@@ -47,6 +47,74 @@
 
 ---
 
+## Прямые ссылки (если качаешь вручную)
+
+Обычно ничего качать вручную не нужно — `start.bat` сам скачает ядро. Но если
+интернет на ПК с сервером закрыт/капризный, вот что нужно:
+
+### 1. Java 25 — обязательно (1 файл)
+
+| Что | Ссылка |
+|---|---|
+| **Installer (MSI), рекомендуется** | <https://github.com/adoptium/temurin25-binaries/releases/download/jdk-25.0.4.1%2B1/OpenJDK25U-jdk_x64_windows_hotspot_25.0.4.1_1.msi> |
+| Portable (ZIP, без установки) | <https://github.com/adoptium/temurin25-binaries/releases/download/jdk-25.0.4.1%2B1/OpenJDK25U-jdk_x64_windows_hotspot_25.0.4.1_1.zip> |
+| Страница со всеми вариантами | <https://adoptium.net/temurin/releases/?version=25&os=windows&arch=x64> |
+
+Это **Eclipse Temurin JDK 25.0.4.1+1, Windows x64** (MSI, ~116 МБ; SHA-256 MSI:
+`517b3590be43120c34c3891d09c97a1eddc12da982208c4f5adf1bdc1b5e3f15`).
+При установке оставь галочки **«Set JAVA_HOME»** и **«Add to PATH»**.
+Если распаковал portable-версию — укажи путь в `JAVA_CMD` в `settings.bat`.
+
+### 2. Ядро Paper (1 файл)
+
+| Что | Ссылка |
+|---|---|
+| **Paper 26.3, последний билд (сейчас build 151)** | <https://fill-data.papermc.io/v1/objects/daf00db322543de77eb2012f37a1919537fafe13e04888ef256e56a5ca51af69/paper-26.3-151.jar> |
+| Страница загрузок (все версии) | <https://papermc.io/downloads/paper> |
+| API: всегда последний билд 26.3 | <https://fill.papermc.io/v3/projects/paper/versions/26.3/builds/latest> |
+
+Скачанный файл положи в папку `server` **и переименуй в `paper.jar`** — тогда
+`start.bat` не будет ничего качать, а сразу запустит сервер.
+Размер build 151 — 54 017 528 байт (~51,5 МБ), SHA-256:
+`daf00db322543de77eb2012f37a1919537fafe13e04888ef256e56a5ca51af69`.
+
+Проверить скачанный файл (PowerShell в папке `server`):
+
+```powershell
+Get-FileHash .\paper.jar -Algorithm SHA256
+```
+
+Хэш должен совпасть с указанным. Скачать сразу под правильным именем можно и
+командой (в той же папке):
+
+```powershell
+curl.exe -L -o paper.jar https://fill-data.papermc.io/v1/objects/daf00db322543de77eb2012f37a1919537fafe13e04888ef256e56a5ca51af69/paper-26.3-151.jar
+```
+
+> Номера билдов обновляются несколько раз в неделю — если ссылка на конкретный
+> билд не открывается, возьми свежий со страницы загрузок или из API выше.
+
+### 3. Клиент Minecraft 26.3 — у игроков
+
+Официальный лаунчер обновляется сам: <https://www.minecraft.net/download>
+Версия клиента должна совпадать с сервером (26.3).
+
+### 4. Плагины (опционально)
+
+Скачивать лучше с первоисточников, проверяя поддержку 26.3:
+[Modrinth](https://modrinth.com/plugins) ·
+[Hangar (PaperMC)](https://hangar.papermc.io/) ·
+[SpigotMC](https://www.spigotmc.org/resources/). Готовые поисковые ссылки:
+[ViaVersion](https://modrinth.com/plugins?q=viaversion) ·
+[Geyser (Bedrock)](https://geysermc.org/download) ·
+[EssentialsX](https://modrinth.com/plugins?q=essentialsx) ·
+[LuckPerms](https://modrinth.com/plugins?q=luckperms) ·
+[CoreProtect](https://modrinth.com/plugins?q=coreprotect) ·
+[Chunky](https://modrinth.com/plugins?q=chunky) ·
+[Spark](https://modrinth.com/plugins?q=spark)
+
+---
+
 ## Настройки: `settings.bat`
 
 Открывается любым текстовым редактором (Правка в Блокноте). После правки — сохранить

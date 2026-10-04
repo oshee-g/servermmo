@@ -1,0 +1,18 @@
+# Line endings and file types for a server pack that is edited on Windows
+# and tested on Linux/macOS.
+
+* text=auto eol=lf
+
+# Windows scripts must keep CRLF, otherwise cmd.exe can misbehave
+# (and Notepad would show one long line).
+*.bat  text eol=crlf
+*.cmd  text eol=crlf
+*.ps1  text eol=crlf
+
+# Shell scripts must keep LF.
+*.sh   text eol=lf
+
+# Binary-ish files: never touch them.
+*.jar  binary
+*.png  binary
+*.zip  binary

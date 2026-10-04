@@ -1,0 +1,32 @@
+# Runtime files of the Minecraft server - never commit these.
+# (The repo-wide .gitignore already skips *.jar, *.zip, *.tar.gz and *.log.)
+
+# Server core (downloaded by start.sh / update.sh)
+/paper.jar
+/paper.jar.old
+/paper.jar.download
+
+# Worlds
+/world*/
+/level*/
+
+# Generated caches, libraries and logs
+/logs/
+/cache/
+/libraries/
+/versions/
+/crash-reports/
+/usercache.json
+/session.lock
+
+# Backups (can be huge, keep them out of git)
+/backups/
+
+# Plugin jars (their config folders *are* worth committing)
+/plugins/*.jar
+
+# Player and moderation data
+/ops.json
+/whitelist.json
+/banned-players.json
+/banned-ips.json

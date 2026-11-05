@@ -85,31 +85,48 @@ Paper сам выстроит порядок загрузки по `depend:` в 
 ### Ресурспак
 
 Файл: [`server/resourcepack/servermmo-hud.zip`](../server/resourcepack/servermmo-hud.zip)
-(13418 байт, SHA-1 `5f742a5a945c2b1c33a6097e656dbdab1f7ffde2`).
+(13 418 байт, SHA-1 `5f742a5a945c2b1c33a6097e656dbdab1f7ffde2`).
 
-**Вариант А — вручную каждому игроку (проще всего):**
+**Вариант 1 — сервер раздаёт сам (игра предложит скачать всем):**
+
+1. `server/pack-server.bat` — запускает мини-сервер на Java, который отдаёт
+   `servermmo-hud.zip` по HTTP. В окне печатается адрес вида
+   `http://192.168.1.50:8080/servermmo-hud.zip`. Окно держать открытым.
+2. `server/setup-resourcepack.bat` — спрашивает URL (Enter = предложенный),
+   считает SHA-1 и пишет в `server.properties`:
+   `resource-pack`, `resource-pack-sha1`, `resource-pack-prompt`,
+   `require-resource-pack` (старый файл → `server.properties.bak`).
+3. Перезапустить `start.bat`. Игроки получают предложение скачать пак.
+
+Через интернет нужен проброс порта `8080` (как `25565` для Minecraft).
+Порт меняется в `settings.bat` → `PACK_PORT`.
+
+**Вариант 2 — публичный хостинг:**
+
+Залей zip туда, где есть прямая ссылка (GitHub Pages в публичном репозитории,
+Cloudflare R2, любой статический хостинг) и выполни:
+
+```bat
+setup-resourcepack.bat https://example.com/servermmo-hud.zip
+```
+
+Ссылка с GitHub Release в приватном репозитории не подойдёт: клиент Minecraft
+не умеет авторизовываться в GitHub.
+
+**Вариант 3 — вручную каждому игроку:**
 
 1. Скопируй `servermmo-hud.zip` в `.minecraft/resourcepacks`
-   (Win+R → `%APPDATA%\.minecraft\resourcepacks`).
-2. В игре: **Настройки → Наборы ресурсов** → включить «ServerMMO HUD» → Готово.
+   (`%APPDATA%\.minecraft\resourcepacks`).
+2. В игре: **Настройки → Наборы ресурсов** → включить «ServerMMO HUD».
 
-**Вариант Б — сервер раздаёт сам:**
+Посчитать SHA-1 вручную: `Get-FileHash servermmo-hud.zip -Algorithm SHA1` (PowerShell).
 
-1. Залей `servermmo-hud.zip` на любой хостинг, чтобы получилась прямая ссылка.
-2. В `server.properties`:
-
-   ```properties
-   resource-pack=https://твой-хостинг/servermmo-hud.zip
-   resource-pack-sha1=5f742a5a945c2b1c33a6097e656dbdab1f7ffde2
-   require-resource-pack=false
-   ```
-
-3. Перезапусти сервер. Клиент скачает пак при входе.
-
-Посчитать SHA-1 самому: `Get-FileHash servermmo-hud.zip -Algorithm SHA1` (PowerShell).
+`require-resource-pack=true` заставляет принять пак (отказ = кик).
+По умолчанию `false`: игрок без пака зайдёт, но увидит пустые квадраты.
 
 > Если ресурспак не установлен, HUD покажет пустые квадраты вместо рамки и
-> цифр, а ванильные сердца останутся на месте.
+> цифр. Проверка: открой URL из `server.properties` в браузере на другом
+> устройстве — должен скачаться zip.
 
 ---
 

@@ -12,6 +12,7 @@
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 import sys
@@ -163,6 +164,42 @@ def check_resourcepack() -> None:
     print(f"  ok ресурспак: формат 97.1, глифов {len(chars)}, сдвигов {len(advances)}")
 
 
+def check_server_properties() -> None:
+    """Если ресурспак уже раздаётся, SHA-1 в server.properties должен совпадать с файлом."""
+    props = ROOT / "server" / "server.properties"
+    if not props.is_file():
+        fail("нет server/server.properties")
+        return
+    # server.properties традиционно читается как ISO-8859-1 (latin-1)
+    values: dict[str, str] = {}
+    for line in props.read_text(encoding="latin-1").splitlines():
+        if not line or line.lstrip().startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        values[key.strip()] = value.strip()
+
+    for key in ("resource-pack", "resource-pack-sha1", "require-resource-pack", "resource-pack-prompt"):
+        if key not in values:
+            fail(f"server.properties: нет ключа {key}")
+
+    url = values.get("resource-pack", "")
+    sha1 = values.get("resource-pack-sha1", "").lower()
+    pack = ROOT / "server" / "resourcepack" / "servermmo-hud.zip"
+
+    if not url:
+        print("  ok server.properties: ресурспак пока не раздаётся (resource-pack пуст)")
+        return
+    if not pack.is_file():
+        fail("server.properties: resource-pack задан, а zip ресурспака отсутствует")
+        return
+    real = hashlib.sha1(pack.read_bytes()).hexdigest()
+    if sha1 != real:
+        fail(f"server.properties: resource-pack-sha1={sha1 or '(пусто)'} не совпадает "
+             f"с файлом ({real}). Запусти setup-resourcepack.bat")
+        return
+    print(f"  ok server.properties: ресурспак раздаётся, SHA-1 совпадает ({url})")
+
+
 def main() -> int:
     print("Проверка ServerMMO:")
     jars = [
@@ -175,6 +212,7 @@ def main() -> int:
         check_jar(PLUGINS_DIR / file_name, plugin_name)
     check_stats_yaml()
     check_resourcepack()
+    check_server_properties()
 
     if warnings:
         print("\nПредупреждения:")

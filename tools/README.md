@@ -39,6 +39,19 @@ bash   tools/test-linux.sh          # поведение .sh (Linux/macOS)
 `pack.mcmeta` пишется под Minecraft 26.3: формат ресурспака **97.1**
 (`min_format: [97, 1]`, `max_format: 97`).
 
+### Раздача ресурспака
+
+`server/pack-server.bat` запускает `server/resourcepack/PackServer.java` —
+маленький HTTP-сервер на `java.base` (никаких зависимостей), который отдаёт
+`servermmo-hud.zip` игрокам. `server/setup-resourcepack.bat` вызывает
+`server/scripts/resourcepack.ps1`: тот считает SHA-1 и правит
+`server.properties` (кодировка ISO-8859-1, чтобы не попортить остальной файл).
+
+Проверяется автоматически в `.github/workflows/smoke-test.yml`: сервер
+запускается на JDK 25, скачивается zip, сверяется SHA-1, проверяются
+`Content-Length`, 404 на неизвестный путь и 405 на POST. Лог складывается
+в `packserver-test.log`.
+
 ### `check_plugins.py` — проверка артефактов
 
 * `plugin.yml` внутри каждого jar: `name`, `main`, `api-version: '26.3'`;
@@ -46,7 +59,9 @@ bash   tools/test-linux.sh          # поведение .sh (Linux/macOS)
 * `stats.yml` и `player-stats.yml`: 90 уровней, значения в пределах `long`,
   первый уровень игрока = 20/5/200;
 * ресурспак: формат 97.1, все текстуры шрифта на месте, все глифы и сдвиги
-  (`\uE001`…`\uE006`, `\uE100`, цифры) объявлены; `pack.mcmeta` в корне zip.
+  (`\uE001`…`\uE006`, `\uE100`, цифры) объявлены; `pack.mcmeta` в корне zip;
+* `server.properties`: если `resource-pack` заполнен, `resource-pack-sha1`
+  обязан совпадать с реальным SHA-1 файла ресурспака.
 
 Запускать после `mvn package` или после того, как CI опубликовал jar в
 `server/plugins/`.

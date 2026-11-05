@@ -151,52 +151,38 @@ Paper сам выстроит порядок загрузки по `depend:` в 
 Файл: [`server/resourcepack/servermmo-hud.zip`](../server/resourcepack/servermmo-hud.zip)
 (SHA-1 и размер печатает `python3 tools/check_pack.py`).
 
-**Вариант 1 — прямая ссылка из релиза (по умолчанию):**
+**Единственный способ — ссылка на Google Диск:**
 
 Сервер пак **не хранит и не раздаёт**: в `server.properties` лежат только
-ссылка и SHA-1, клиент качает zip сам. Пак выложен отдельным файлом в каждом
-релизе, поэтому:
+ссылка и SHA-1, клиент качает zip сам при входе. Пак лежит одним файлом на
+Google Диске (доступ «все, у кого есть ссылка»):
 
-1. `server/setup-resourcepack.bat` — спрашивает URL (Enter = ссылка на пак из
-   последнего релиза), считает SHA-1 и пишет в `server.properties`:
-   `resource-pack`, `resource-pack-sha1`, `resource-pack-prompt`,
-   `require-resource-pack` (старый файл → `server.properties.bak`).
-2. Запустить `start.bat`. Ядро сверит SHA-1 в `server.properties` с лежащим
-   рядом `resourcepack/servermmo-hud.zip` и предупредит, если ссылка протухла.
-3. Игроки получают предложение скачать пак при входе.
+    https://drive.google.com/uc?export=download&id=17tX_yNScUcmUIe3KGoRGgOzTKWbbzM4P
 
-Ничего пробрасывать не нужно: GitHub отдаёт файл по обычному HTTPS. Единственное
-требование — ссылка должна открываться с компьютера игрока, поэтому репозиторий
-с релизом должен быть **публичным**.
+Эти строки уже стоят в `server/server.properties` — обычно ничего делать не
+нужно:
 
-**Вариант 2 — свой хостинг:**
+1. Запустить `start.bat`.
+2. Игроки получают предложение скачать пак при входе.
 
-Залей zip туда, где есть прямая ссылка (GitHub Pages в публичном репозитории,
-Cloudflare R2, любой статический хостинг) и выполни:
+Других способов (установщик, ассет в релизе, ручная копия файла в клиент)
+нет — один способ, чтобы ничего не конфликтовало.
 
-```bat
-setup-resourcepack.bat https://example.com/servermmo-hud.zip
-```
+Обновление пака: заменить файл на Google Диске (ссылка при замене не
+меняется) и обновить `resource-pack-sha1` в `server.properties` под новый
+`server/resourcepack/servermmo-hud.zip`. Пару «ссылка + SHA-1» сверяет
+`tools/check_plugins.py`.
 
-Ссылка с GitHub Release в приватном репозитории не подойдёт: клиент Minecraft
-не умеет авторизовываться в GitHub.
-
-**Вариант 3 — вручную каждому игроку:**
-
-1. Скопируй `servermmo-hud.zip` в `.minecraft/resourcepacks`
-   (`%APPDATA%\.minecraft\resourcepacks`).
-2. В игре: **Настройки → Наборы ресурсов** → включить «ServerMMO HUD».
-
-Посчитать SHA-1 вручную (если правишь `server.properties` без скрипта):
-`Get-FileHash servermmo-hud.zip -Algorithm SHA1` в PowerShell или
-`sha1sum servermmo-hud.zip` в Linux/macOS.
+Посчитать SHA-1 вручную: `Get-FileHash servermmo-hud.zip -Algorithm SHA1` в
+PowerShell или `sha1sum servermmo-hud.zip` в Linux/macOS.
 
 `require-resource-pack=true` заставляет принять пак (отказ = кик).
-По умолчанию `false`: игрок без пака зайдёт, но увидит пустые квадраты.
+По умолчанию `false`: игрок без пака зайдёт, но HUD у него будет полностью
+скрыт — сервер слушает статус загрузки пака (`SUCCESSFULLY_LOADED`) и до
+него не показывает ни панель босс-бара, ни строку хотбара.
 
-> Если ресурспак не установлен, вместо значков будут пустые квадраты, а числа
-> останутся читаемыми. Проверка: открой URL из `server.properties` в браузере
-> на другом устройстве — должен скачаться zip.
+> Проверка: открой URL из `server.properties` в браузере на другом
+> устройстве — должен скачаться zip.
 
 ---
 

@@ -72,23 +72,20 @@ bash   tools/test-linux.sh          # поведение .sh (Linux/macOS)
 ### Раздача ресурспака
 
 Пак **не раздаётся сервером**: ни плагин, ни отдельный процесс его не
-хостит. В `server.properties` лежат только `resource-pack` (прямая ссылка)
-и `resource-pack-sha1`, клиент качает zip сам. Файл `servermmo-hud.zip`
-прикладывается к каждому релизу, поэтому рабочая ссылка есть сразу после
-`gh release create`.
+хостит. Единственный канал — один файл на Google Диске с доступом
+«все, у кого есть ссылка»:
 
-`server/setup-resourcepack.bat` вызывает
-`server/resourcepack/SetupPack.java`: тот считает SHA-1,
-спрашивает ссылку (Enter = последний релиз) и правит `server.properties`
-(читается как ISO-8859-1, поэтому остальной файл сохраняется байт в байт;
-делается бэкап `server.properties.bak`). Файл запускается в режиме
-`java SetupPack.java` — компилятор не нужен, но нужен именно JDK
-(модуль `jdk.compiler`), а не голый JRE.
+    https://drive.google.com/uc?export=download&id=17tX_yNScUcmUIe3KGoRGgOzTKWbbzM4P
 
-Проверяется автоматически в `.github/workflows/smoke-test.yml` на JDK 25:
-`SetupPack.java` правит копию `server.properties` — проверяются
-`resource-pack`, `resource-pack-sha1`, `require-resource-pack`, промпт,
-отсутствие дублей, сохранение не-ASCII байтов и создание `.bak`.
+В `server.properties` лежат только `resource-pack` (эта ссылка) и
+`resource-pack-sha1` (SHA-1 файла `server/resourcepack/servermmo-hud.zip`),
+клиент качает zip сам. Обновление пака = замена файла на Диске (ссылка при
+замене не меняется) и, если изменился zip, правка `resource-pack-sha1` —
+пару «ссылка+SHA-1» сверяет `tools/check_plugins.py` в CI.
+
+Отдельного ассета `servermmo-hud.zip` в релизах GitHub больше нет и
+установщика (`setup-resourcepack.bat`/`SetupPack.java`) тоже: один способ,
+чтобы ничего не конфликтовало.
 
 ### `check_plugins.py` — проверка артефактов
 

@@ -206,9 +206,9 @@ def check_server_properties() -> None:
     real = hashlib.sha1(pack.read_bytes()).hexdigest()
     if sha1 != real:
         fail(f"server.properties: resource-pack-sha1={sha1 or '(пусто)'} не совпадает "
-             f"с файлом ({real}). Запусти setup-resourcepack.bat")
+             f"с файлом ({real}). Обнови resource-pack-sha1 под zip на Google Диске")
         return
-    print(f"  ok server.properties: ресурспак раздаётся, SHA-1 совпадает ({url})")
+    print(f"  ok server.properties: ресурспак на Google Диске, SHA-1 совпадает ({url})")
 
 
 def main() -> int:

@@ -46,10 +46,10 @@ jobs:
           if [ "${GITHUB_REF_TYPE}" != "tag" ]; then TAG="v1.0.0"; fi
           ZIP="$RUNNER_TEMP/servermmo-paper-26.3-server-pack.zip"
           gh release delete "$TAG" --yes --cleanup-tag 2>/dev/null || true
-          # servermmo-hud.zip кладём отдельным файлом: на него ссылается
-          # resource-pack= в server.properties (прямая ссылка на релиз).
+          # Ресурспак отдельным файлом НЕ прикладываем: он раздаётся только
+          # одним файлом на Google Диске, на который ссылается resource-pack=
+          # в server.properties. Второй источник = конфликт версий пака.
           gh release create "$TAG" "$ZIP#servermmo-paper-26.3-server-pack.zip" \
-            "server/resourcepack/servermmo-hud.zip#servermmo-hud.zip" \
             --target "${GITHUB_SHA}" \
             --title "ServerMMO Pack ${TAG} (Paper 26.3)" \
             --notes-file .github/release-notes.md

@@ -254,55 +254,31 @@ WorldEdit/WorldGuard, Simple Voice Chat. Подробнее — в `plugins/READ
 ### Как раздать ресурспак всем игрокам
 
 Игра скачивает пак сама, если в `server.properties` есть **прямая ссылка** на файл
-и его **SHA-1**. Ссылка должна открываться с компьютера игрока.
+и его **SHA-1**. Единственный способ установки — один файл на Google Диске,
+других (установщик, релизы, ручная копия в клиент) не существует, чтобы
+ничего не конфликтовало:
 
-#### Вариант 1: прямая ссылка из релиза (по умолчанию)
+```properties
+resource-pack=https://drive.google.com/uc?export=download&id=17tX_yNScUcmUIe3KGoRGgOzTKWbbzM4P
+resource-pack-sha1=СЧИТАЕТСЯ_ИЗ_ФАЙЛА
+resource-pack-prompt={"text":"ServerMMO HUD resource pack","color":"gold"}
+require-resource-pack=false
+```
 
-Сервер пак не хранит и не раздаёт — в `server.properties` лежат только ссылка и
-SHA-1. Пак уже выложен отдельным файлом в каждом релизе, поэтому:
-
-1. Двойной щелчок по `server/setup-resourcepack.bat` и Enter. Скрипт предложит
-   прямую ссылку на пак из последнего релиза, посчитает SHA-1 и запишет:
-
-   ```properties
-   resource-pack=https://github.com/oshee-g/servermmo/releases/latest/download/servermmo-hud.zip
-   resource-pack-sha1=СЧИТАЕТСЯ_ИЗ_ФАЙЛА
-   resource-pack-prompt={"text":"ServerMMO HUD resource pack","color":"gold"}
-   require-resource-pack=false
-   ```
-
-   Старый файл сохраняется как `server.properties.bak`.
-
-2. Запусти `server/start.bat`. При старте ядро сверяет SHA-1 в
-   `server.properties` с лежащим рядом `resourcepack/servermmo-hud.zip` и
-   предупреждает, если ссылка устарела.
-
-3. Игрок входит — клиент сам предлагает скачать пак.
+Эти строки уже стоят в `server/server.properties`. Сервер пак не хранит и не
+раздаёт: клиент качает zip сам при входе и сам предлагает его скачать.
 
 **Что важно знать:**
 
-* Ссылка должна открываться с компьютера игрока. GitHub отдаёт файл по
-  обычному HTTPS, ничего пробрасывать не нужно.
-* Свой файл: `setup-resourcepack.bat https://ваш-адрес/servermmo-hud.zip`.
-* Если игрок отказался от пака, он зайдёт, но вместо значков увидит пустые
-  квадратики (числа останутся читаемыми).
+* Файл на Диске открыт как «все, у кого есть ссылка» — иначе клиент его не скачает.
+* Обновление пака: заменить файл на Google Диске (ссылка при замене файла не
+  меняется) и, если zip изменился, обновить `resource-pack-sha1` под него и
+  перезапустить сервер.
+* Если игрок отказался от пака, он зайдёт, но HUD у него будет полностью
+  скрыт: сервер видит статус загрузки пака и не показывает ни панели, ни
+  строки хотбара.
 
-#### Вариант 2: свой хостинг
 
-Подходит, если файл лежит не в релизе. Залей `server/resourcepack/servermmo-hud.zip`
-туда, где получится **прямая ссылка** (GitHub Pages в публичном репозитории,
-Cloudflare R2, Yandex Object Storage, любой статический хостинг), и выполни
-`setup-resourcepack.bat <url>` — SHA-1 скрипт посчитает сам.
-
-#### Вариант 3: вручную каждому игроку
-
-Без автоматики и без хостинга:
-
-1. Скопируй `server/resourcepack/servermmo-hud.zip` в
-   `%APPDATA%\.minecraft\resourcepacks` (Win+R → вставить этот путь).
-2. В игре: **Настройки → Наборы ресурсов** → включить **ServerMMO HUD**.
-
-#### Если хочется заставить, а не предлагать
 
 Поставь `require-resource-pack=true` в `server.properties`: тогда игрок либо
 принимает пак, либо его не пускает на сервер. Текст предложения меняется в

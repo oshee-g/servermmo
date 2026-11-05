@@ -123,9 +123,10 @@ exit /b 1
 rem --- hint: is the HUD resource pack linked in server.properties? ------
 findstr /b /c:"resource-pack=http" "server.properties" >nul 2>&1
 if not errorlevel 1 goto :pack_ready
-echo [i] Resource pack is not linked yet, so players will see empty
-echo     squares instead of the ServerMMO HUD icons. Run
-echo     setup-resourcepack.bat once and restart. Details: ..\PLUGINS.md
+echo [i] Resource pack link is missing in server.properties, so the
+echo     ServerMMO HUD stays hidden for players. The pack lives on
+echo     Google Drive - restore the resource-pack line in
+echo     server.properties and restart.
 echo.
 :pack_ready
 

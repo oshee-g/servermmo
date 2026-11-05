@@ -115,8 +115,9 @@ final class MobSpawner {
     int spawnConfigured() {
         var section = plugin.getConfig().getMapList("spawns");
         int spawned = 0;
-        for (var entry : section) {
-            String typeName = String.valueOf(entry.getOrDefault("type", ""));
+        for (java.util.Map<?, ?> entry : section) {
+            Object rawType = entry.get("type");
+            String typeName = rawType == null ? "" : String.valueOf(rawType).trim();
             EntityType type = resolveType(typeName);
             if (type == null) {
                 plugin.getLogger().warning("spawns: неизвестный моб \"" + typeName + "\" - пропускаю");
@@ -127,9 +128,11 @@ final class MobSpawner {
                 plugin.getLogger().warning("spawns: нет уровня " + level + " - пропускаю " + typeName);
                 continue;
             }
-            var world = plugin.getServer().getWorld(String.valueOf(entry.getOrDefault("world", "world")));
+            Object rawWorld = entry.get("world");
+            String worldName = rawWorld == null ? "world" : String.valueOf(rawWorld).trim();
+            var world = plugin.getServer().getWorld(worldName);
             if (world == null) {
-                plugin.getLogger().warning("spawns: нет мира " + entry.get("world") + " - пропускаю " + typeName);
+                plugin.getLogger().warning("spawns: нет мира " + worldName + " - пропускаю " + typeName);
                 continue;
             }
             Location location = new Location(world,

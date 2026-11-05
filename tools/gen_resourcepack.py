@@ -376,10 +376,15 @@ def main() -> int:
     ZIP_OUT.parent.mkdir(parents=True, exist_ok=True)
     if ZIP_OUT.exists():
         ZIP_OUT.unlink()
+    # Фиксированные таймстампы: одинаковый вход -> одинаковый zip -> стабильный SHA-1.
     with zipfile.ZipFile(ZIP_OUT, "w", zipfile.ZIP_DEFLATED) as zf:
         for path in sorted(PACK.rglob("*")):
-            if path.is_file():
-                zf.write(path, path.relative_to(PACK).as_posix())
+            if not path.is_file():
+                continue
+            info = zipfile.ZipInfo(path.relative_to(PACK).as_posix(), date_time=(2026, 11, 5, 12, 0, 0))
+            info.compress_type = zipfile.ZIP_DEFLATED
+            info.external_attr = 0o644 << 16
+            zf.writestr(info, path.read_bytes())
 
     files = sum(1 for p in PACK.rglob("*") if p.is_file())
     print(f"Ресурспак: {files} файлов -> {ZIP_OUT.relative_to(ROOT)} ({ZIP_OUT.stat().st_size} байт)")

@@ -85,7 +85,7 @@ Paper сам выстроит порядок загрузки по `depend:` в 
 ### Ресурспак
 
 Файл: [`server/resourcepack/servermmo-hud.zip`](../server/resourcepack/servermmo-hud.zip)
-(13418 байт, SHA-1 `d19a69e420b2861cbe7187833ae50c9bda26dba7`).
+(13418 байт, SHA-1 `5f742a5a945c2b1c33a6097e656dbdab1f7ffde2`).
 
 **Вариант А — вручную каждому игроку (проще всего):**
 
@@ -100,7 +100,7 @@ Paper сам выстроит порядок загрузки по `depend:` в 
 
    ```properties
    resource-pack=https://твой-хостинг/servermmo-hud.zip
-   resource-pack-sha1=d19a69e420b2861cbe7187833ae50c9bda26dba7
+   resource-pack-sha1=5f742a5a945c2b1c33a6097e656dbdab1f7ffde2
    require-resource-pack=false
    ```
 

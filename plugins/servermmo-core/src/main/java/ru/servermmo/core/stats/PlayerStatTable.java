@@ -29,10 +29,13 @@ public final class PlayerStatTable {
     }
 
     public static PlayerStatTable load(JavaPlugin plugin, String name) {
+        java.io.InputStream resource = plugin.getResource(name);
+        if (resource == null) {
+            plugin.getLogger().severe("В jar плагина нет ресурса " + name + " - таблица не загружена");
+            return empty();
+        }
         YamlConfiguration yaml = YamlConfiguration.loadConfiguration(
-                new java.io.InputStreamReader(
-                        java.util.Objects.requireNonNull(plugin.getResource(name), "Нет ресурса " + name),
-                        java.nio.charset.StandardCharsets.UTF_8));
+                new java.io.InputStreamReader(resource, java.nio.charset.StandardCharsets.UTF_8));
 
         ConfigurationSection root = yaml.getConfigurationSection("levels");
         if (root == null) {

@@ -3,7 +3,7 @@
 
 Читает tools/mobs_stats.txt (таблица из 90 уровней) и пишет:
   plugins/servermmo-core/src/main/resources/stats.yml         - статы мобов по уровням
-  plugins/servermmo-players/src/main/resources/player-stats.yml - статы игрока по уровням
+  plugins/servermmo-core/src/main/resources/player-stats.yml    - статы игрока по уровням
 
 Запуск:  python3 tools/gen_stats.py
 """
@@ -16,7 +16,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / "tools" / "mobs_stats.txt"
 CORE_OUT = ROOT / "plugins" / "servermmo-core" / "src" / "main" / "resources" / "stats.yml"
-PLAYER_OUT = ROOT / "plugins" / "servermmo-players" / "src" / "main" / "resources" / "player-stats.yml"
+PLAYER_OUT = ROOT / "plugins" / "servermmo-core" / "src" / "main" / "resources" / "player-stats.yml"
 
 # Русское название из таблицы -> EntityType Bukkit/Paper (26.3)
 MOB_TYPES: dict[str, str] = {

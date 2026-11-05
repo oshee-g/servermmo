@@ -22,8 +22,8 @@ public final class HudSettings {
         HudSettings settings = new HudSettings();
         settings.distance = config.getDouble("hud.distance", 1.0D);
         settings.offsetX = config.getDouble("hud.offset-x", -0.52D);
-        settings.offsetY = config.getDouble("hud.offset-y", 0.30D);
-        settings.scale = (float) config.getDouble("hud.scale", 0.06D);
+        settings.offsetY = config.getDouble("hud.offset-y", 0.32D);
+        settings.scale = (float) config.getDouble("hud.scale", 0.27D);
         settings.updateIntervalTicks = Math.max(1L, config.getLong("hud.update-interval-ticks", 2L));
         settings.seeThrough = config.getBoolean("hud.see-through", true);
         settings.resourcePackEnabled = config.getBoolean("resource-pack.enabled", false);
@@ -33,8 +33,8 @@ public final class HudSettings {
             settings.distance = 0.9D;
         }
         if (settings.scale <= 0.0F) {
-            plugin.getLogger().warning("hud.scale <= 0, ставлю 0.038");
-            settings.scale = 0.038F;
+            plugin.getLogger().warning("hud.scale <= 0, ставлю 0.27");
+            settings.scale = 0.27F;
         }
         return settings;
     }

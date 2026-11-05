@@ -96,7 +96,6 @@ jobs:
 
           echo "forceload add 0 0" >&3
           echo "gamerule doMobSpawning false" >&3
-          echo "gamerule doMobLoot false" >&3
           sleep 3
           echo "execute in minecraft:overworld run summon minecraft:zombie 0 -59 0 {NoAI:1b,NoGravity:1b,PersistenceRequired:1b,Silent:0b}" >&3
           sleep 4
@@ -113,7 +112,9 @@ jobs:
           echo "say STEP3_AFTER_LETHAL" >&3
           echo "execute in minecraft:overworld if entity @e[type=minecraft:zombie]" >&3
           sleep 3
-          echo "execute in minecraft:overworld run summon minecraft:chicken 2 -59 0 {NoGravity:1b,PersistenceRequired:1b}" >&3\n          sleep 2\n          echo "execute in minecraft:overworld if entity @e[type=minecraft:chicken]" >&3
+          echo "execute in minecraft:overworld run summon minecraft:chicken 2 -59 0 {NoGravity:1b,PersistenceRequired:1b}" >&3
+          sleep 3
+          echo "execute in minecraft:overworld if entity @e[type=minecraft:chicken]" >&3
           sleep 3
           echo "stop" >&3
 

@@ -320,6 +320,18 @@ chmod +x *.sh
 | `linux/` | то же самое для Linux/macOS (`start.sh`, `settings.sh`, `update.sh`, `backup.sh`) |
 | `tools/` | тесты, линтер, генераторы статов и ресурспака |
 
+### Проверка плагинов (для разработки)
+
+```bash
+python3 tools/check_plugins.py   # jar, таблицы статов, ресурспак
+```
+
+Сборка плагинов идёт в GitHub Actions: `.github/workflows/build-plugins.yml`
+каждый push пересобирает четыре jar и кладёт их в `server/plugins/`.
+Отдельный workflow `.github/workflows/smoke-test.yml` поднимает настоящий
+Paper 26.3, ставит плагины, спавнит зомби и проверяет кастомный урон —
+результат складывается в `smoke-test.log`.
+
 ### Проверка скриптов (для разработки)
 
 Если правишь `start.bat` / `start.sh`, прогони тесты:

@@ -145,10 +145,6 @@ final class AggressionTask extends BukkitRunnable {
     private boolean isHostile(Mob mob) {
         return mob instanceof org.bukkit.entity.Monster
                 || mob instanceof org.bukkit.entity.Slime
-                || mob instanceof org.bukkit.entity.Ghast
-                || mob instanceof org.bukkit.entity.Phantom
-                || mob instanceof org.bukkit.entity.Shulker
-                || mob instanceof org.bukkit.entity.EnderDragon
-                || mob instanceof org.bukkit.entity.Flying;
+                || mob instanceof org.bukkit.entity.EnderDragon;
     }
 }

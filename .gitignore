@@ -8,8 +8,7 @@ server/crash-reports/
 server/cache/
 server/libraries/
 server/versions/
-server/plugins/*.jar
-server/plugins/ServerMMO*/
+server/plugins/*/
 server/banned-*.json
 server/ops.json
 server/whitelist.json

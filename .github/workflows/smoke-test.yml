@@ -6,6 +6,7 @@ on:
     branches: ['**']
     paths:
       - 'plugins/**'
+      - '.github/workflows/smoke-test.yml'
 
 permissions:
   contents: write

@@ -143,13 +143,6 @@ def icons_atlas(icons: list[Image.Image]) -> Image.Image:
     return image
 
 
-def heart_atlas(heart: Image.Image) -> Image.Image:
-    """Одно сердечко 8x8 для подписей над мобами."""
-    image = Image.new("RGBA", (CELL, CELL), (0, 0, 0, 0))
-    image.alpha_composite(heart, (0, 0))
-    return image
-
-
 def pack_icon(bar: Image.Image, heart: Image.Image) -> Image.Image:
     """pack.png 64x64: деревянная панель + сердце."""
     panel = bar.resize((64, 64), Image.LANCZOS)
@@ -195,9 +188,6 @@ def main() -> int:
     atlas = icons_atlas(icons)
     atlas.save(OUT / "hud_icons.png", optimize=True)
     print(f"hud_icons.png: {atlas.width}x{atlas.height} (сердце, меч, щит, кристалл)")
-
-    heart_atlas(icons[0]).save(OUT / "hud_heart.png", optimize=True)
-    print("hud_heart.png: 8x8 (для подписи над мобом)")
 
     pack_icon(bar, icons[0]).save(OUT / "pack_icon.png", optimize=True)
     print("pack_icon.png: 64x64")

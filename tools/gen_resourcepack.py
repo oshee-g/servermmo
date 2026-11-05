@@ -35,7 +35,6 @@ ZIP_OUT = ROOT / "server" / "resourcepack" / "servermmo-hud.zip"
 GLYPH_HEIGHT = 8  # ячейка 8x8, как у ванильного шрифта
 DIGIT_CHARS = "0123456789/ "
 ICON_CHARS = "\ue010\ue011\ue012\ue013"  # сердце, меч, щит, кристалл
-HEART_CHAR = "\ue010"
 
 # Ванильные спрайты HUD, которые надо спрятать. Список снят с настоящих
 # ресурсов 1.21.9: имена с суффиксом _blinking появились в 1.21.2, а
@@ -126,13 +125,6 @@ def build_font_json() -> dict:
                 "chars": [ICON_CHARS],
             },
             {
-                "type": "bitmap",
-                "file": "servermmo:font/hud_heart.png",
-                "ascent": 7,
-                "height": GLYPH_HEIGHT,
-                "chars": [HEART_CHAR],
-            },
-            {
                 "type": "space",
                 "advances": {
                     # служебные символы: тонкая подгонка отступов
@@ -184,7 +176,7 @@ def main() -> int:
     (fonts / "hud.json").write_text(
         json.dumps(build_font_json(), ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
-    for name in ("hud_digits.png", "hud_icons.png", "hud_heart.png"):
+    for name in ("hud_digits.png", "hud_icons.png"):
         copy_asset(name, textures / name)
     copy_asset("pack_icon.png", PACK / "pack.png")
 

@@ -108,6 +108,9 @@ final class PlayerHud {
         TextDisplay created = player.getWorld().spawn(spawn, TextDisplay.class, entity -> {
             entity.setVisibleByDefault(false);
             entity.setBillboard(Display.Billboard.FIXED);
+            // Выравнивание по левому краю: тогда offset-x задаёт левую границу
+            // панели, а не её центр — так проще прижать HUD к углу.
+            entity.setAlignment(TextDisplay.TextAlignment.LEFT);
             entity.setSeeThrough(settings.seeThrough());
             entity.setShadowed(false);
             entity.setDefaultBackground(false);

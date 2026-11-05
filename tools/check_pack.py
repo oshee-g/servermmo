@@ -28,7 +28,6 @@ REQUIRED = [
     "assets/servermmo/font/hud.json",
     "assets/servermmo/textures/font/hud_digits.png",
     "assets/servermmo/textures/font/hud_icons.png",
-    "assets/servermmo/textures/font/hud_heart.png",
     "assets/minecraft/textures/gui/icons.png",
     "assets/minecraft/textures/gui/sprites/hud/heart/full.png",
     "assets/minecraft/textures/gui/sprites/hud/heart/half.png",
@@ -96,6 +95,22 @@ def main() -> int:
                                     f" нужна ячейка {GLYPH_HEIGHT}x{GLYPH_HEIGHT}")
             if bitmaps == 0:
                 problems.append("в шрифте нет ни одного bitmap-провайдера")
+
+            # один и тот же символ не должен быть в двух провайдерах:
+            # второй молча игнорируется, и текстура «пропадает»
+            seen: dict[str, str] = {}
+            for provider in font.get("providers", []):
+                if provider.get("type") != "bitmap":
+                    continue
+                for row in provider.get("chars", []):
+                    for char in row:
+                        if char in seen:
+                            problems.append(f"символ {hex(ord(char))} объявлен дважды:"
+                                            f" {seen[char]} и {provider.get('file')}")
+                        else:
+                            seen[char] = provider.get("file", "?")
+            if any(ch not in seen for ch in "0123456789/"):
+                problems.append("в шрифте нет всех цифр и дроби для опыта")
 
         for name in names:
             if "/heart/" in name and name.endswith(".png"):

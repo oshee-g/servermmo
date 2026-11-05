@@ -234,7 +234,8 @@ WorldEdit/WorldGuard, Simple Voice Chat. Подробнее — в `plugins/READ
 * у игрока своё здоровье: удар вызывает покраснение и снимает его;
 * обычные мобы в мире остаются ванильными — их можно бить обычным способом;
 * кастомные мобы (уровень, статы из таблицы, агро 20 блоков, подпись над
-  головой) создаются командой `/mob spawn <уровень> <тип> [x y z]`;
+  головой) создаются командой `/mob spawn <уровень> <тип> [x y z]` или
+  точками в `plugins/ServerMMOMobs/config.yml` (секция `spawns`);
 * кастомный моб умирает без анимации смерти и без дропа, только со звуком;
 * за убийство кастомного моба дают опыт, при переполнении — новый уровень
   и полное лечение;
@@ -261,7 +262,7 @@ WorldEdit/WorldGuard, Simple Voice Chat. Подробнее — в `plugins/READ
 
    ```properties
    resource-pack=http://192.168.1.50:8080/servermmo-hud.zip
-   resource-pack-sha1=f130cff31b7857580813b7b00a5b6837c6c9eeca
+   resource-pack-sha1=860950b0cc85afb16eb897f7143f9d06b3128087
    resource-pack-prompt={"text":"ServerMMO HUD resource pack","color":"gold"}
    require-resource-pack=false
    ```
@@ -334,7 +335,7 @@ setup-resourcepack.bat https://example.com/servermmo-hud.zip
 
 Открой ссылку из `server.properties` в браузере **на другом устройстве**
 (например, телефон в том же Wi-Fi). Должен скачаться `servermmo-hud.zip`
-на 26842 байт. Быстрая проверка раздачи: `http://<адрес>:8080/health` отвечает
+на 26471 байт. Быстрая проверка раздачи: `http://<адрес>:8080/health` отвечает
 `ok`, `http://<адрес>:8080/sha1` показывает хеш файла. Если не открывается —
 дело в адресе/порту/брандмауэре, а не в Minecraft.
 

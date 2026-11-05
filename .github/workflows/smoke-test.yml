@@ -310,6 +310,18 @@ jobs:
             FAIL=1
           fi
 
+          # Подпись над мобом: щит, уровень, сердце и здоровье — глифами пака,
+          # то есть в CustomName должно быть несколько кусков с этим шрифтом.
+          TAG_GLYPHS=$(grep -E 'Курица .* has the following entity data' console.log \
+            | grep -o 'font: "servermmo:hud"' | wc -l)
+          if [ "$TAG_GLYPHS" -ge 3 ]; then
+            echo "OK: подпись моба использует шрифт пака ($TAG_GLYPHS глифа)"
+          else
+            echo "::error::В подписи моба только $TAG_GLYPHS глифов пака (ожидалось 4)"
+            grep -E 'Курица .* has the following entity data' console.log | head -2 || true
+            FAIL=1
+          fi
+
           if awk '/STEP1_VANILLA/{f=1} f && /Zombie has the following entity data/{print; exit}' console.log \
               | grep -Eq '[0-9]+\.[0-9]+f'; then
             ZOMBIE_HP=$(awk '/STEP1_VANILLA/{f=1} f && /Zombie has the following entity data/{print; exit}' console.log \

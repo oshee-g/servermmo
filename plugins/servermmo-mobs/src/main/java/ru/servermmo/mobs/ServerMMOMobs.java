@@ -32,6 +32,7 @@ public final class ServerMMOMobs extends JavaPlugin {
         tags = new MobTags(this, core);
         long tagInterval = Math.max(1L, getConfig().getLong("tag.update-interval-ticks", 10L));
         tags.runTaskTimer(this, 20L, tagInterval);
+        getServer().getPluginManager().registerEvents(new MobTagListener(core, tags), this);
 
         MobSpawner spawner = new MobSpawner(this, core, tags);
         MobCommand mobCommand = new MobCommand(this, spawner);

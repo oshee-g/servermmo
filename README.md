@@ -257,7 +257,7 @@ WorldEdit/WorldGuard, Simple Voice Chat. Подробнее — в `plugins/READ
    ==================================================================
      File:  ...\server\resourcepack\servermmo-hud.zip
      Size:  13418 bytes
-     SHA-1: d19a69e420b2861cbe7187833ae50c9bda26dba7
+     SHA-1: 5f742a5a945c2b1c33a6097e656dbdab1f7ffde2
      Port:  8080
 
      URL for players on the same network (LAN):
@@ -272,7 +272,7 @@ WorldEdit/WorldGuard, Simple Voice Chat. Подробнее — в `plugins/READ
 
    ```properties
    resource-pack=http://192.168.1.50:8080/servermmo-hud.zip
-   resource-pack-sha1=d19a69e420b2861cbe7187833ae50c9bda26dba7
+   resource-pack-sha1=5f742a5a945c2b1c33a6097e656dbdab1f7ffde2
    resource-pack-prompt={"text":"ServerMMO HUD resource pack","color":"gold"}
    require-resource-pack=false
    ```

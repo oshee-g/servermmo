@@ -7,6 +7,10 @@
 Всё лежит в папке [`server/`](server/). Скопируй её целиком на Windows-машину
 и запусти `start.bat` двойным щелчком.
 
+> **Скачать готовый архив:**
+> [servermmo-paper-26.3-server-pack.zip](https://github.com/oshee-g/servermmo/releases/download/v1.0.0/servermmo-paper-26.3-server-pack.zip)
+> (97 351 байт, все плагины и ресурспак внутри).
+
 ---
 
 ## Что входит в пак

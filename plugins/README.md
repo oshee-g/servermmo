@@ -87,19 +87,38 @@ Paper сам выстроит порядок загрузки по `depend:` в 
 Файл: [`server/resourcepack/servermmo-hud.zip`](../server/resourcepack/servermmo-hud.zip)
 (13 418 байт, SHA-1 `5f742a5a945c2b1c33a6097e656dbdab1f7ffde2`).
 
-**Вариант 1 — сервер раздаёт сам (игра предложит скачать всем):**
+**Вариант 1 — сервер раздаёт сам (по умолчанию):**
 
-1. `server/pack-server.bat` — запускает мини-сервер на Java, который отдаёт
-   `servermmo-hud.zip` по HTTP. В окне печатается адрес вида
-   `http://192.168.1.50:8080/servermmo-hud.zip`. Окно держать открытым.
-2. `server/setup-resourcepack.bat` — спрашивает URL (Enter = предложенный),
-   считает SHA-1 и пишет в `server.properties`:
-   `resource-pack`, `resource-pack-sha1`, `resource-pack-prompt`,
-   `require-resource-pack` (старый файл → `server.properties.bak`).
-3. Перезапустить `start.bat`. Игроки получают предложение скачать пак.
+Плагин `ServerMMOCore` поднимает HTTP-раздачу внутри процесса Paper, так что
+отдельное окно не нужно. Клиент получает ссылку и качает zip сам.
 
-Через интернет нужен проброс порта `8080` (как `25565` для Minecraft).
-Порт меняется в `settings.bat` → `PACK_PORT`.
+1. `server/setup-resourcepack.bat` — спрашивает URL (Enter = предложенный
+   `http://<lan-ip>:8080/servermmo-hud.zip`), считает SHA-1 и пишет в
+   `server.properties`: `resource-pack`, `resource-pack-sha1`,
+   `resource-pack-prompt`, `require-resource-pack`
+   (старый файл → `server.properties.bak`).
+2. Запустить `start.bat`. В консоли будет блок «Раздача ресурспака» с файлом,
+   SHA-1 и адресами; плагин сверит `server.properties` с реальным файлом и
+   предупредит, если строка протухла.
+3. Игроки получают предложение скачать пак при входе.
+
+Настройки — `plugins/ServerMMOCore/config.yml`, раздел `resourcepack`:
+
+```yaml
+resourcepack:
+  serve: true                                   # false — не открывать порт
+  port: 8080                                    # тот же, что PACK_PORT в settings.bat
+  file: resourcepack/servermmo-hud.zip
+  bind: 0.0.0.0
+  public-url: ""                                # внешний адрес, если сервер за NAT/прокси
+```
+
+Через интернет нужен проброс порта `8080` (как `25565` для Minecraft) либо
+внешний адрес в `public-url` (туннель, reverse proxy).
+
+**Вариант 1b — отдельный мини-сервер:** `server/pack-server.bat` делает то же
+самое, но отдельным процессом; нужен только для раздачи при выключенном
+Minecraft-сервере (порт тот же, одновременно не запустить).
 
 **Вариант 2 — публичный хостинг:**
 

@@ -41,9 +41,16 @@ bash   tools/test-linux.sh          # поведение .sh (Linux/macOS)
 
 ### Раздача ресурспака
 
-`server/pack-server.bat` запускает `server/resourcepack/PackServer.java` —
-маленький HTTP-сервер на `java.base` (никаких зависимостей), который отдаёт
-`servermmo-hud.zip` игрокам. `server/setup-resourcepack.bat` вызывает
+По умолчанию пак отдаёт сам Paper — HTTP-сервер живёт
+внутри `ServerMMOCore` (`core/src/main/java/ru/servermmo/core/web/ResourcePackServer.java`,
+настраивается в `config.yml`, раздел `resourcepack`). Smoke-тест поднимает
+настоящий сервер и проверяет `/health`, `/sha1`, `/`, скачивание zip со сверкой
+SHA-1, 404 на неизвестный путь и 405 на POST.
+
+`server/pack-server.bat` + `server/resourcepack/PackServer.java` — тот же
+протокол отдельным процессом, на случай раздачи при выключенном Minecraft.
+
+`server/setup-resourcepack.bat` вызывает
 `server/resourcepack/SetupPack.java`: тот считает SHA-1 и правит
 `server.properties` (читается как ISO-8859-1, поэтому остальной файл
 сохраняется байт в байт; делается бэкап `server.properties.bak`).

@@ -8,6 +8,11 @@ rem  writes both for you).
 rem
 rem  Needs Java 25 - the same JDK the Minecraft server uses.
 rem  Settings: settings.bat  (JAVA_CMD, PACK_PORT)
+rem
+rem  Usually you do NOT need this file: the server shares the pack by
+rem  itself (plugins\ServerMMOCore\config.yml, section resourcepack).
+rem  Use this window only to share the pack while the Minecraft server
+rem  is stopped - both cannot listen on the same port at once.
 rem  Full guide (RU): ..\README.md
 rem ====================================================================
 setlocal EnableExtensions

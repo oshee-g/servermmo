@@ -1,0 +1,134 @@
+name: Smoke test on real Paper 26.3
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ['**']
+    paths:
+      - 'plugins/**'
+
+permissions:
+  contents: write
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Build plugins
+        run: mvn -B -ntp -f plugins/pom.xml clean package
+
+      - name: Download Paper 26.3
+        run: |
+          set -euo pipefail
+          URL=$(curl -sS --max-time 60 https://fill.papermc.io/v3/projects/paper/versions/26.3/builds/latest \
+                | python3 -c "import json,sys; d=json.load(sys.stdin); print(d['downloads']['server:default']['url'])")
+          echo "paper: $URL"
+          mkdir -p run/plugins
+          curl -sSL --max-time 300 -o run/paper.jar "$URL"
+          ls -la run/paper.jar
+
+      - name: Prepare server
+        run: |
+          set -euo pipefail
+          cp plugins/servermmo-core/target/servermmo-core-*.jar run/plugins/
+          cp plugins/servermmo-mobs/target/servermmo-mobs-*.jar run/plugins/
+          cp plugins/servermmo-players/target/servermmo-players-*.jar run/plugins/
+          cp plugins/servermmo-hud/target/servermmo-hud-*.jar run/plugins/
+          echo "eula=true" > run/eula.txt
+          cat > run/server.properties <<'PROPS'
+          server-port=25599
+          online-mode=false
+          level-type=minecraft\:flat
+          level-name=world
+          spawn-protection=0
+          view-distance=4
+          simulation-distance=4
+          max-players=5
+          white-list=false
+          enable-query=false
+          enable-rcon=false
+          sync-chunk-writes=false
+          PROPS
+          sed -i 's/^ *//' run/server.properties
+          cat run/server.properties
+
+      - name: Run server and check plugins
+        run: |
+          set -uo pipefail
+          cd run
+          mkfifo console_in
+          ( timeout 420 java -Xms1G -Xmx2G -jar paper.jar --nogui < console_in > console.log 2>&1 ) &
+          SERVER_PID=$!
+          exec 3> console_in
+
+          echo "Ждём запуска..."
+          READY=0
+          for i in $(seq 1 200); do
+            if grep -q 'Done (' console.log 2>/dev/null; then READY=1; break; fi
+            if ! kill -0 $SERVER_PID 2>/dev/null; then break; fi
+            sleep 2
+          done
+
+          if [ "$READY" -ne 1 ]; then
+            echo "::error::Сервер не дошёл до 'Done ('"
+            tail -n 120 console.log
+            exit 1
+          fi
+          echo "Сервер запустился"
+
+          echo "plugins" >&3
+          sleep 8
+          echo "stats" >&3
+          sleep 3
+          echo "hud" >&3
+          sleep 3
+          echo "stop" >&3
+
+          for i in $(seq 1 60); do
+            if ! kill -0 $SERVER_PID 2>/dev/null; then break; fi
+            sleep 2
+          done
+          kill $SERVER_PID 2>/dev/null || true
+
+          echo "==================== ВЫВОД ===================="
+          grep -E 'ServerMMO|Done \(|Plugin:|enabled' console.log | head -60 || true
+          echo "==============================================="
+
+          FAIL=0
+          for name in ServerMMOCore ServerMMOMobs ServerMMOPlayers ServerMMOHud; do
+            if grep -q "$name включён" console.log; then
+              echo "OK: $name"
+            else
+              echo "::error::Плагин $name не включился"
+              FAIL=1
+            fi
+          done
+
+          if grep -Eq 'Could not load|Failed to enable|java\.lang\.[A-Za-z]*Exception' console.log; then
+            echo "::error::В логе есть ошибки:"
+            grep -E 'Could not load|Failed to enable|java\.lang\.[A-Za-z]*Exception' console.log | head -20
+            FAIL=1
+          fi
+
+          cp console.log ../console.log
+          exit $FAIL
+
+      - name: Publish server log
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if [ -f console.log ]; then cp console.log smoke-test.log; fi
+          git add -f smoke-test.log 2>/dev/null || true
+          git commit -m "ci: smoke test log" 2>/dev/null || echo "нечего коммитить"
+          git push origin HEAD 2>/dev/null || echo "push не удался"

@@ -25,7 +25,18 @@ jobs:
           cache: maven
 
       - name: Build with Maven
-        run: mvn -B -ntp -f plugins/pom.xml clean package
+        run: |
+          set -o pipefail
+          mvn -B -ntp -f plugins/pom.xml clean package 2>&1 | tee build.log
+
+      - name: Publish build log on failure
+        if: failure()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f build.log
+          git commit -m "ci: build log (failed run)" || true
+          git push || true
 
       - name: Collect jars
         run: |

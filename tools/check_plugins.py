@@ -133,22 +133,23 @@ def check_resourcepack() -> None:
         return
     font = json.loads(font_path.read_text(encoding="utf-8"))
     chars: set[str] = set()
+    advances: set[str] = set()
     for provider in font.get("providers", []):
+        if provider.get("type") == "space":
+            advances.update(provider.get("advances", {}).keys())
         if provider.get("type") == "bitmap":
             file_name = provider.get("file", "")
-            texture = RESOURCEPACK / "assets" / file_name.split(":", 1)[1] / "textures" / (
-                file_name.split(":", 1)[1].split("/", 1)[1] + ".png")
-            # проще: файл лежит в assets/servermmo/textures/<path>.png
             namespace, path = file_name.split(":", 1)
-            texture = RESOURCEPACK / "assets" / namespace / "textures" / (path + ".png")
+            texture = RESOURCEPACK / "assets" / namespace / "textures" / path
             if not texture.is_file():
                 fail(f"шрифт ссылается на отсутствующую текстуру {file_name}")
             chars.update(provider.get("chars", []))
-    needed = {"\ue001", "\ue002", "\ue003", "\ue004", "\ue005", "\ue006",
-              "\ue100", *"0123456789"}
+    needed = {"\ue001", "\ue002", "\ue003", "\ue004", "\ue005", "\ue006", *"0123456789"}
     missing = sorted(needed - chars)
     if missing:
         fail(f"в шрифте нет глифов: {[hex(ord(c)) for c in missing]}")
+    if "\ue100" not in advances:
+        fail("в шрифте нет отрицательного сдвига \ue100")
 
     if not RESOURCEPACK_ZIP.is_file():
         fail("нет server/resourcepack/servermmo-hud.zip")
@@ -159,7 +160,7 @@ def check_resourcepack() -> None:
                 fail("в zip ресурспака pack.mcmeta не в корне")
             if not any(n.endswith("hud.json") for n in names):
                 fail("в zip нет шрифта hud.json")
-    print(f"  ok ресурспак: формат 97.1, глифов {len(chars)}")
+    print(f"  ok ресурспак: формат 97.1, глифов {len(chars)}, сдвигов {len(advances)}")
 
 
 def main() -> int:

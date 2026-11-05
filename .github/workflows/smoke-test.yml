@@ -77,8 +77,56 @@ jobs:
           echo "$body" | grep -q "ServerMMO HUD" || { echo "::error::нет индексной страницы"; exit 1; }
 
           kill "$(cat /tmp/packserver.pid)" 2>/dev/null || true
-          cp /tmp/packserver.log ../packserver-test.log
+          cp /tmp/packserver.log "$GITHUB_WORKSPACE/packserver-test.log"
           echo "PACK SERVER OK"
+
+      - name: Test the resource pack setup tool
+        run: |
+          set -euo pipefail
+          cd server/resourcepack
+          work=$(mktemp -d)
+          cp ../server.properties "$work/server.properties"
+          # строка с не-ASCII байтом: файл должен остаться байт в байт
+          printf '# motd test: \xe2\x9c\x93\n' >> "$work/server.properties"
+
+          echo "--- первый прогон (URL из аргумента) ---"
+          java SetupPack.java --url "http://192.168.1.50:8080/servermmo-hud.zip" \
+              --props "$work/server.properties" --port 8080
+
+          props="$work/server.properties"
+          expected=$(sha1sum servermmo-hud.zip | cut -d' ' -f1)
+
+          grep -qx 'resource-pack=http://192.168.1.50:8080/servermmo-hud.zip' "$props" \
+            || { echo "::error::resource-pack не записан"; exit 1; }
+          grep -qx "resource-pack-sha1=$expected" "$props" \
+            || { echo "::error::resource-pack-sha1 неверный"; exit 1; }
+          grep -qx 'require-resource-pack=false' "$props" \
+            || { echo "::error::require-resource-pack не записан"; exit 1; }
+          grep -q '^resource-pack-prompt={"text"' "$props" \
+            || { echo "::error::prompt не записан"; exit 1; }
+          [ "$(grep -c '^resource-pack=' "$props")" = "1" ] \
+            || { echo "::error::resource-pack продублирован"; exit 1; }
+          grep -q 'motd test' "$props" || { echo "::error::потеряна строка с не-ASCII"; exit 1; }
+          tail -1 "$props" | xxd -p | grep -q 'e29c93' \
+            || { echo "::error::не-ASCII байты изменились"; exit 1; }
+          [ -f "$props.bak" ] || { echo "::error::нет бэкапа server.properties.bak"; exit 1; }
+
+          echo "--- второй прогон (идемпотентность + --require true) ---"
+          java SetupPack.java --url "https://cdn.example.com/servermmo-hud.zip" \
+              --props "$props" --require true > /dev/null
+          grep -qx 'resource-pack=https://cdn.example.com/servermmo-hud.zip' "$props"
+          grep -qx 'require-resource-pack=true' "$props"
+          [ "$(grep -c '^resource-pack=' "$props")" = "1" ] \
+            || { echo "::error::resource-pack продублирован во втором прогоне"; exit 1; }
+
+          echo "--- отказ от некорректного URL ---"
+          if java SetupPack.java --url "ftp://bad/file.zip" --props "$props" > /tmp/bad.log 2>&1; then
+            echo "::error::ftp:// должен был привести к ошибке"
+            exit 1
+          fi
+          grep -q 'http:// or https://' /tmp/bad.log
+
+          echo "SETUP PACK OK"
 
       - name: Download Paper 26.3
         run: |

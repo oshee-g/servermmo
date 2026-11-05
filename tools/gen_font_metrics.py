@@ -23,10 +23,16 @@ ASSETS = ROOT / "tools" / "pack_assets"
 OUT = (ROOT / "plugins" / "servermmo-hud" / "src" / "main" / "resources"
        / "font-metrics.properties")
 
+def _fade_chars(step: int) -> str:
+    base = 0xE200 + step * 16
+    return "".join(chr(base + i) for i in range(12))
+
+
 ATLASES = (
     ("hud_digits.png", "0123456789/ "),
     ("hud_icons.png", "\ue010\ue011\ue013"),
     ("hud_letters.png", "LVXP"),
+    *(("hud_fade%d.png" % step, _fade_chars(step)) for step in range(5)),
 )
 
 

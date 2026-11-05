@@ -5,6 +5,8 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerResourcePackStatusEvent;
+import ru.servermmo.core.event.CustomPlayerDamageEvent;
 
 /** Показ и снятие панели при входе и выходе игрока. */
 public final class HudListener implements Listener {
@@ -18,6 +20,24 @@ public final class HudListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR)
     public void onJoin(PlayerJoinEvent event) {
         manager.show(event.getPlayer());
+    }
+
+    /**
+     * Пока пак не загружен клиентом, HUD полностью скрыт: босс-бары без пака —
+     * белые полосы, глифы — пустые квадратики, а строка хотбара — те же
+     * квадратики над хотбаром. Панель и хотбар появляются только после
+     * SUCCESSFULLY_LOADED и пропадают при отказе/сбое загрузки.
+     */
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onResourcePackStatus(PlayerResourcePackStatusEvent event) {
+        boolean loaded = event.getStatus() == PlayerResourcePackStatusEvent.Status.SUCCESSFULLY_LOADED;
+        manager.packLoaded(event.getPlayer(), loaded);
+    }
+
+    /** Кастомный урон по игроку — индикатор «−N♥» в хотбаре. */
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onCustomDamage(CustomPlayerDamageEvent event) {
+        manager.recordDamage(event.player(), event.amount());
     }
 
     @EventHandler(priority = EventPriority.MONITOR)

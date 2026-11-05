@@ -128,6 +128,16 @@ def build_space_advances() -> dict:
     return dict(sorted(advances.items()))
 
 
+# Ступени затухания индикатора урона: ступень L занимает кодовые точки
+# 0xE200 + L*16 .. +11 (цифры, минус, сердце). Синхронно с build_hud_assets.py.
+FADE_STEPS = 5
+
+
+def fade_chars(step: int) -> str:
+    base = 0xE200 + step * 16
+    return "".join(chr(base + i) for i in range(12))
+
+
 def build_font_json() -> dict:
     """Шрифт HUD.
 
@@ -158,6 +168,16 @@ def build_font_json() -> dict:
                 "height": GLYPH_HEIGHT,
                 "chars": [LETTER_CHARS],
             },
+            *[
+                {
+                    "type": "bitmap",
+                    "file": f"servermmo:font/hud_fade{step}.png",
+                    "ascent": 7,
+                    "height": GLYPH_HEIGHT,
+                    "chars": [fade_chars(step)],
+                }
+                for step in range(FADE_STEPS)
+            ],
             {
                 "type": "space",
                 # пустые глифы и сдвиги для раскладки панели HUD
@@ -205,7 +225,8 @@ def main() -> int:
     (fonts / "hud.json").write_text(
         json.dumps(build_font_json(), ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
-    for name in ("hud_digits.png", "hud_icons.png", "hud_letters.png"):
+    for name in ("hud_digits.png", "hud_icons.png", "hud_letters.png",
+                 *(f"hud_fade{step}.png" for step in range(FADE_STEPS))):
         copy_asset(name, textures / name)
     copy_asset("pack_icon.png", PACK / "pack.png")
 

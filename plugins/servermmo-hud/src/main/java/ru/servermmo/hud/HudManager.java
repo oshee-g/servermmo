@@ -50,6 +50,23 @@ final class HudManager extends BukkitRunnable {
         hud.tick();
     }
 
+    /** Статус серверного ресурспака: загружен — HUD виден, нет — скрыт весь. */
+    void packLoaded(Player player, boolean loaded) {
+        PlayerHud hud = huds.computeIfAbsent(player.getUniqueId(),
+                uuid -> new PlayerHud(settings, text, player));
+        hud.packLoaded(loaded);
+        if (loaded) {
+            hud.tick();
+        }
+    }
+
+    /** Игрок получил кастомный урон: вспыхнуть индикатору «−N♥» в хотбаре. */
+    void recordDamage(Player player, long amount) {
+        PlayerHud hud = huds.computeIfAbsent(player.getUniqueId(),
+                uuid -> new PlayerHud(settings, text, player));
+        hud.recordDamage(amount);
+    }
+
     /** Пересобирает строки: иконки и цифры после смены настроек. */
     void reset(Player player) {
         PlayerHud hud = huds.get(player.getUniqueId());

@@ -124,6 +124,15 @@ LETTERS_5x7 = {
 }
 LETTER_CHARS = "LVXP"
 
+MINUS_5x7 = ["00000", "00000", "00000", "11111", "00000", "00000", "00000"]
+
+# Индикатор полученного урона в хотбаре («−25♥») затухает не цветом текста
+# (у bitmap-глифов нет прозрачности от цвета), а сменой атласа: пять ступеней
+# от полной яркости до почти прозрачной. Кодовые точки согласованы с
+# tools/gen_resourcepack.py и HudText: ступень L, база 0xE200 + L*16,
+# внутри — цифры 0-9, минус (10), сердце (11).
+FADE_STEPS = (255, 190, 140, 95, 50)
+
 def glyph_run(patterns: list[list[str]]) -> Image.Image:
     """Атлас символов 5x7 в ячейках 8x8, все на одной базовой линии."""
     image = Image.new("RGBA", (CELL * len(patterns), CELL), (0, 0, 0, 0))
@@ -160,6 +169,22 @@ def icons_atlas(icons: list[Image.Image]) -> Image.Image:
 def digits_atlas() -> Image.Image:
     """Цифры и дробь: ячейка 8x8, символ 5x7 на общей базовой линии."""
     return glyph_run([DIGITS_5x7[ch] for ch in "0123456789/ "])
+
+
+def fade_atlas(heart: Image.Image, alpha: int) -> Image.Image:
+    """Атлас индикатора урона одной ступени затухания: 0-9, минус, сердце."""
+    patterns = [DIGITS_5x7[ch] for ch in "0123456789"] + [MINUS_5x7]
+    image = glyph_run(patterns)
+    # цифры glyph_run рисует полной альфой — домножаем на ступень
+    pixels = [(r, g, b, a * alpha // 255) for (r, g, b, a) in list(image.getdata())]
+    image.putdata(pixels)
+    faded_heart = heart.copy()
+    faded_heart.putdata([(r, g, b, a * alpha // 255)
+                         for (r, g, b, a) in list(faded_heart.getdata())])
+    canvas = Image.new("RGBA", (CELL * 12, CELL), (0, 0, 0, 0))
+    canvas.alpha_composite(image, (0, 0))
+    canvas.alpha_composite(faded_heart, (11 * CELL, INK_TOP))
+    return canvas
 
 
 def pack_icon(bar: Image.Image, heart: Image.Image) -> Image.Image:
@@ -215,6 +240,11 @@ def main() -> int:
     atlas = icons_atlas(icons)
     atlas.save(OUT / "hud_icons.png", optimize=True)
     print(f"hud_icons.png: {atlas.width}x{atlas.height} (сердце, меч, кристалл)")
+
+    for step, alpha in enumerate(FADE_STEPS):
+        faded = fade_atlas(icons[0], alpha)
+        faded.save(OUT / f"hud_fade{step}.png", optimize=True)
+        print(f"hud_fade{step}.png: {faded.width}x{faded.height} (альфа {alpha})")
 
     # Иконка пака — отдельно от HUD-глифа: там нужен крупный значок 8x8,
     # иначе pack.png меняется при каждой правке размера глифов.

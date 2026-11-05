@@ -15,6 +15,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 import ru.servermmo.core.ServerMMOCore;
+import ru.servermmo.core.event.CustomPlayerDamageEvent;
 import ru.servermmo.core.player.PlayerProfile;
 import ru.servermmo.core.stats.LevelStats;
 
@@ -182,6 +183,10 @@ public final class CombatService {
         long remaining = current - amount;
         if (remaining > 0L) {
             setHealth(target, remaining);
+            if (target instanceof Player victim) {
+                plugin.getServer().getPluginManager().callEvent(
+                        new CustomPlayerDamageEvent(victim, amount, remaining));
+            }
             playHurt(target);
             if (plugin.settings().debug()) {
                 plugin.getLogger().info("[debug] " + name(target) + " получил " + amount
@@ -190,6 +195,10 @@ public final class CombatService {
             return DamageResult.DAMAGED;
         }
         setHealth(target, 0L);
+        if (target instanceof Player victim) {
+            plugin.getServer().getPluginManager().callEvent(
+                    new CustomPlayerDamageEvent(victim, amount, 0L));
+        }
         kill(target, source);
         return DamageResult.KILLED;
     }

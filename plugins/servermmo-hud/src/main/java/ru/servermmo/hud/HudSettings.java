@@ -19,6 +19,9 @@ public final class HudSettings {
 
     private int offsetX;
     private long updateIntervalTicks;
+    private int hotbarAnchorX;
+    private long damageHoldMillis;
+    private long damageFadeMillis;
 
     private HudSettings() {
     }
@@ -28,6 +31,10 @@ public final class HudSettings {
         HudSettings settings = new HudSettings();
         settings.offsetX = config.getInt("hud.offset-x", DEFAULT_OFFSET_X);
         settings.updateIntervalTicks = Math.max(1L, config.getLong("hud.update-interval-ticks", 2L));
+        // левый край хотбара: хотбар 182 px wide, его левый край — центр-91
+        settings.hotbarAnchorX = config.getInt("hud.hotbar-anchor-x", -91);
+        settings.damageHoldMillis = Math.max(0L, config.getLong("hud.damage-hold-seconds", 5L)) * 1000L;
+        settings.damageFadeMillis = Math.max(200L, config.getLong("hud.damage-fade-seconds", 2L)) * 1000L;
         if (settings.offsetX > 0) {
             plugin.getLogger().warning("hud.offset-x > 0 уводит панель вправо от центра");
         }
@@ -45,6 +52,21 @@ public final class HudSettings {
 
     public long updateIntervalTicks() {
         return updateIntervalTicks;
+    }
+
+    /** Левый край строки хотбара относительно центра экрана, px. */
+    public int hotbarAnchorX() {
+        return hotbarAnchorX;
+    }
+
+    /** Сколько индикатор урона висит в полной яркости, мс. */
+    public long damageHoldMillis() {
+        return damageHoldMillis;
+    }
+
+    /** За сколько индикатор урона затухает до невидимости, мс. */
+    public long damageFadeMillis() {
+        return damageFadeMillis;
     }
 
     /** Вернуть заводские значения. */

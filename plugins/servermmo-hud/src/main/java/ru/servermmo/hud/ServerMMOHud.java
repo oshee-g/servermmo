@@ -47,7 +47,9 @@ public final class ServerMMOHud extends JavaPlugin {
         hud.setExecutor(new HudCommand(this, settings));
 
         getLogger().info("ServerMMOHud включён: панель строками босс-бара, offset-x="
-                + settings.offsetX() + " px, подстройка: /hud offsetx <px>, /hud reset");
+                + settings.offsetX() + " px, здоровье и индикатор урона — строкой хотбара; "
+                + "без загруженного ресурспака HUD полностью скрыт; "
+                + "подстройка: /hud offsetx <px>, /hud reset");
     }
 
     @Override

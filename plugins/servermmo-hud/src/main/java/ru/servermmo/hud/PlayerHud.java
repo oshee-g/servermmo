@@ -45,6 +45,21 @@ final class PlayerHud {
     private String lastFirst;
     private String lastSecond;
 
+    /**
+     * Поставил ли клиент серверный ресурспак. Пока пак не загружен, игрок не
+     * должен видеть ничего нашего: без пака полосы босс-баров белые, а вместо
+     * глифов — пустые квадратики. Поэтому и босс-бары, и строка хотбара
+     * показываются только после SUCCESSFULLY_LOADED.
+     */
+    private boolean packLoaded;
+    private boolean actionBarCleared;
+
+    /** Последний полученный урон и когда он случился (мс). */
+    private long lastDamage;
+    private long lastDamageAt;
+    private String lastActionBar;
+    private long ticksSinceActionBar;
+
     PlayerHud(HudSettings settings, HudText text, Player player) {
         this.settings = settings;
         this.text = text;
@@ -62,21 +77,56 @@ final class PlayerHud {
         return player;
     }
 
-    /** Показать панель (после входа игрока). */
+    /** Статус ресурспака у этого игрока: загружен — можно показывать HUD. */
+    void packLoaded(boolean loaded) {
+        if (this.packLoaded == loaded) {
+            return;
+        }
+        this.packLoaded = loaded;
+        if (!loaded) {
+            hide();
+            clearActionBar();
+        } else {
+            invalidate();
+            lastActionBar = null; // строку хотбара перешлём в ближайшем тике
+        }
+    }
+
+    boolean packLoaded() {
+        return packLoaded;
+    }
+
+    /** Игрок получил урон: индикатор «−N♥» вспыхивает заново. */
+    void recordDamage(long amount) {
+        if (amount <= 0L) {
+            return;
+        }
+        this.lastDamage = amount;
+        this.lastDamageAt = System.currentTimeMillis();
+    }
+
+    /** Показать панель (только если ресурспак загружен). */
     void show() {
-        if (!visible) {
+        if (!visible && packLoaded) {
             player.showBossBar(first);
             player.showBossBar(second);
             visible = true;
         }
     }
 
-    /** Убрать панель (выход, выключение плагина). */
+    /** Убрать панель (выход, выключение плагина, нет ресурспака). */
     void hide() {
         if (visible) {
             player.hideBossBar(first);
             player.hideBossBar(second);
             visible = false;
+        }
+    }
+
+    private void clearActionBar() {
+        if (!actionBarCleared && player.isOnline()) {
+            player.sendActionBar(Component.empty());
+            actionBarCleared = true;
         }
     }
 
@@ -89,6 +139,13 @@ final class PlayerHud {
     void tick() {
         if (!player.isOnline()) {
             hide();
+            return;
+        }
+        if (!packLoaded) {
+            // Без ресурспака не показываем ничего: ни полосы босс-баров, ни
+            // строку хотбара — иначе игрок увидит белые полосы и квадратики.
+            hide();
+            clearActionBar();
             return;
         }
         show();
@@ -110,7 +167,7 @@ final class PlayerHud {
             }
         }
 
-        String[] lines = text.panel(health, damage, level, xp, xpToNext, settings.offsetX());
+        String[] lines = text.panel(damage, level, xp, xpToNext, settings.offsetX());
         String firstLine = lines[0];
         String secondLine = lines[1];
         if (!firstLine.equals(lastFirst)) {
@@ -120,6 +177,42 @@ final class PlayerHud {
         if (!secondLine.equals(lastSecond)) {
             second.name(Component.text(secondLine, HUD_STYLE));
             lastSecond = secondLine;
+        }
+
+        tickActionBar(health);
+    }
+
+    /**
+     * Строка хотбара: сердце и здоровье над хотбаром (там, где были ванильные
+     * сердца), справа — индикатор полученного урона. Он висит в полной
+     * яркости {@code damage-hold-seconds}, затем ступенями затухает и
+     * пропадает; новый урон вспыхивает его заново.
+     */
+    private void tickActionBar(long health) {
+        int fadeStep = -1;
+        if (lastDamageAt > 0L) {
+            long elapsed = System.currentTimeMillis() - lastDamageAt;
+            long hold = settings.damageHoldMillis();
+            long fade = settings.damageFadeMillis();
+            if (elapsed < hold) {
+                fadeStep = 0;
+            } else if (elapsed < hold + fade) {
+                long into = elapsed - hold;
+                fadeStep = 1 + (int) (into * (HudText.FADE_STEPS - 1) / fade);
+                if (fadeStep >= HudText.FADE_STEPS) {
+                    fadeStep = -1;
+                }
+            }
+        }
+        String line = text.hotbar(health, lastDamage, fadeStep, settings.hotbarAnchorX());
+        ticksSinceActionBar++;
+        // Экшн-бар сам гаснет примерно за 3 секунды: пересылаем раз в секунду,
+        // даже если строка не менялась.
+        if (!line.equals(lastActionBar) || ticksSinceActionBar >= 10L) {
+            player.sendActionBar(Component.text(line, HUD_STYLE));
+            lastActionBar = line;
+            ticksSinceActionBar = 0L;
+            actionBarCleared = false;
         }
     }
 }

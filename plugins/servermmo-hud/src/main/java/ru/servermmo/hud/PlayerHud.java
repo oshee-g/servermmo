@@ -28,7 +28,9 @@ final class PlayerHud {
     private static final String GLYPH_REWIND = "\uE100";
 
     /** Шрифт ресурспака с рамкой, иконками и цифрами. */
-    private static final Style HUD_STYLE = Style.style(Key.key("servermmo", "hud"));
+    private static final Style HUD_STYLE = Style.style()
+            .font(Key.key("servermmo", "hud"))
+            .build();
 
     private final ServerMMOHud plugin;
     private final HudSettings settings;
@@ -72,7 +74,7 @@ final class PlayerHud {
         current.teleport(computeLocation());
         String text = buildText();
         if (!text.equals(lastText)) {
-            current.text(Component.text(text).style(HUD_STYLE));
+            current.text(Component.text(text, HUD_STYLE));
             lastText = text;
         }
     }

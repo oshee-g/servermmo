@@ -27,3 +27,6 @@ __pycache__/
 .idea/
 .vscode/
 .DS_Store
+
+# лог CI-сборки
+build.log

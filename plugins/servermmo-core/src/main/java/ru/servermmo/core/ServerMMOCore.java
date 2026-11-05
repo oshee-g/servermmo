@@ -14,6 +14,7 @@ import ru.servermmo.core.player.PlayerStore;
 import ru.servermmo.core.stats.LevelTable;
 import ru.servermmo.core.stats.PlayerLevelStats;
 import ru.servermmo.core.stats.PlayerStatTable;
+import ru.servermmo.core.web.PackService;
 
 /**
  * Ядро ServerMMO: таблицы статов, кастомное здоровье, урон и опыт.
@@ -29,6 +30,7 @@ public final class ServerMMOCore extends JavaPlugin {
     private PlayerStatTable playerStats = PlayerStatTable.empty();
     private PlayerStore players = null;
     private CombatService combat = null;
+    private PackService packs = null;
 
     /** Ядро либо {@code null}, если плагин ещё не включён. */
     public static ServerMMOCore get() {
@@ -50,6 +52,10 @@ public final class ServerMMOCore extends JavaPlugin {
         Bukkit.getPluginManager().registerEvents(new CombatListener(this), this);
         Bukkit.getPluginManager().registerEvents(new EntityLifecycleListener(this), this);
 
+        // Ресурспак раздаёт сам сервер — отдельное окно с pack-server.bat не нужно.
+        packs = new PackService(this, settings);
+        packs.start();
+
         long interval = Math.max(20L, settings.saveIntervalSeconds() * 20L);
         Bukkit.getScheduler().runTaskTimer(this, () -> players.saveAll(), interval, interval);
 
@@ -59,6 +65,10 @@ public final class ServerMMOCore extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (packs != null) {
+            packs.stop();
+            packs = null;
+        }
         if (players != null) {
             players.saveAll();
         }

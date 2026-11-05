@@ -155,6 +155,8 @@ jobs:
           cp plugins/servermmo-mobs/target/servermmo-mobs-*.jar run/plugins/
           cp plugins/servermmo-players/target/servermmo-players-*.jar run/plugins/
           cp plugins/servermmo-hud/target/servermmo-hud-*.jar run/plugins/
+          mkdir -p run/resourcepack
+          cp server/resourcepack/servermmo-hud.zip run/resourcepack/
           echo "eula=true" > run/eula.txt
           cat > run/server.properties <<'PROPS'
           server-port=25599
@@ -197,6 +199,38 @@ jobs:
           fi
           echo "Сервер запустился"
 
+          echo "--- встроенная раздача ресурспака (порт 8080) ---"
+          PACK_FAIL=0
+          PACK_SHA=$(sha1sum ../server/resourcepack/servermmo-hud.zip | cut -d' ' -f1)
+          PACK_UP=0
+          for i in $(seq 1 30); do
+            if curl -fsS --max-time 2 http://127.0.0.1:8080/health > /dev/null 2>&1; then PACK_UP=1; break; fi
+            sleep 1
+          done
+          if [ "$PACK_UP" -ne 1 ]; then
+            echo "::error::Плагин не поднял раздачу ресурспака на порту 8080"
+            grep -iE 'ресурспак|resourcepack|порт' console.log | tail -20 || true
+            PACK_FAIL=1
+          else
+            curl -fsS http://127.0.0.1:8080/health | grep -qx ok \
+              || { echo "::error::/health вернул не ok"; PACK_FAIL=1; }
+            curl -fsS -o /tmp/pack-embedded.zip http://127.0.0.1:8080/servermmo-hud.zip \
+              || { echo "::error::пак не скачался"; PACK_FAIL=1; }
+            echo "$PACK_SHA  /tmp/pack-embedded.zip" | sha1sum -c - \
+              || { echo "::error::SHA-1 скачанного пака не совпал"; PACK_FAIL=1; }
+            [ "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/missing.txt)" = "404" ] \
+              || { echo "::error::неизвестный путь не дал 404"; PACK_FAIL=1; }
+            [ "$(curl -s -o /dev/null -w '%{http_code}' -X POST http://127.0.0.1:8080/)" = "405" ] \
+              || { echo "::error::POST не дал 405"; PACK_FAIL=1; }
+            [ "$(curl -sI http://127.0.0.1:8080/servermmo-hud.zip | tr -d '\r' | awk -F': ' 'tolower($1)=="content-length"{print $2}')" = "$(stat -c %s /tmp/pack-embedded.zip)" ] \
+              || { echo "::error::Content-Length не совпал с размером файла"; PACK_FAIL=1; }
+            curl -fsS http://127.0.0.1:8080/sha1 | grep -qx "$PACK_SHA" \
+              || { echo "::error::/sha1 вернул неверный хеш"; PACK_FAIL=1; }
+            curl -fsS http://127.0.0.1:8080/ | grep -q 'ServerMMO HUD' \
+              || { echo "::error::нет индексной страницы"; PACK_FAIL=1; }
+            echo "раздача отвечает, SHA-1 $PACK_SHA"
+          fi
+
           echo "plugins" >&3
           sleep 8
           echo "stats" >&3
@@ -238,7 +272,7 @@ jobs:
           grep -E 'ServerMMO|Done \(|Plugin:|enabled' console.log | head -60 || true
           echo "==============================================="
 
-          FAIL=0
+          FAIL=${PACK_FAIL:-0}
           for name in ServerMMOCore ServerMMOMobs ServerMMOPlayers ServerMMOHud; do
             if grep -q "$name включён" console.log; then
               echo "OK: $name"
@@ -247,6 +281,10 @@ jobs:
               FAIL=1
             fi
           done
+
+          if grep -q 'Раздача ресурспака' console.log; then
+            echo "встроенная раздача ресурспака есть в логе"
+          fi
 
           if grep -q 'ServerMMOMobs\] .*ударил' console.log || grep -q '\[debug\]' console.log; then
             echo "debug-сообщения боя есть в логе"

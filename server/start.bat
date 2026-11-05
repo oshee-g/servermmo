@@ -124,8 +124,9 @@ rem --- hint: is the HUD resource pack shared with players? -------------
 findstr /b /c:"resource-pack=http" "server.properties" >nul 2>&1
 if not errorlevel 1 goto :pack_ready
 echo [i] Resource pack is not shared yet, so players will see empty
-echo     squares instead of the ServerMMO HUD. Run pack-server.bat once
-echo     and then setup-resourcepack.bat. Details: ..\PLUGINS.md
+echo     squares instead of the ServerMMO HUD. The server already
+echo     serves the pack itself - run setup-resourcepack.bat once
+echo     and restart. Details: ..\PLUGINS.md
 echo.
 :pack_ready
 

@@ -118,7 +118,7 @@ Paper сам выстроит порядок загрузки по `depend:` в 
 ### Ресурспак
 
 Файл: [`server/resourcepack/servermmo-hud.zip`](../server/resourcepack/servermmo-hud.zip)
-(26914 байт, SHA-1 `16c89c727c291490fc3f5e4066fdaa1470984290`).
+(26842 байт, SHA-1 `f130cff31b7857580813b7b00a5b6837c6c9eeca`).
 
 **Вариант 1 — сервер раздаёт сам (по умолчанию):**
 

@@ -63,9 +63,6 @@ public final class PlayerStore {
     public void saveAll() {
         YamlConfiguration yaml = new YamlConfiguration();
         for (PlayerProfile profile : profiles.values()) {
-            if (!profile.dirty()) {
-                continue;
-            }
             String base = "players." + profile.uuid();
             yaml.set(base + ".name", profile.name());
             yaml.set(base + ".level", profile.level());

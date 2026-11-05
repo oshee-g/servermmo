@@ -3,6 +3,7 @@ package ru.servermmo.core.listener;
 import org.bukkit.GameMode;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
 import org.bukkit.event.EventHandler;
@@ -34,6 +35,11 @@ public final class CombatListener implements Listener {
     public void onEntityDamage(EntityDamageEvent event) {
         Entity entity = event.getEntity();
         if (!(entity instanceof LivingEntity target)) {
+            return;
+        }
+        // Кастомная система работает только для игроков и мобов;
+        // стойки для брони, картины и прочее остаются ванильными.
+        if (!(target instanceof Player) && !(target instanceof Mob)) {
             return;
         }
         // Ванильный урон не должен проходить никогда.

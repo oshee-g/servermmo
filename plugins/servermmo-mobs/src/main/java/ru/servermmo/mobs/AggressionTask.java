@@ -98,6 +98,12 @@ final class AggressionTask extends BukkitRunnable {
             faceTarget(mob, player);
         }
 
+        // Враждебные мобы бьют ванильной атакой: её перехватывает CombatListener
+        // и переводит в кастомный урон. Руками добиваем только мирных.
+        if (hostile) {
+            return;
+        }
+
         Location mobLocation = mob.getLocation();
         if (mobLocation.getWorld() != player.getWorld()) {
             return;

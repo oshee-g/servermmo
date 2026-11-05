@@ -45,16 +45,14 @@ public final class EntityLifecycleListener implements Listener {
     }
 
     private void prepareMob(LivingEntity living) {
-        if (living instanceof Player) {
+        if (!(living instanceof Mob mob) || living instanceof Player) {
             return;
         }
         CombatService combat = plugin.combat();
         if (plugin.settings().stripVanillaStats()) {
             combat.stripVanillaStats(living);
         }
-        if (living instanceof Mob mob) {
-            mob.clearLootTable();
-        }
+        mob.clearLootTable();
         int level = combat.mobLevel(living);
         combat.setMobLevel(living, level);
     }

@@ -8,10 +8,48 @@
 
 ```bash
 cd <корень репозитория>
-python3 tools/lint-bats.py      # статические проверки .bat
-python3 tools/test-bats.py      # поведение .bat (Windows-логика)
-bash   tools/test-linux.sh      # поведение .sh (Linux/macOS)
+python3 tools/check_plugins.py      # собранные jar, таблицы статов, ресурспак
+python3 tools/lint-bats.py          # статические проверки .bat
+python3 tools/test-bats.py          # поведение .bat (Windows-логика)
+bash   tools/test-linux.sh          # поведение .sh (Linux/macOS)
 ```
+
+## Генераторы статов и ресурспака
+
+### `gen_stats.py` — таблицы статов из `mobs_stats.txt`
+
+Читает `tools/mobs_stats.txt` (таблица 90 уровней) и пишет:
+
+* `plugins/servermmo-core/src/main/resources/stats.yml` — статы мобов по уровням;
+* `plugins/servermmo-core/src/main/resources/player-stats.yml` — статы игрока.
+
+Русские названия мобов переводятся в `EntityType` Paper 26.3 (например,
+`Лосось` → `SALMON`, `Хранитель` → `WARDEN`). 1 уровень игрока переопределён
+под макет HUD: 20 HP / 5 урона / 200 опыта до следующего уровня.
+
+Все числа пишутся как целые `long`.
+
+### `gen_resourcepack.py` — рамка HUD
+
+Рисует пиксель-арт (деревянная рамка, панель, иконки сердца/меча/`LVL`/кристалла,
+пиксельные цифры), собирает шрифт `assets/servermmo/font/hud.json` и прозрачные
+заглушки ванильных сердец/полос, упаковывает всё в
+`server/resourcepack/servermmo-hud.zip`.
+
+`pack.mcmeta` пишется под Minecraft 26.3: формат ресурспака **97.1**
+(`min_format: [97, 1]`, `max_format: 97`).
+
+### `check_plugins.py` — проверка артефактов
+
+* `plugin.yml` внутри каждого jar: `name`, `main`, `api-version: '26.3'`;
+* наличие главного класса и пакета `ru/servermmo/`;
+* `stats.yml` и `player-stats.yml`: 90 уровней, значения в пределах `long`,
+  первый уровень игрока = 20/5/200;
+* ресурспак: формат 97.1, все текстуры шрифта на месте, все глифы и сдвиги
+  (`\uE001`…`\uE006`, `\uE100`, цифры) объявлены; `pack.mcmeta` в корне zip.
+
+Запускать после `mvn package` или после того, как CI опубликовал jar в
+`server/plugins/`.
 
 ## Что внутри
 

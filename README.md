@@ -19,7 +19,10 @@
 | `server/backup.bat` | бэкап миров, плагинов и конфигов в папку `backups/` |
 | `server/server.properties` | настройки мира, порта, мотд, белого списка (уже заполнены разумными значениями) |
 | `server/eula.txt` | согласие с EULA — уже `true`, чтобы сервер стартовал без ручной правки |
-| `server/plugins/` | папка для плагинов `.jar` |
+| `server/plugins/` | папка для плагинов `.jar` — там уже лежат четыре плагина **ServerMMO** |
+| `server/resourcepack/` | `servermmo-hud.zip` — ресурспак с рамкой HUD (ставится клиенту) |
+| `plugins/` | исходники плагинов ServerMMO (Maven, Java 25) |
+| `resourcepack/` | распакованный ресурспак: рамка, иконки, шрифт |
 | `server/scripts/*.ps1` | служебные скрипты (скачивание ядра, проверка Java, бэкап) — их вызывают `.bat`-файлы |
 
 ---
@@ -207,6 +210,45 @@ Paper 26.3 (G1 GC). Трогать их необязательно.
 ViaVersion (+ViaBackwards), Geyser+Floodgate (для Bedrock), Chunky, Spark,
 WorldEdit/WorldGuard, Simple Voice Chat. Подробнее — в `plugins/README.txt`.
 
+### Свои плагины ServerMMO (уже в паке)
+
+В `server/plugins/` лежат четыре готовых плагина — это кастомная система
+здоровья, урона, уровней и HUD:
+
+| Jar | Что делает |
+|---|---|
+| `servermmo-core-1.0.0.jar` | таблица 90 уровней, здоровье и урон на `long`, ванильные статы отключены |
+| `servermmo-mobs-1.0.0.jar` | мобы видят игрока в радиусе 20 блоков, поворачивают голову и тело, бьют по кастомной системе |
+| `servermmo-players-1.0.0.jar` | опыт за мобов, уровни, команда `/stats` |
+| `servermmo-hud-1.0.0.jar` | рамка в левом верхнем углу: здоровье, урон, уровень, опыт |
+
+Что изменилось в игре:
+
+* ванильные сердца, броня, голод и полоска опыта в хотбаре больше не рисуются —
+  вместо них рамка с цифрами;
+* у мобов и игроков своё здоровье; удар вызывает покраснение и снимает его;
+* моб умирает без анимации смерти и без дропа, только со звуком;
+* за убийство моба дают опыт, при переполнении — новый уровень и полное лечение;
+* игрок начинает с 20 HP / 5 урона / 0 из 200 опыта.
+
+**Обязательно поставь ресурспак** — без него вместо рамки будут пустые квадраты:
+
+1. Скопируй `server/resourcepack/servermmo-hud.zip` в
+   `%APPDATA%\.minecraft\resourcepacks`.
+2. В игре: **Настройки → Наборы ресурсов** → включить **ServerMMO HUD**.
+
+Либо раздавай его сервером: залей zip на хостинг и пропиши в `server.properties`
+`resource-pack=<ссылка>` и
+`resource-pack-sha1=a92bb1940c89a2c6ff9bc115aea1b2a1f6957454`.
+
+Команды: `/stats` — свои статы, `/stats <ник>` — чужие,
+`/stats reset` — сброс к 1 уровню (оператор), `/hud scale|distance|offsetx|offsety`
+— подстройка рамки под разрешение (оператор).
+
+Настройки — в `plugins/ServerMMOCore/config.yml`, `plugins/ServerMMOMobs/config.yml`
+и `plugins/ServerMMOHud/config.yml`. Полное описание — в
+[`plugins/README.md`](plugins/README.md).
+
 ---
 
 ## Обновление ядра
@@ -271,14 +313,21 @@ chmod +x *.sh
 | Папка | Содержимое |
 |---|---|
 | `server/` | **готовый серверный пак для Windows** — копируй на ПК и запускай `start.bat` |
+| `server/plugins/` | собранные плагины **ServerMMO** (`.jar`) |
+| `server/resourcepack/` | готовый ресурспак `servermmo-hud.zip` |
+| `plugins/` | исходники плагинов ServerMMO (Maven, Java 25) + описание |
+| `resourcepack/` | исходники ресурспака: рамка, иконки, шрифт |
 | `linux/` | то же самое для Linux/macOS (`start.sh`, `settings.sh`, `update.sh`, `backup.sh`) |
-| `tools/` | тесты и линтер для скриптов — нужны только при их правке |
+| `tools/` | тесты, линтер, генераторы статов и ресурспака |
 
 ### Проверка скриптов (для разработки)
 
 Если правишь `start.bat` / `start.sh`, прогони тесты:
 
 ```bash
+python3 tools/check_plugins.py  # проверка собранных jar, таблиц статов и ресурспака
+python3 tools/gen_stats.py      # перегенерация stats.yml из tools/mobs_stats.txt
+python3 tools/gen_resourcepack.py  # перерисовка и сборка ресурспака
 python3 tools/lint-bats.py      # статические проверки .bat (метки, переменные, кавычки)
 python3 tools/test-bats.py      # прогон логики .bat на мини-интерпретаторе batch + моках
 bash    tools/test-linux.sh     # прогон linux/*.sh с подставными curl/java

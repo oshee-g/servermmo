@@ -16,12 +16,23 @@ import ru.servermmo.core.ServerMMOCore;
 import ru.servermmo.core.player.PlayerProfile;
 
 /**
- * HUD одного игрока: табличка перед камерой с сердцем, мечом, щитом и
- * кристаллом из ресурспака и числами рядом.
+ * HUD одного игрока: табличка перед камерой со значками сердца, меча,
+ * «LVL» и «XP» из ресурспака и числами рядом.
  *
- * <p>Иконки — глифы шрифта {@code servermmo:hud} (ячейка 8x8), числа — тоже
- * из пака, поэтому строка выглядит как единая пиксельная панель. Без пака
- * вместо иконок будут пустые квадратики, числа останутся ванильными.</p>
+ * <p>Почему так, а не иначе:</p>
+ * <ul>
+ *   <li>{@link Display.Billboard#CENTER} — табличка всегда разворачивается к
+ *       камере. С {@code FIXED} текст смотрел в ту же сторону, что и игрок,
+ *       то есть к игроку был повёрнут обратной стороной, и панель не была
+ *       видна вообще;</li>
+ *   <li>положение считается векторами камеры (вперёд / вправо / вверх), а не
+ *       через {@code Transformation}: порядок применения translate и поворота
+ *       billboard в клиенте не документирован, и смещение могло уйти в мировые
+ *       оси. Векторы дают предсказуемый угол экрана при любом взгляде;</li>
+ *   <li>яркость выставляется максимальной, иначе ночью HUD темнеет вместе
+ *       с миром;</li>
+ *   <li>выравнивание по левому краю — цифры разной длины не «прыгают».</li>
+ * </ul>
  */
 final class PlayerHud {
 
@@ -29,24 +40,14 @@ final class PlayerHud {
     private static final String GLYPH_HEART = "\uE010";
     /** Меч (базовый урон). */
     private static final String GLYPH_SWORD = "\uE011";
-    /** Щит (уровень). */
-    private static final String GLYPH_LEVEL = "\uE012";
-    /** Кристалл (опыт). */
-    private static final String GLYPH_XP = "\uE013";
-    /** Пустой глиф-разделитель шириной 2 пикселя. */
-    private static final String GLYPH_SPACER = "\uE100";
+    /** Пустой глиф-разделитель шириной 4 пикселя (обычный пробел пака — 1 px). */
+    private static final String GLYPH_SPACER = "\uE101";
+
+    /** Мировая ось «вверх» — нужна только для вычисления осей экрана. */
+    private static final Vector WORLD_UP = new Vector(0.0D, 1.0D, 0.0D);
 
     /** Шрифт ресурспака с иконками и цифрами. */
     private static final Style HUD_STYLE = Style.style()
-            .font(Key.key("servermmo", "hud"))
-            .build();
-
-    private static final Style VALUE_STYLE = Style.style()
-            .font(Key.key("servermmo", "hud"))
-            .color(NamedTextColor.WHITE)
-            .build();
-
-    private static final Style LABEL_STYLE = Style.style()
             .font(Key.key("servermmo", "hud"))
             .color(NamedTextColor.WHITE)
             .build();
@@ -57,6 +58,7 @@ final class PlayerHud {
 
     private TextDisplay display;
     private String lastText;
+    private Location lastLocation;
 
     PlayerHud(ServerMMOHud plugin, HudSettings settings, Player player) {
         this.plugin = plugin;
@@ -68,6 +70,11 @@ final class PlayerHud {
         return player;
     }
 
+    /** Текстовая сущность (для {@code /hud debug}). */
+    TextDisplay display() {
+        return display;
+    }
+
     /** Пересоздаёт сущность (например, после смены мира). */
     void reset() {
         if (display != null && display.isValid()) {
@@ -75,6 +82,7 @@ final class PlayerHud {
         }
         display = null;
         lastText = null;
+        lastLocation = null;
     }
 
     void remove() {
@@ -90,13 +98,26 @@ final class PlayerHud {
         if (current == null) {
             return;
         }
-        current.teleport(computeLocation());
+        Location target = computeLocation();
+        // Телепорт каждый тик — это пакет каждый тик. Если игрок стоит на
+        // месте, панель и так не двигается, поэтому шлём только изменения.
+        if (lastLocation == null || !samePlace(lastLocation, target)) {
+            current.teleport(target);
+            lastLocation = target;
+        }
         Component text = buildText();
         String flat = plain(text);
         if (!flat.equals(lastText)) {
             current.text(text);
             lastText = flat;
         }
+    }
+
+    /** Позиция и направление взгляда не изменились заметно. */
+    private static boolean samePlace(Location a, Location b) {
+        return a.getWorld() == b.getWorld()
+                && a.distanceSquared(b) < 1.0E-6D
+                && a.getDirection().distanceSquared(b.getDirection()) < 1.0E-8D;
     }
 
     private TextDisplay ensureDisplay() {
@@ -107,9 +128,7 @@ final class PlayerHud {
         Location spawn = computeLocation();
         TextDisplay created = player.getWorld().spawn(spawn, TextDisplay.class, entity -> {
             entity.setVisibleByDefault(false);
-            entity.setBillboard(Display.Billboard.FIXED);
-            // Выравнивание по левому краю: тогда offset-x задаёт левую границу
-            // панели, а не её центр — так проще прижать HUD к углу.
+            entity.setBillboard(Display.Billboard.CENTER);
             entity.setAlignment(TextDisplay.TextAlignment.LEFT);
             entity.setSeeThrough(settings.seeThrough());
             entity.setShadowed(false);
@@ -122,32 +141,49 @@ final class PlayerHud {
             entity.setSilent(true);
             entity.setInterpolationDuration(0);
             entity.setTeleportDuration(0);
+            // HUD не должен темнеть ночью вместе с миром.
+            entity.setBrightness(new Display.Brightness(15, 15));
+            // Смещение уже зашито в позицию сущности, поэтому здесь только
+            // масштаб: текст растягивается вокруг своего левого верхнего угла.
             entity.setTransformation(new Transformation(
-                    new Vector3f(0.0F, 0.0F, 0.0F),
+                    new Vector3f(),
                     new Quaternionf(),
                     new Vector3f(settings.scale(), settings.scale(), settings.scale()),
                     new Quaternionf()));
         });
         player.showEntity(plugin, created);
         display = created;
+        lastLocation = spawn;
         return created;
     }
 
+    /**
+     * Левый верхний угол панели: {@code distance} блоков вперёд по взгляду,
+     * плюс смещение по осям «вправо» и «вверх» экрана.
+     *
+     * <p>Оси берутся из вектора взгляда: {@code right = forward x up},
+     * {@code up = right x forward}. Так смещение всегда читается как «на
+     * экране», как бы игрок ни повернулся.</p>
+     */
     private Location computeLocation() {
         Location eye = player.getEyeLocation();
-        Vector direction = eye.getDirection().normalize();
-        Vector up = new Vector(0.0D, 1.0D, 0.0D);
-        Vector right = up.clone().crossProduct(direction);
+        Vector forward = eye.getDirection().normalize();
+        Vector right = forward.clone().crossProduct(WORLD_UP);
         if (right.lengthSquared() < 1.0E-6D) {
+            // Смотрим строго вниз или вверх: ось «вправо» вырождается.
             right = new Vector(1.0D, 0.0D, 0.0D);
+            if (Math.abs(forward.getX()) > 0.9D) {
+                right = new Vector(0.0D, 0.0D, -1.0D);
+            }
         }
         right.normalize();
-        Vector cameraUp = direction.clone().crossProduct(right).normalize();
-        Location location = eye.clone()
-                .add(direction.clone().multiply(settings.distance()))
+        Vector up = right.clone().crossProduct(forward).normalize();
+        Vector position = eye.toVector()
+                .add(forward.clone().multiply(settings.distance()))
                 .add(right.multiply(settings.offsetX()))
-                .add(cameraUp.multiply(settings.offsetY()));
-        location.setDirection(direction);
+                .add(up.multiply(settings.offsetY()));
+        Location location = position.toLocation(eye.getWorld());
+        location.setDirection(forward);
         return location;
     }
 
@@ -174,17 +210,17 @@ final class PlayerHud {
                 .append(Component.newline())
                 .append(row(GLYPH_SWORD, Long.toString(damage)))
                 .append(Component.newline())
-                .append(row(GLYPH_LEVEL, Long.toString(level)))
+                .append(row("LVL", Long.toString(level)))
                 .append(Component.newline())
-                .append(row(GLYPH_XP, xp + "/" + xpToNext))
+                .append(row("XP", xp + "/" + xpToNext))
                 .build();
     }
 
     private Component row(String icon, String value) {
         return Component.text()
                 .append(Component.text(icon, HUD_STYLE))
-                .append(Component.text(GLYPH_SPACER, LABEL_STYLE))
-                .append(Component.text(value, VALUE_STYLE))
+                .append(Component.text(GLYPH_SPACER, HUD_STYLE))
+                .append(Component.text(value, HUD_STYLE))
                 .build();
     }
 

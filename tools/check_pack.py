@@ -6,6 +6,9 @@
 
 * шрифт HUD на месте и все bitmap-провайдеры — квадратные ячейки 8x8;
 * текстуры глифов действительно 8x8 (или кратны 8 по ширине);
+* чернила глифов лежат в строках 1..7 ячейки — как заглавные буквы и цифры
+  ванильного ``ascii.png``; иначе в подписи моба значки «прыгают» относительно
+  имени, которое рисуется ванильным шрифтом;
 * ванильные сердца (включая ``_blinking``, ``hardcore_`` и ``vehicle_``)
   перекрыты прозрачными спрайтами;
 * старые спрайты ``icons.png`` тоже пустые.
@@ -28,6 +31,7 @@ REQUIRED = [
     "assets/servermmo/font/hud.json",
     "assets/servermmo/textures/font/hud_digits.png",
     "assets/servermmo/textures/font/hud_icons.png",
+    "assets/servermmo/textures/font/hud_letters.png",
     "assets/minecraft/textures/gui/icons.png",
     "assets/minecraft/textures/gui/sprites/hud/heart/full.png",
     "assets/minecraft/textures/gui/sprites/hud/heart/half.png",
@@ -59,6 +63,76 @@ def png_is_blank(data: bytes) -> bool:
         pos += 12 + length
     raw = zlib.decompress(idat)
     return all(byte == 0 for byte in raw)
+
+
+def png_rgba(data: bytes) -> tuple[int, int, bytes]:
+    """Раскодировать 8-битный RGBA PNG (color type 6) в сырые пиксели.
+
+    Pillow в CI нет, а проверить строки, в которых лежат чернила глифов,
+    нужно именно по пикселям.
+    """
+    import zlib
+    width, height = struct.unpack(">II", data[16:24])
+    depth, color_type = data[24], data[25]
+    if (depth, color_type) != (8, 6):
+        raise ValueError(f"ожидался 8-битный RGBA, а тут depth={depth} type={color_type}")
+    pos = 8
+    idat = b""
+    while pos < len(data):
+        length = struct.unpack(">I", data[pos:pos + 4])[0]
+        kind = data[pos + 4:pos + 8]
+        if kind == b"IDAT":
+            idat += data[pos + 8:pos + 8 + length]
+        pos += 12 + length
+    raw = zlib.decompress(idat)
+    stride = width * 4
+    pixels = bytearray(stride * height)
+    previous = bytearray(stride)
+    offset = 0
+    for row in range(height):
+        filter_type = raw[offset]
+        offset += 1
+        line = bytearray(raw[offset:offset + stride])
+        offset += stride
+        for i in range(stride):
+            left = line[i - 4] if i >= 4 else 0
+            up = previous[i]
+            up_left = previous[i - 4] if i >= 4 else 0
+            if filter_type == 1:
+                line[i] = (line[i] + left) & 0xFF
+            elif filter_type == 2:
+                line[i] = (line[i] + up) & 0xFF
+            elif filter_type == 3:
+                line[i] = (line[i] + (left + up) // 2) & 0xFF
+            elif filter_type == 4:
+                p = left + up - up_left
+                pa, pb, pc = abs(p - left), abs(p - up), abs(p - up_left)
+                predictor = left if pa <= pb and pa <= pc else (up if pb <= pc else up_left)
+                line[i] = (line[i] + predictor) & 0xFF
+        pixels[row * stride:(row + 1) * stride] = line
+        previous = line
+    return width, height, bytes(pixels)
+
+
+def check_ink_rows(width: int, height: int, pixels: bytes, cells: int,
+                   file: str, problems: list[str]) -> None:
+    """Чернила каждого глифа обязаны лежать в строках 1..7 ячейки 8x8."""
+    stride = width * 4
+    cell_width = width // cells
+    for index in range(cells):
+        rows_with_ink = set()
+        for y in range(height):
+            for x in range(index * cell_width, (index + 1) * cell_width):
+                if pixels[y * stride + x * 4 + 3] > 40:
+                    rows_with_ink.add(y)
+        if not rows_with_ink:
+            continue  # пустой глиф-пробел
+        if 0 in rows_with_ink:
+            problems.append(f"{file}: у глифа #{index} чернила в строке 0 —"
+                            f" он выше ванильных заглавных и сдвинет строку")
+        for y in rows_with_ink:
+            if y > GLYPH_HEIGHT - 1:
+                problems.append(f"{file}: глиф #{index} вылезает ниже ячейки")
 
 
 def main() -> int:
@@ -111,6 +185,24 @@ def main() -> int:
                             seen[char] = provider.get("file", "?")
             if any(ch not in seen for ch in "0123456789/"):
                 problems.append("в шрифте нет всех цифр и дроби для опыта")
+            if any(ch not in seen for ch in "LVXP"):
+                problems.append("в шрифте нет букв LVL/XP для строк HUD")
+
+            # чернила на одной базовой линии с ванильным шрифтом
+            for provider in font.get("providers", []):
+                if provider.get("type") != "bitmap":
+                    continue
+                file = provider.get("file", "").split(":", 1)[-1]
+                texture = f"assets/servermmo/textures/{file}"
+                if texture not in names:
+                    continue
+                cells = sum(len(row) for row in provider.get("chars", []))
+                try:
+                    width, height, pixels = png_rgba(zf.read(texture))
+                except ValueError as exc:
+                    problems.append(f"{texture}: {exc}")
+                    continue
+                check_ink_rows(width, height, pixels, cells, texture, problems)
 
         for name in names:
             if "/heart/" in name and name.endswith(".png"):

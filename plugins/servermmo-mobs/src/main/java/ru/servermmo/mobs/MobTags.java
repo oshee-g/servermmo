@@ -17,12 +17,15 @@ import ru.servermmo.core.ServerMMOCore;
 import ru.servermmo.core.stats.LevelStats;
 
 /**
- * Подпись над кастомным мобом: {@code Ур <щит> 1 Курица <сердце> 11}.
+ * Подпись над кастомным мобом: {@code <LVL> 1 Лосось 3}.
  *
- * <p>Иконки щита и сердца и сами числа — глифы шрифта {@code servermmo:hud}
- * из ресурспака, поэтому подпись выглядит как единая пиксельная полоска, а
- * не как ванильный текст с картинками. Без пака вместо иконок будут пустые
- * квадратики, текст останется читаемым.</p>
+ * <p>Значок {@code LVL} и числа — глифы шрифта {@code servermmo:hud} из
+ * ресурспака, имя моба — обычный ванильный шрифт. Глифы пака лежат в тех же
+ * строках ячейки, что ванильные заглавные буквы, поэтому строка не «пляшет»:
+ * значок, цифры и имя стоят на одной базовой линии.</p>
+ *
+ * <p>Без ресурспака вместо {@code LVL} останется текст, а цифры будут
+ * ванильными — подпись не сломается.</p>
  *
  * <p>Подпись обновляется при изменении здоровья. Перебираются только
  * кастомные мобы (они регистрируются при спавне и загрузке), а не все
@@ -30,10 +33,10 @@ import ru.servermmo.core.stats.LevelStats;
  */
 final class MobTags extends BukkitRunnable {
 
-    /** Щит: обозначает уровень. */
-    private static final String GLYPH_LEVEL = "\uE012";
-    /** Сердце: обозначает здоровье. */
-    private static final String GLYPH_HEART = "\uE010";
+    /** Значок уровня: буквы LVL из шрифта пака. */
+    private static final String GLYPH_LEVEL = "LVL";
+    /** Пробел шрифта пака шириной 4 пикселя: в паке обычный пробел 1 px. */
+    private static final String GLYPH_SPACE = "\uE101";
 
     private static final Style HUD_STYLE = Style.style()
             .font(Key.key("servermmo", "hud"))
@@ -97,14 +100,14 @@ final class MobTags extends BukkitRunnable {
         String name = stats != null ? stats.mobName() : niceName(mob);
         long health = core.combat().health(mob);
 
+        // Пробелы внутри шрифта пака шириной 1 px, поэтому между значком и
+        // числом ставим глиф-пробел \uE101 (4 px), а вокруг имени — обычные
+        // ванильные пробелы: имя рисуется ванильным шрифтом.
         return Component.text()
-                .append(Component.text("Ур ", NamedTextColor.YELLOW))
                 .append(Component.text(GLYPH_LEVEL, HUD_STYLE))
-                .append(Component.text(" ", NamedTextColor.YELLOW))
+                .append(Component.text(GLYPH_SPACE, HUD_STYLE))
                 .append(Component.text(Integer.toString(level), HUD_STYLE))
                 .append(Component.text(" " + name + " ", NamedTextColor.WHITE))
-                .append(Component.text(GLYPH_HEART, HUD_STYLE))
-                .append(Component.text(" ", NamedTextColor.WHITE))
                 .append(Component.text(Long.toString(health), HUD_STYLE))
                 .build();
     }

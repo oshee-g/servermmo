@@ -15,7 +15,16 @@
       "ascent": 7,
       "height": 8,
       "chars": [
-        ""
+        ""
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "servermmo:font/hud_letters.png",
+      "ascent": 7,
+      "height": 8,
+      "chars": [
+        "LVXP"
       ]
     },
     {

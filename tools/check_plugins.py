@@ -147,8 +147,8 @@ def check_resourcepack() -> None:
             # в JSON строка символов может быть одной строкой ("0123456789")
             for row in provider.get("chars", []):
                 chars.update(row)
-    # иконки HUD: сердце, меч, щит, кристалл; плюс цифры и "/" для опыта
-    needed = {"\ue010", "\ue011", "\ue012", "\ue013", *"0123456789/"}
+    # иконки HUD: сердце, меч, кристалл; цифры, "/" и буквы LVL/XP
+    needed = {"\ue010", "\ue011", "\ue013", *"0123456789/", *"LVXP"}
     missing = sorted(needed - chars)
     if missing:
         fail(f"в шрифте нет глифов: {[hex(ord(c)) for c in missing]}")

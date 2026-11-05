@@ -29,7 +29,11 @@ public final class ServerMMOHud extends JavaPlugin {
         PluginCommand hud = Objects.requireNonNull(getCommand("hud"), "команда hud не описана");
         hud.setExecutor(new HudCommand(this, settings));
 
-        getLogger().info("ServerMMOHud включён");
+        getLogger().info("ServerMMOHud включён: distance=" + settings.distance()
+                + " offsetX=" + settings.offsetX()
+                + " offsetY=" + settings.offsetY()
+                + " scale=" + settings.scale()
+                + ", подстройка: /hud scale|distance|offsetx|offsety, /hud reset");
     }
 
     @Override

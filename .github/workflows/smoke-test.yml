@@ -310,16 +310,30 @@ jobs:
             FAIL=1
           fi
 
-          # Подпись над мобом: щит, уровень, сердце и здоровье — глифами пака,
-          # то есть в CustomName должно быть несколько кусков с этим шрифтом.
-          TAG_GLYPHS=$(grep -E 'Курица .* has the following entity data' console.log \
-            | grep -o 'font: "servermmo:hud"' | wc -l)
-          if [ "$TAG_GLYPHS" -ge 3 ]; then
-            echo "OK: подпись моба использует шрифт пака ($TAG_GLYPHS глифа)"
+          # Подпись над мобом: «LVL 2 Курица 11». Значок LVL, пробел, уровень и
+          # здоровье — куски шрифта пака (имя моба ванильное), плюс сам значок.
+          TAG_LINE=$(grep -E 'Курица .* has the following entity data' console.log | head -1 || true)
+          TAG_GLYPHS=$(printf '%s' "$TAG_LINE" | grep -o 'font: "servermmo:hud"' | wc -l)
+          if [ "$TAG_GLYPHS" -ge 4 ]; then
+            echo "OK: подпись моба использует шрифт пака ($TAG_GLYPHS куска)"
           else
-            echo "::error::В подписи моба только $TAG_GLYPHS глифов пака (ожидалось 4)"
-            grep -E 'Курица .* has the following entity data' console.log | head -2 || true
+            echo "::error::В подписи моба $TAG_GLYPHS кусков шрифта пака (ожидалось 4)"
+            echo "$TAG_LINE" | head -2 || true
             FAIL=1
+          fi
+          if printf '%s' "$TAG_LINE" | grep -q 'LVL'; then
+            echo "OK: в подписи моба есть значок LVL"
+          else
+            echo "::error::В подписи моба нет значка LVL"
+            echo "$TAG_LINE" | head -2 || true
+            FAIL=1
+          fi
+          if printf '%s' "$TAG_LINE" | grep -q 'Ур'; then
+            echo "::error::В подписи моба осталось слово «Ур»"
+            echo "$TAG_LINE" | head -2 || true
+            FAIL=1
+          else
+            echo "OK: слова «Ур» в подписи нет"
           fi
 
           if awk '/STEP1_VANILLA/{f=1} f && /Zombie has the following entity data/{print; exit}' console.log \

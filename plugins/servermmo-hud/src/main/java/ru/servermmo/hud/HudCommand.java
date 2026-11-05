@@ -24,9 +24,27 @@ public final class HudCommand implements CommandExecutor {
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command,
                              @NotNull String label, @NotNull String[] args) {
+        if (args.length == 1 && args[0].equalsIgnoreCase("reset")) {
+            settings.reset();
+            plugin.getConfig().set("hud.scale", settings.scale());
+            plugin.getConfig().set("hud.distance", settings.distance());
+            plugin.getConfig().set("hud.offset-x", settings.offsetX());
+            plugin.getConfig().set("hud.offset-y", settings.offsetY());
+            plugin.saveConfig();
+            if (sender instanceof Player player) {
+                plugin.manager().reset(player);
+            }
+            sender.sendMessage(Component.text(
+                    "HUD вернул заводские значения: scale=" + settings.scale()
+                            + " distance=" + settings.distance()
+                            + " offsetX=" + settings.offsetX()
+                            + " offsetY=" + settings.offsetY(), NamedTextColor.GREEN));
+            return true;
+        }
         if (args.length < 2) {
             sender.sendMessage(Component.text(
-                    "/hud <scale|distance|offsetx|offsety> <значение>", NamedTextColor.YELLOW));
+                    "/hud <scale|distance|offsetx|offsety> <значение>  |  /hud reset",
+                    NamedTextColor.YELLOW));
             sender.sendMessage(Component.text(
                     "сейчас: scale=" + settings.scale()
                             + " distance=" + settings.distance()
@@ -69,7 +87,8 @@ public final class HudCommand implements CommandExecutor {
             }
             default -> {
                 sender.sendMessage(Component.text(
-                        "/hud <scale|distance|offsetx|offsety> <значение>", NamedTextColor.YELLOW));
+                        "/hud <scale|distance|offsetx|offsety> <значение>  |  /hud reset",
+                        NamedTextColor.YELLOW));
                 return true;
             }
         }
@@ -83,6 +102,6 @@ public final class HudCommand implements CommandExecutor {
 
     /** Подсказка аргументов (используется в plugin.yml как tab-complete по умолчанию). */
     public static List<String> keys() {
-        return List.of("scale", "distance", "offsetx", "offsety");
+        return List.of("scale", "distance", "offsetx", "offsety", "reset");
     }
 }

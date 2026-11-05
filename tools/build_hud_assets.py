@@ -32,6 +32,12 @@ SRC = ROOT / "tools" / "assets_src"
 OUT = ROOT / "tools" / "pack_assets"
 
 CELL = 8            # как у ванильного шрифта: ячейка 8x8, height=8
+INK_H = 7           # высота заглавных букв и цифр
+# У ванильного ascii.png (ячейка 8x8, height 8, ascent 7) чернила заглавных и
+# цифр лежат в строках 1..7, то есть нижняя строка совпадает с базовой линией.
+# Наши глифы обязаны попадать туда же, иначе в неймтеге, где рядом ванильное
+# имя моба, значки «прыгают» на пиксель вверх.
+INK_TOP = 1
 
 CHROMA = (0, 255, 0)
 
@@ -109,38 +115,51 @@ DIGITS_5x7 = {
     " ": ["00000", "00000", "00000", "00000", "00000", "00000", "00000"],
 }
 
-def digits_atlas() -> Image.Image:
-    """Цифры: ячейка 8x8, цифра 5x7 по центру.
+# Буквы для значков LVL и XP: та же сетка 5x7, что у цифр.
+LETTERS_5x7 = {
+    "L": ["10000", "10000", "10000", "10000", "10000", "10000", "11111"],
+    "V": ["10001", "10001", "10001", "10001", "10001", "01010", "00100"],
+    "X": ["10001", "10001", "01010", "00100", "01010", "10001", "10001"],
+    "P": ["11110", "10001", "10001", "11110", "10000", "10000", "10000"],
+}
+LETTER_CHARS = "LVXP"
 
-    Раньше поверх цифры рисовалась обводка с тенью — она заливала просветы
-    у «0», «8», «9» и цифры превращались в кашу. Теперь чистая заливка:
-    верхний ряд светлый, остальное золото, снизу на пиксель темнее.
-    """
-    chars = "0123456789/ "
-    image = Image.new("RGBA", (CELL * len(chars), CELL), (0, 0, 0, 0))
+def glyph_run(patterns: list[list[str]]) -> Image.Image:
+    """Атлас символов 5x7 в ячейках 8x8, все на одной базовой линии."""
+    image = Image.new("RGBA", (CELL * len(patterns), CELL), (0, 0, 0, 0))
     draw = ImageDraw.Draw(image)
-    for index, char in enumerate(chars):
+    for index, pattern in enumerate(patterns):
         x0 = index * CELL
-        pattern = DIGITS_5x7[char]
         ink = {(x, y) for y, line in enumerate(pattern)
                for x, bit in enumerate(line) if bit == "1"}
+        # Заливка одним цветом: посветка «верх/низ» на 5x7 превращала
+        # буквы в мешанину (L и V читались как одна фигура).
         for (x, y) in ink:
-            if (x, y - 1) not in ink:
-                color = GOLD_HI
-            elif (x, y + 1) not in ink:
-                color = GOLD_DARK
-            else:
-                color = GOLD
-            draw.point((x0 + 1 + x, y), fill=color)
+            draw.point((x0 + 1 + x, y + INK_TOP), fill=GOLD)
     return image
+
+
+def letters_atlas() -> Image.Image:
+    """Буквы LVL и XP: та же сетка, что у цифр."""
+    return glyph_run([LETTERS_5x7[ch] for ch in LETTER_CHARS])
 
 
 def icons_atlas(icons: list[Image.Image]) -> Image.Image:
-    """Иконки по ячейкам 8x8: [сердце, меч, щит, кристалл]."""
+    """Иконки 7x7 по ячейкам 8x8: [сердце, меч, кристалл].
+
+    Высота 7, а не 8: у ванильного шрифта заглавные буквы и цифры занимают
+    ровно 7 строк ячейки. Иконки на 8 пикселей выступали над строкой, из-за
+    чего подпись смотрелась криво.
+    """
     image = Image.new("RGBA", (CELL * len(icons), CELL), (0, 0, 0, 0))
     for index, icon in enumerate(icons):
-        image.alpha_composite(icon, (index * CELL, 0))
+        image.alpha_composite(icon, (index * CELL, INK_TOP))
     return image
+
+
+def digits_atlas() -> Image.Image:
+    """Цифры и дробь: ячейка 8x8, символ 5x7 на общей базовой линии."""
+    return glyph_run([DIGITS_5x7[ch] for ch in "0123456789/ "])
 
 
 def pack_icon(bar: Image.Image, heart: Image.Image) -> Image.Image:
@@ -153,22 +172,26 @@ def pack_icon(bar: Image.Image, heart: Image.Image) -> Image.Image:
     return panel
 
 
-def preview(digits: Image.Image, icons: Image.Image) -> Image.Image:
-    """Как выглядит HUD: строки «иконка + число»."""
-    rows = [("0", "10"), ("1", "1"), ("2", "1"), ("3", "0/200")]
+def preview(digits: Image.Image, icons: Image.Image, letters: Image.Image) -> Image.Image:
+    """Как выглядит HUD: иконка + число, и значки LVL / XP."""
+    rows = [(icons, 0, "10"), (icons, 1, "1"), ("LVL", None, "1"), ("XP", None, "0/200")]
     scale = 6
-    width, height = 120, 8 * len(rows) + 2
-    canvas = Image.new("RGBA", (width, height), (26, 26, 30, 255))
+    canvas = Image.new("RGBA", (120, CELL * len(rows) + 2), (26, 26, 30, 255))
     y = 1
-    for icon_index, value in rows:
-        icon_index = int(icon_index)
-        icon = icons.crop((icon_index * CELL, 0, icon_index * CELL + CELL, CELL))
-        canvas.alpha_composite(icon, (0, y))
-        x = CELL + 3
+    for icon, index, value in rows:
+        x = 1
+        if index is not None:
+            canvas.alpha_composite(icon.crop((index * CELL, 0, (index + 1) * CELL, CELL)), (x, y))
+            x += CELL
+        else:
+            for char in icon:
+                offset = LETTER_CHARS.index(char) * CELL
+                canvas.alpha_composite(letters.crop((offset, 0, offset + CELL, CELL)), (x, y))
+                x += CELL - 1
+        x += 2
         for char in value:
             offset = "0123456789/ ".index(char) * CELL
-            glyph = digits.crop((offset, 0, offset + CELL, CELL))
-            canvas.alpha_composite(glyph, (x, y))
+            canvas.alpha_composite(digits.crop((offset, 0, offset + CELL, CELL)), (x, y))
             x += CELL - 1
         y += CELL
     return canvas.resize((canvas.width * scale, canvas.height * scale), Image.NEAREST)
@@ -178,21 +201,27 @@ def main() -> int:
     OUT.mkdir(parents=True, exist_ok=True)
     bar = Image.open(SRC / "bar.png").convert("RGBA")
 
-    icons = [to_icon(SRC / f"{name}.png", CELL)
-             for name in ("heart", "sword", "level", "orb")]
+    icons = [to_icon(SRC / f"{name}.png", INK_H)
+             for name in ("heart", "sword", "orb")]
 
     digits = digits_atlas()
     digits.save(OUT / "hud_digits.png", optimize=True)
     print(f"hud_digits.png: {digits.width}x{digits.height}")
 
+    letters = letters_atlas()
+    letters.save(OUT / "hud_letters.png", optimize=True)
+    print(f"hud_letters.png: {letters.width}x{letters.height} ({LETTER_CHARS})")
+
     atlas = icons_atlas(icons)
     atlas.save(OUT / "hud_icons.png", optimize=True)
-    print(f"hud_icons.png: {atlas.width}x{atlas.height} (сердце, меч, щит, кристалл)")
+    print(f"hud_icons.png: {atlas.width}x{atlas.height} (сердце, меч, кристалл)")
 
-    pack_icon(bar, icons[0]).save(OUT / "pack_icon.png", optimize=True)
+    # Иконка пака — отдельно от HUD-глифа: там нужен крупный значок 8x8,
+    # иначе pack.png меняется при каждой правке размера глифов.
+    pack_icon(bar, to_icon(SRC / "heart.png", CELL)).save(OUT / "pack_icon.png", optimize=True)
     print("pack_icon.png: 64x64")
 
-    preview(digits, atlas).save(OUT / "hud_preview.png", optimize=True)
+    preview(digits, atlas, letters).save(OUT / "hud_preview.png", optimize=True)
     print("hud_preview.png (как выглядит HUD)")
     return 0
 

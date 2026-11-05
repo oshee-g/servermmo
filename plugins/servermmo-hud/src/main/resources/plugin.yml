@@ -9,7 +9,7 @@ depend: [ServerMMOCore]
 commands:
   hud:
     description: Подстройка HUD
-    usage: /hud <scale|distance|offsetx|offsety> <значение>
+    usage: /hud <scale|distance|offsetx|offsety> <значение> | /hud reset
     permission: servermmo.hud
 permissions:
   servermmo.hud:

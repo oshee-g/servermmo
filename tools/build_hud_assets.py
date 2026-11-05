@@ -96,7 +96,7 @@ def to_icon(path: Path, size: int) -> Image.Image:
 # ---------------------------------------------------------------------------
 DIGITS_5x7 = {
     "0": ["01110", "10001", "10011", "10101", "11001", "10001", "01110"],
-    "1": ["00010", "00110", "01010", "00010", "00010", "00010", "01110"],
+    "1": ["00100", "01100", "00100", "00100", "00100", "00100", "01110"],
     "2": ["01110", "10001", "00001", "00010", "00100", "01000", "11111"],
     "3": ["11111", "00010", "00100", "00010", "00001", "10001", "01110"],
     "4": ["00010", "00110", "01010", "10010", "11111", "00010", "00010"],
@@ -105,13 +105,17 @@ DIGITS_5x7 = {
     "7": ["11111", "00001", "00010", "00100", "01000", "01000", "01000"],
     "8": ["01110", "10001", "10001", "01110", "10001", "10001", "01110"],
     "9": ["01110", "10001", "10001", "01111", "00001", "00010", "01100"],
-    "/": ["00001", "00001", "00010", "00100", "01000", "10000", "10000"],
+    "/": ["00001", "00011", "00010", "00100", "01000", "11000", "10000"],
     " ": ["00000", "00000", "00000", "00000", "00000", "00000", "00000"],
 }
 
-
 def digits_atlas() -> Image.Image:
-    """Цифры: ячейка 8x8, цифра 5x7 с тёмной обводкой — как в ванильном шрифте."""
+    """Цифры: ячейка 8x8, цифра 5x7 по центру.
+
+    Раньше поверх цифры рисовалась обводка с тенью — она заливала просветы
+    у «0», «8», «9» и цифры превращались в кашу. Теперь чистая заливка:
+    верхний ряд светлый, остальное золото, снизу на пиксель темнее.
+    """
     chars = "0123456789/ "
     image = Image.new("RGBA", (CELL * len(chars), CELL), (0, 0, 0, 0))
     draw = ImageDraw.Draw(image)
@@ -120,15 +124,14 @@ def digits_atlas() -> Image.Image:
         pattern = DIGITS_5x7[char]
         ink = {(x, y) for y, line in enumerate(pattern)
                for x, bit in enumerate(line) if bit == "1"}
-        if not ink:
-            continue
-        # тень вправо-вниз: не заливает внутренние просветы цифр (у нуля, 8)
         for (x, y) in ink:
-            if (x + 1, y + 1) not in ink:
-                draw.point((x0 + 1 + x + 1, y + 1), fill=SHADOW)
-        # заливка: сверху блик, ниже золото
-        for (x, y) in ink:
-            draw.point((x0 + 1 + x, y), fill=GOLD_HI if (x, y - 1) not in ink else GOLD)
+            if (x, y - 1) not in ink:
+                color = GOLD_HI
+            elif (x, y + 1) not in ink:
+                color = GOLD_DARK
+            else:
+                color = GOLD
+            draw.point((x0 + 1 + x, y), fill=color)
     return image
 
 
@@ -173,7 +176,7 @@ def preview(digits: Image.Image, icons: Image.Image) -> Image.Image:
             offset = "0123456789/ ".index(char) * CELL
             glyph = digits.crop((offset, 0, offset + CELL, CELL))
             canvas.alpha_composite(glyph, (x, y))
-            x += CELL - 2
+            x += CELL - 1
         y += CELL
     return canvas.resize((canvas.width * scale, canvas.height * scale), Image.NEAREST)
 
@@ -199,8 +202,8 @@ def main() -> int:
     pack_icon(bar, icons[0]).save(OUT / "pack_icon.png", optimize=True)
     print("pack_icon.png: 64x64")
 
-    preview(digits, atlas).save(ROOT / "resourcepack" / "hud-preview.png", optimize=True)
-    print("resourcepack/hud-preview.png")
+    preview(digits, atlas).save(OUT / "hud_preview.png", optimize=True)
+    print("hud_preview.png (как выглядит HUD)")
     return 0
 
 

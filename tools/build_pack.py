@@ -46,7 +46,7 @@ def main() -> int:
         for extra, arc in [
             (ROOT / "README.md", "README.md"),
             (ROOT / "plugins" / "README.md", "PLUGINS.md"),
-            (ROOT / "resourcepack" / "hud-preview.png", "hud-preview.png"),
+            (ROOT / "tools" / "pack_assets" / "hud_preview.png", "hud-preview.png"),
         ]:
             if extra.is_file():
                 add(zf, extra, arc)

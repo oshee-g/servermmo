@@ -239,7 +239,7 @@ WorldEdit/WorldGuard, Simple Voice Chat. Подробнее — в `plugins/READ
 
 Либо раздавай его сервером: залей zip на хостинг и пропиши в `server.properties`
 `resource-pack=<ссылка>` и
-`resource-pack-sha1=a92bb1940c89a2c6ff9bc115aea1b2a1f6957454`.
+`resource-pack-sha1=d19a69e420b2861cbe7187833ae50c9bda26dba7`.
 
 Команды: `/stats` — свои статы, `/stats <ник>` — чужие,
 `/stats reset` — сброс к 1 уровню (оператор), `/hud scale|distance|offsetx|offsety`

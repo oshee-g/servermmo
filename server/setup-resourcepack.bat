@@ -30,7 +30,7 @@ rem Source-file mode needs the JDK (jdk.compiler), a plain JRE cannot do it.
 if errorlevel 1 goto :no_jdk
 
 cd /d "%~dp0resourcepack"
-"%JAVA_CMD%" SetupPack.java %* --port %PACK_PORT%
+"%JAVA_CMD%" SetupPack.java --port %PACK_PORT% %*
 set "EXIT_CODE=%ERRORLEVEL%"
 echo.
 if not "%EXIT_CODE%"=="0" echo [WARN] server.properties was not updated ^(exit code %EXIT_CODE%^).

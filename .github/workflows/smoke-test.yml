@@ -126,6 +126,16 @@ jobs:
           fi
           grep -q 'http:// or https://' /tmp/bad.log
 
+          echo "--- файл без ключей ресурспака: значения дописываются ---"
+          bare="$work/bare.properties"
+          printf 'motd=bare\nmax-players=20\n' > "$bare"
+          java SetupPack.java --url "http://10.0.0.2:8080/servermmo-hud.zip" --props "$bare" > /dev/null
+          [ "$(grep -c '^resource-pack=' "$bare")" = "1" ]
+          [ "$(grep -c '^resource-pack-sha1=' "$bare")" = "1" ]
+          grep -qx 'motd=bare' "$bare"
+          tail -c 1 "$bare" | od -An -c | grep -q '\\n' \
+            || { echo "::error::в конец файла не добавлен перевод строки"; exit 1; }
+
           echo "SETUP PACK OK"
 
       - name: Download Paper 26.3

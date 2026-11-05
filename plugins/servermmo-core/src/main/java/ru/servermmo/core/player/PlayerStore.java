@@ -50,7 +50,7 @@ public final class PlayerStore {
             PlayerProfile profile = new PlayerProfile(uuid, section.getString("name", key));
             profile.level(section.getLong("level", 1L));
             profile.xp(section.getLong("xp", 0L));
-            profile.health(section.getLong("health", 20L));
+            profile.health(section.getLong("health", 10L));
             PlayerLevelStats stats = plugin.playerStats().forLevel((int) Math.min(Integer.MAX_VALUE, profile.level()));
             profile.applyStats(stats, false);
             profile.clampHealth();

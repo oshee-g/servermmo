@@ -2,6 +2,7 @@ package ru.servermmo.core;
 
 import java.util.Objects;
 import org.bukkit.Bukkit;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import ru.servermmo.core.combat.CombatService;
@@ -31,6 +32,7 @@ public final class ServerMMOCore extends JavaPlugin {
     private PlayerStore players = null;
     private CombatService combat = null;
     private PackService packs = null;
+    private EntityLifecycleListener lifecycle = null;
 
     /** Ядро либо {@code null}, если плагин ещё не включён. */
     public static ServerMMOCore get() {
@@ -49,8 +51,9 @@ public final class ServerMMOCore extends JavaPlugin {
         players.loadAll();
         combat = new CombatService(this);
 
+        lifecycle = new EntityLifecycleListener(this);
         Bukkit.getPluginManager().registerEvents(new CombatListener(this), this);
-        Bukkit.getPluginManager().registerEvents(new EntityLifecycleListener(this), this);
+        Bukkit.getPluginManager().registerEvents(lifecycle, this);
 
         // Ресурспак раздаёт сам сервер — отдельное окно с pack-server.bat не нужно.
         packs = new PackService(this, settings);
@@ -99,6 +102,13 @@ public final class ServerMMOCore extends JavaPlugin {
         return Objects.requireNonNull(combat, "Ядро не инициализировано");
     }
 
+    /** Готовит кастомного моба: снимает ванильные статы, ставит уровень. */
+    public void prepareMob(LivingEntity entity) {
+        if (lifecycle != null && entity != null) {
+            lifecycle.prepareMob(entity);
+        }
+    }
+
     // ------------------------------------------------------------------
     // Опыт и уровни
     // ------------------------------------------------------------------
@@ -132,6 +142,9 @@ public final class ServerMMOCore extends JavaPlugin {
                 break;
             }
             profile.applyStats(next, true);
+            if (settings.stripVanillaStats()) {
+                combat.stripVanillaStats(player);
+            }
             leveled = true;
             PlayerLevelUpEvent event = new PlayerLevelUpEvent(player, oldLevel, profile.level());
             Bukkit.getPluginManager().callEvent(event);
@@ -152,5 +165,8 @@ public final class ServerMMOCore extends JavaPlugin {
             profile.applyStats(stats, true);
         }
         profile.clampHealth();
+        if (settings.stripVanillaStats()) {
+            combat.stripVanillaStats(player);
+        }
     }
 }

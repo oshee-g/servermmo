@@ -20,10 +20,10 @@ public final class HudSettings {
     public static HudSettings load(JavaPlugin plugin) {
         var config = plugin.getConfig();
         HudSettings settings = new HudSettings();
-        settings.distance = config.getDouble("hud.distance", 0.9D);
-        settings.offsetX = config.getDouble("hud.offset-x", -0.40D);
-        settings.offsetY = config.getDouble("hud.offset-y", 0.22D);
-        settings.scale = (float) config.getDouble("hud.scale", 0.038D);
+        settings.distance = config.getDouble("hud.distance", 1.0D);
+        settings.offsetX = config.getDouble("hud.offset-x", -0.55D);
+        settings.offsetY = config.getDouble("hud.offset-y", 0.28D);
+        settings.scale = (float) config.getDouble("hud.scale", 0.04D);
         settings.updateIntervalTicks = Math.max(1L, config.getLong("hud.update-interval-ticks", 2L));
         settings.seeThrough = config.getBoolean("hud.see-through", true);
         settings.resourcePackEnabled = config.getBoolean("resource-pack.enabled", false);

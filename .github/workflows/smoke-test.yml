@@ -80,6 +80,13 @@ jobs:
           cp /tmp/packserver.log "$GITHUB_WORKSPACE/packserver-test.log"
           echo "PACK SERVER OK"
 
+      - name: Test the resource pack contents
+        run: |
+          set -euo pipefail
+          python3 tools/gen_resourcepack.py
+          python3 tools/check_pack.py
+          sha1sum server/resourcepack/servermmo-hud.zip
+
       - name: Test the resource pack setup tool
         run: |
           set -euo pipefail
@@ -241,23 +248,32 @@ jobs:
           echo "forceload add 0 0" >&3
           echo "gamerule doMobSpawning false" >&3
           sleep 3
-          echo "execute in minecraft:overworld run summon minecraft:zombie 0 -59 0 {NoAI:1b,NoGravity:1b,PersistenceRequired:1b,Silent:0b}" >&3
+
+          # 1. Ванильный моб остаётся ванильным: у него полное здоровье.
+          echo "execute in minecraft:overworld run summon minecraft:zombie 10 -59 0 {NoAI:1b,NoGravity:1b,PersistenceRequired:1b}" >&3
           sleep 4
-          echo "say STEP1_SUMMONED" >&3
-          echo "execute in minecraft:overworld if entity @e[type=minecraft:zombie]" >&3
+          echo "say STEP1_VANILLA" >&3
+          echo "execute in minecraft:overworld run data get entity @e[type=minecraft:zombie,limit=1] Health" >&3
           sleep 3
-          echo "execute in minecraft:overworld run damage @e[type=minecraft:zombie,limit=1] 5" >&3
+
+          # 2. Кастомный моб создаётся только командой /mob spawn.
+          echo "mob spawn 2 chicken 0 -59 0" >&3
+          sleep 4
+          echo "say STEP2_CUSTOM" >&3
+          echo "execute in minecraft:overworld if entity @e[type=minecraft:chicken]" >&3
           sleep 2
-          echo "say STEP2_AFTER_5" >&3
-          echo "execute in minecraft:overworld if entity @e[type=minecraft:zombie]" >&3
+          echo "execute in minecraft:overworld run data get entity @e[type=minecraft:chicken,limit=1] CustomName" >&3
           sleep 3
-          echo "execute in minecraft:overworld run damage @e[type=minecraft:zombie,limit=1] 99999999" >&3
+
+          # 3. Курица 2 уровня: 11 HP. Пять урона - жива, смертельный - исчезает.
+          echo "execute in minecraft:overworld run damage @e[type=minecraft:chicken,limit=1] 5" >&3
           sleep 2
-          echo "say STEP3_AFTER_LETHAL" >&3
-          echo "execute in minecraft:overworld if entity @e[type=minecraft:zombie]" >&3
+          echo "say STEP3_AFTER_5" >&3
+          echo "execute in minecraft:overworld if entity @e[type=minecraft:chicken]" >&3
           sleep 3
-          echo "execute in minecraft:overworld run summon minecraft:chicken 2 -59 0 {NoGravity:1b,PersistenceRequired:1b}" >&3
-          sleep 3
+          echo "execute in minecraft:overworld run damage @e[type=minecraft:chicken,limit=1] 99999999" >&3
+          sleep 2
+          echo "say STEP4_AFTER_LETHAL" >&3
           echo "execute in minecraft:overworld if entity @e[type=minecraft:chicken]" >&3
           sleep 3
           echo "stop" >&3
@@ -284,6 +300,27 @@ jobs:
 
           if grep -q 'Раздача ресурспака' console.log; then
             echo "встроенная раздача ресурспака есть в логе"
+          fi
+
+          if grep -q 'Создан Курица 2 уровня: 11 HP, 3 урона' console.log; then
+            echo "OK: кастомный моб создан командой /mob spawn"
+          else
+            echo "::error::Команда /mob spawn не создала моба 2 уровня"
+            grep -E 'mob|Курица|Unknown command' console.log | tail -10 || true
+            FAIL=1
+          fi
+
+          if grep -q 'STEP1_VANILLA' console.log && grep -Eq 'Health: 20\.0f' console.log; then
+            echo "OK: ванильный зомби остался с ванильным здоровьем"
+          else
+            echo "[warn] не удалось подтвердить ванильное здоровье зомби"
+          fi
+
+          if grep -q 'STEP4_AFTER_LETHAL' console.log && \
+             awk '/STEP3_AFTER_5/{f=1} /STEP4_AFTER_LETHAL/{f=0} f' console.log | grep -q 'Chicken'; then
+            echo "OK: курица жива после 5 урона и исчезла после смертельного"
+          else
+            echo "[warn] поведение урона по кастомному мобу не подтверждено"
           fi
 
           if grep -q 'ServerMMOMobs\] .*ударил' console.log || grep -q '\[debug\]' console.log; then

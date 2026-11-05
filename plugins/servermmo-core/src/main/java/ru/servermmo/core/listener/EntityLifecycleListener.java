@@ -7,7 +7,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
@@ -18,8 +17,10 @@ import ru.servermmo.core.player.PlayerProfile;
 import ru.servermmo.core.stats.PlayerLevelStats;
 
 /**
- * Ставит кастомные статы новым сущностям, восстанавливает профиль игрока
- * при входе и респавне.
+ * Восстанавливает профиль игрока при входе и респавне, а кастомным мобам
+ * возвращает их статы после перезагрузки мира.
+ *
+ * <p>Обычные мобы игрой не трогаются: они ванильные.</p>
  */
 public final class EntityLifecycleListener implements Listener {
 
@@ -29,22 +30,18 @@ public final class EntityLifecycleListener implements Listener {
         this.plugin = plugin;
     }
 
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onCreatureSpawn(CreatureSpawnEvent event) {
-        prepareMob(event.getEntity());
-    }
-
-    /** Мобы, которые уже были в мире до установки плагина. */
+    /** Кастомные мобы, пережившие перезапуск сервера. */
     @EventHandler(priority = EventPriority.MONITOR)
     public void onEntitiesLoad(EntitiesLoadEvent event) {
         for (Entity entity : event.getEntities()) {
-            if (entity instanceof LivingEntity living && !(entity instanceof Player)) {
+            if (entity instanceof LivingEntity living && plugin.combat().isCustom(living)) {
                 prepareMob(living);
             }
         }
     }
 
-    private void prepareMob(LivingEntity living) {
+    /** Готовит кастомного моба: снимает ванильные статы и ставит уровень. */
+    public void prepareMob(LivingEntity living) {
         if (!(living instanceof Mob mob) || living instanceof Player) {
             return;
         }

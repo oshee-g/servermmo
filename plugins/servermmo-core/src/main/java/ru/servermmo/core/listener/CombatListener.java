@@ -9,18 +9,22 @@ import org.bukkit.entity.Projectile;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
-import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.projectiles.ProjectileSource;
 import ru.servermmo.core.ServerMMOCore;
 import ru.servermmo.core.combat.CombatService;
 
 /**
- * Перехватывает весь ванильный урон и переводит его в кастомную систему.
+ * Перехватывает ванильный урон и переводит его в кастомную систему.
  *
- * <p>Ванильный урон всегда отменяется: здоровье списывает только
- * {@link CombatService}. Благодаря этому моб с «техническим» 1 HP не умирает
+ * <p>Кастомная система работает только для игроков и кастомных мобов (тех,
+ * что созданы командой спавна). Обычные мобы остаются полностью ванильными:
+ * их удары, здоровье, дроп и смерть не трогаются.</p>
+ *
+ * <p>Урон по игроку всегда отменяется: здоровье списывает только
+ * {@link CombatService}. Благодаря этому игрок с «техническим» 1 HP не умирает
  * по-настоящему, а покраснение и звук остаются ванильными.</p>
  */
 public final class CombatListener implements Listener {
@@ -37,8 +41,11 @@ public final class CombatListener implements Listener {
         if (!(entity instanceof LivingEntity target)) {
             return;
         }
-        // Кастомная система работает только для игроков и мобов;
-        // стойки для брони, картины и прочее остаются ванильными.
+        // Ванильных мобов не трогаем совсем: за них играет сама игра.
+        if (target instanceof Mob && !plugin.combat().isCustom(target)) {
+            return;
+        }
+        // Стойки для брони, картины и прочее остаются ванильными.
         if (!(target instanceof Player) && !(target instanceof Mob)) {
             return;
         }
@@ -60,12 +67,12 @@ public final class CombatListener implements Listener {
             Entity damager = byEntity.getDamager();
             if (damager instanceof LivingEntity living) {
                 source = living;
-                amount = plugin.combat().baseDamage(living);
+                amount = damageOf(living, event.getDamage());
             } else if (damager instanceof Projectile projectile) {
                 ProjectileSource shooter = projectile.getShooter();
                 if (shooter instanceof LivingEntity living) {
                     source = living;
-                    amount = plugin.combat().baseDamage(living);
+                    amount = damageOf(living, event.getDamage());
                 } else {
                     amount = scaleEnvironment(event.getDamage());
                 }
@@ -86,10 +93,22 @@ public final class CombatListener implements Listener {
         plugin.combat().damage(target, source, amount);
     }
 
-    /** Ванильный опыт и дроп мобов выключены полностью. */
+    /**
+     * Урон источника. Игрок и кастомный моб бьют по таблице статов, обычный
+     * моб — своим ванильным уроном.
+     */
+    private long damageOf(LivingEntity source, double vanillaDamage) {
+        if (source instanceof Mob && !plugin.combat().isCustom(source)) {
+            return Math.max(1L, Math.round(vanillaDamage));
+        }
+        long custom = plugin.combat().baseDamage(source);
+        return custom > 0L ? custom : scaleEnvironment(vanillaDamage);
+    }
+
+    /** Ванильный опыт и дроп отключаются только у кастомных мобов. */
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityDeath(EntityDeathEvent event) {
-        if (event.getEntity() instanceof Player) {
+        if (event.getEntity() instanceof Player || !plugin.combat().isCustom(event.getEntity())) {
             return;
         }
         if (!event.getDrops().isEmpty()) {

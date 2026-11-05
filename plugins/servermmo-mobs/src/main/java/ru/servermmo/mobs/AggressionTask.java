@@ -16,9 +16,12 @@ import ru.servermmo.core.ServerMMOCore;
 import ru.servermmo.core.combat.CombatService;
 
 /**
- * Заставляет всех мобов (включая мирных и нейтральных) замечать игрока
- * в радиусе {@code aggression.radius} блоков, поворачиваться к нему,
- * подходить и бить по кастомной системе урона.
+ * Агрессия кастомных мобов: замечают игрока в радиусе
+ * {@code aggression.radius} блоков, поворачиваются к нему, подходят и бьют
+ * по кастомной системе урона.
+ *
+ * <p>Обычные (ванильные) мобы пропускаются: у них полностью ванильное
+ * поведение.</p>
  */
 final class AggressionTask extends BukkitRunnable {
 
@@ -53,6 +56,10 @@ final class AggressionTask extends BukkitRunnable {
                         continue;
                     }
                     if (living.isDead() || !living.isValid()) {
+                        continue;
+                    }
+                    // Ванильных мобов не трогаем: они ведут себя как в игре.
+                    if (!core.combat().isCustom(living)) {
                         continue;
                     }
                     if (living.getLocation().distanceSquared(player.getLocation()) > radiusSquared) {

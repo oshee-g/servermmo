@@ -40,12 +40,36 @@ public final class CombatService {
     private final ServerMMOCore plugin;
     private final NamespacedKey healthKey;
     private final NamespacedKey levelKey;
+    private final NamespacedKey customKey;
     private final Map<UUID, Long> mobHealth = new ConcurrentHashMap<>();
 
     public CombatService(ServerMMOCore plugin) {
         this.plugin = plugin;
         this.healthKey = new NamespacedKey(plugin, "combat-health");
         this.levelKey = new NamespacedKey(plugin, "mob-level");
+        this.customKey = new NamespacedKey(plugin, "custom-mob");
+    }
+
+    // ------------------------------------------------------------------
+    // Кастомные и ванильные мобы
+    // ------------------------------------------------------------------
+
+    /**
+     * Кастомный ли моб: только такие живут по кастомной системе (здоровье из
+     * таблицы, урон, имя с уровнем). Обычные, заспавненные игрой мобы
+     * остаются полностью ванильными.
+     */
+    public boolean isCustom(LivingEntity entity) {
+        if (entity instanceof Player) {
+            return true;
+        }
+        Byte flag = entity.getPersistentDataContainer().get(customKey, PersistentDataType.BYTE);
+        return flag != null && flag == (byte) 1;
+    }
+
+    /** Помечает моба кастомным (вызывается только командой спавна). */
+    public void markCustom(LivingEntity entity) {
+        entity.getPersistentDataContainer().set(customKey, PersistentDataType.BYTE, (byte) 1);
     }
 
     // ------------------------------------------------------------------
@@ -56,7 +80,7 @@ public final class CombatService {
     public long maxHealth(LivingEntity entity) {
         if (entity instanceof Player player) {
             PlayerProfile profile = plugin.players().get(player.getUniqueId());
-            return profile != null ? profile.maxHealth() : 20L;
+            return profile != null ? profile.maxHealth() : 10L;
         }
         LevelStats stats = levelStats(entity);
         return stats != null ? stats.health() : 1L;
@@ -123,16 +147,16 @@ public final class CombatService {
     }
 
     private LevelStats levelStats(LivingEntity entity) {
-        EntityType type = entity.getType();
-        LevelStats byType = plugin.levels().byType(type);
-        if (byType != null) {
-            return byType;
-        }
+        // У кастомного моба уровень задан при спавне и важнее типа: курица
+        // 40 уровня должна быть сильнее курицы 2 уровня.
         Integer level = entity.getPersistentDataContainer().get(levelKey, PersistentDataType.INTEGER);
         if (level != null) {
-            return plugin.levels().byLevel(level);
+            LevelStats byLevel = plugin.levels().byLevel(level);
+            if (byLevel != null) {
+                return byLevel;
+            }
         }
-        return null;
+        return plugin.levels().byType(entity.getType());
     }
 
     // ------------------------------------------------------------------
@@ -234,6 +258,9 @@ public final class CombatService {
     /**
      * Убирает ванильные атрибуты, чтобы здоровье и урон считались только
      * кастомной системой.
+     *
+     * <p>Игроку ванильный урон не обнуляется, а выставляется равным его
+     * кастомному урону: так он обычным ударом убивает ванильных мобов.</p>
      */
     public void stripVanillaStats(LivingEntity entity) {
         AttributeInstance maxHealth = entity.getAttribute(Attribute.MAX_HEALTH);
@@ -242,7 +269,7 @@ public final class CombatService {
         }
         AttributeInstance attackDamage = entity.getAttribute(Attribute.ATTACK_DAMAGE);
         if (attackDamage != null) {
-            attackDamage.setBaseValue(0.0D);
+            attackDamage.setBaseValue(entity instanceof Player ? (double) baseDamage(entity) : 0.0D);
         }
         AttributeInstance armor = entity.getAttribute(Attribute.ARMOR);
         if (armor != null) {
@@ -279,14 +306,14 @@ public final class CombatService {
         }
     }
 
-    /** Уровень моба: по типу из таблицы либо сохранённый в данных. */
+    /** Уровень моба: сохранённый при спавне либо по типу из таблицы. */
     public int mobLevel(LivingEntity entity) {
-        LevelStats byType = plugin.levels().byType(entity.getType());
-        if (byType != null) {
-            return byType.level();
-        }
         Integer stored = entity.getPersistentDataContainer().get(levelKey, PersistentDataType.INTEGER);
-        return stored != null ? stored : 1;
+        if (stored != null) {
+            return stored;
+        }
+        LevelStats byType = plugin.levels().byType(entity.getType());
+        return byType != null ? byType.level() : 1;
     }
 
     private String name(LivingEntity entity) {

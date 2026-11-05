@@ -115,8 +115,8 @@ MOB_TYPES: dict[str, str] = {
 ROW_RE = re.compile(r"^\s*(\d+)\s+(.+?)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s*$")
 
 # Переопределение стартовых статов игрока (как в макете HUD: 20 HP, 5 урона, 0/200 XP)
-PLAYER_START_HEALTH = 20
-PLAYER_START_DAMAGE = 5
+PLAYER_START_HEALTH = 10
+PLAYER_START_DAMAGE = 1
 PLAYER_START_XP_NEXT = 200
 
 
@@ -174,7 +174,7 @@ def write_players(rows) -> None:
     out.append("# damage     - базовый урон игрока (по мобам) данного уровня")
     out.append("# xp-to-next - сколько опыта нужно набрать, чтобы получить следующий уровень")
     out.append("#")
-    out.append("# 1 уровень задан по макету HUD: 20 HP / 5 урона / 200 XP.")
+    out.append("# 1 уровень: 10 HP / 1 урон / 200 XP (стартовые значения игрока).")
     out.append("# Со 2 уровня статы совпадают с таблицей мобов (здоровье и урон моба того же уровня).")
     out.append("# Файл сгенерирован tools/gen_stats.py из tools/mobs_stats.txt - правки вручную допустимы.")
     out.append("start-level: 1")

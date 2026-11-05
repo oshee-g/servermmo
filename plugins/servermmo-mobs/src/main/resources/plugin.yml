@@ -2,7 +2,17 @@ name: ServerMMOMobs
 version: '1.0.0'
 main: ru.servermmo.mobs.ServerMMOMobs
 api-version: '26.3'
-description: Агрессия мобов в радиусе 20 блоков, поворот головы и тела
+description: Кастомные мобы по команде, подпись с уровнем и здоровьем
 author: ServerMMO
 website: https://github.com/oshee-g/servermmo
 depend: [ServerMMOCore]
+commands:
+  mob:
+    description: Создать кастомного моба с уровнем
+    usage: /mob spawn <уровень> <тип> [x y z]
+    aliases: [моб, mobs]
+    permission: servermmo.mob.spawn
+permissions:
+  servermmo.mob.spawn:
+    description: Спавн кастомных мобов
+    default: op

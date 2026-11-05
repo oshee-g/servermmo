@@ -24,8 +24,8 @@ public final class PlayerProfile {
         this.name = name;
         this.level = 1L;
         this.xp = 0L;
-        this.maxHealth = 20L;
-        this.health = 20L;
+        this.maxHealth = 10L;
+        this.health = 10L;
         this.damage = 1L;
         this.xpToNext = 200L;
     }

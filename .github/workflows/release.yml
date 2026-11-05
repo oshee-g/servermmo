@@ -33,6 +33,7 @@ jobs:
           cp plugins/servermmo-players/target/servermmo-players-*.jar server/plugins/
           cp plugins/servermmo-hud/target/servermmo-hud-*.jar server/plugins/
           python3 tools/gen_resourcepack.py
+          python3 tools/check_pack.py
           python3 tools/check_plugins.py
           python3 tools/build_pack.py "$RUNNER_TEMP/servermmo-paper-26.3-server-pack.zip"
 
@@ -45,7 +46,10 @@ jobs:
           if [ "${GITHUB_REF_TYPE}" != "tag" ]; then TAG="v1.0.0"; fi
           ZIP="$RUNNER_TEMP/servermmo-paper-26.3-server-pack.zip"
           gh release delete "$TAG" --yes --cleanup-tag 2>/dev/null || true
+          # servermmo-hud.zip кладём отдельным файлом: на него ссылается
+          # resource-pack= в server.properties (прямая ссылка на релиз).
           gh release create "$TAG" "$ZIP#servermmo-paper-26.3-server-pack.zip" \
+            "server/resourcepack/servermmo-hud.zip#servermmo-hud.zip" \
             --target "${GITHUB_SHA}" \
             --title "ServerMMO Pack ${TAG} (Paper 26.3)" \
             --notes-file .github/release-notes.md

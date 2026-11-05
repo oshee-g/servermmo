@@ -24,6 +24,8 @@ import sys
 import zipfile
 from pathlib import Path
 
+from png_io import glyph_advance, png_rgba
+
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_ZIP = ROOT / "server" / "resourcepack" / "servermmo-hud.zip"
 GLYPH_HEIGHT = 8
@@ -41,6 +43,10 @@ REQUIRED = [
     "assets/minecraft/textures/gui/sprites/hud/heart/vehicle_full.png",
     "assets/minecraft/textures/gui/sprites/hud/food_full.png",
     "assets/minecraft/textures/gui/sprites/hud/experience_bar_progress.png",
+    # белая полоса босс-бара: панель HUD рисуется строками босс-бара,
+    # сама полоса должна быть невидимой
+    "assets/minecraft/textures/gui/sprites/boss_bar/white_background.png",
+    "assets/minecraft/textures/gui/sprites/boss_bar/white_progress.png",
 ]
 
 
@@ -66,55 +72,6 @@ def png_is_blank(data: bytes) -> bool:
     return all(byte == 0 for byte in raw)
 
 
-def png_rgba(data: bytes) -> tuple[int, int, bytes]:
-    """Раскодировать 8-битный RGBA PNG (color type 6) в сырые пиксели.
-
-    Pillow в CI нет, а проверить строки, в которых лежат чернила глифов,
-    нужно именно по пикселям.
-    """
-    import zlib
-    width, height = struct.unpack(">II", data[16:24])
-    depth, color_type = data[24], data[25]
-    if (depth, color_type) != (8, 6):
-        raise ValueError(f"ожидался 8-битный RGBA, а тут depth={depth} type={color_type}")
-    pos = 8
-    idat = b""
-    while pos < len(data):
-        length = struct.unpack(">I", data[pos:pos + 4])[0]
-        kind = data[pos + 4:pos + 8]
-        if kind == b"IDAT":
-            idat += data[pos + 8:pos + 8 + length]
-        pos += 12 + length
-    raw = zlib.decompress(idat)
-    stride = width * 4
-    pixels = bytearray(stride * height)
-    previous = bytearray(stride)
-    offset = 0
-    for row in range(height):
-        filter_type = raw[offset]
-        offset += 1
-        line = bytearray(raw[offset:offset + stride])
-        offset += stride
-        for i in range(stride):
-            left = line[i - 4] if i >= 4 else 0
-            up = previous[i]
-            up_left = previous[i - 4] if i >= 4 else 0
-            if filter_type == 1:
-                line[i] = (line[i] + left) & 0xFF
-            elif filter_type == 2:
-                line[i] = (line[i] + up) & 0xFF
-            elif filter_type == 3:
-                line[i] = (line[i] + (left + up) // 2) & 0xFF
-            elif filter_type == 4:
-                p = left + up - up_left
-                pa, pb, pc = abs(p - left), abs(p - up), abs(p - up_left)
-                predictor = left if pa <= pb and pa <= pc else (up if pb <= pc else up_left)
-                line[i] = (line[i] + predictor) & 0xFF
-        pixels[row * stride:(row + 1) * stride] = line
-        previous = line
-    return width, height, bytes(pixels)
-
-
 def check_ink_rows(width: int, height: int, pixels: bytes, cells: int,
                    file: str, problems: list[str]) -> None:
     """Чернила каждого глифа обязаны лежать в строках 0..6 ячейки 8x8.
@@ -136,6 +93,77 @@ def check_ink_rows(width: int, height: int, pixels: bytes, cells: int,
             problems.append(f"{file}: у глифа #{index} чернила в строке"
                             f" {GLYPH_HEIGHT - 1} (базовая линия) — он окажется"
                             f" ниже ванильного текста")
+
+
+LAYOUT_ADVANCES = {
+    # пустые глифы, которыми плагин добивает строки панели до одной ширины
+    "\ue100": 2, "\ue101": 4, "\ue10a": 6, "\ue10b": 10, "\ue10c": 8,
+}
+SHIFT_BITS = range(0, 10)
+METRICS_FILE = ROOT / "plugins" / "servermmo-hud" / "src" / "main" / "resources" / "font-metrics.properties"
+
+
+def check_space_glyphs(font: dict, problems: list[str]) -> None:
+    """Пустые глифы и сдвиги, из которых плагин собирает строки панели."""
+    advances: dict[str, int] = {}
+    for provider in font.get("providers", []):
+        if provider.get("type") == "space":
+            advances.update(provider.get("advances", {}))
+    for char, expected in LAYOUT_ADVANCES.items():
+        if advances.get(char) != expected:
+            problems.append(f"пробел {hex(ord(char))}: {advances.get(char)}, ожидалось {expected}")
+    for bit in SHIFT_BITS:
+        plus = chr(0xE110 + bit)
+        minus = chr(0xE120 + bit)
+        if advances.get(plus) != 1 << bit:
+            problems.append(f"сдвиг {hex(ord(plus))}: {advances.get(plus)}, ожидалось {1 << bit}")
+        if advances.get(minus) != -(1 << bit):
+            problems.append(f"сдвиг {hex(ord(minus))}: {advances.get(minus)}, ожидалось {-(1 << bit)}")
+
+
+def check_metrics(font: dict, names: set[str], zf: zipfile.ZipFile,
+                  problems: list[str]) -> None:
+    """Таблица ширин глифов в плагине должна совпадать с атласами пака."""
+    measured: dict[str, int] = {}
+    for provider in font.get("providers", []):
+        if provider.get("type") != "bitmap":
+            continue
+        file = provider.get("file", "").split(":", 1)[-1]
+        texture = f"assets/servermmo/textures/{file}"
+        if texture not in names:
+            continue
+        chars = [ch for row in provider.get("chars", []) for ch in row]
+        try:
+            width, height, pixels = png_rgba(zf.read(texture))
+        except ValueError:
+            continue
+        cell = width // max(1, len(chars))
+        for index, char in enumerate(chars):
+            measured[char] = glyph_advance(width, height, pixels, cell, index)
+    expected = ",".join(f"{ord(ch):x}:{adv}" for ch, adv in sorted(measured.items()))
+    if not METRICS_FILE.is_file():
+        problems.append("нет font-metrics.properties — запусти tools/gen_font_metrics.py")
+        return
+    text = METRICS_FILE.read_text(encoding="utf-8")
+    actual = next((line[len("advances="):] for line in text.splitlines()
+                   if line.startswith("advances=")), "")
+    if actual != expected:
+        problems.append("font-metrics.properties разошёлся с атласами —"
+                        " запусти tools/gen_font_metrics.py")
+
+
+def check_invisible_bar(zf: zipfile.ZipFile, problems: list[str]) -> None:
+    """Полоса босс-бара под панелью должна быть полностью прозрачной."""
+    for name in ("white_background.png", "white_progress.png"):
+        path = f"assets/minecraft/textures/gui/sprites/boss_bar/{name}"
+        try:
+            width, height, pixels = png_rgba(zf.read(path))
+        except (KeyError, ValueError):
+            continue
+        if any(pixels[i] for i in range(3, len(pixels), 4)):
+            problems.append(f"полоса босс-бара видна: {name}")
+        if (width, height) != (182, 5):
+            problems.append(f"{name}: {width}x{height}, у ванильной полосы 182x5")
 
 
 def main() -> int:
@@ -190,6 +218,8 @@ def main() -> int:
                 problems.append("в шрифте нет всех цифр и дроби для опыта")
             if any(ch not in seen for ch in "LVXP"):
                 problems.append("в шрифте нет букв LVL/XP для строк HUD")
+            check_space_glyphs(font, problems)
+            check_metrics(font, names, zf, problems)
 
             # чернила на одной базовой линии с ванильным шрифтом
             for provider in font.get("providers", []):
@@ -213,6 +243,8 @@ def main() -> int:
                     problems.append(f"сердце не скрыто: {name}")
             if name.endswith("/icons.png") and not png_is_blank(zf.read(name)):
                 problems.append("старые сердца не скрыты: icons.png")
+
+        check_invisible_bar(zf, problems)
 
         hidden = sum(1 for n in names if "/heart/" in n and n.endswith(".png"))
         # в 1.21.9/26.3 ванильных спрайтов сердец 47; меньше — значит список

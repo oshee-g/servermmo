@@ -5,14 +5,20 @@ import org.bukkit.plugin.java.JavaPlugin;
 /** Настройки HUD из {@code config.yml}. */
 public final class HudSettings {
 
-    private double distance;
-    private double offsetX;
-    private double offsetY;
-    private float scale;
+    /**
+     * Заводской сдвиг панели в пикселях интерфейса.
+     *
+     * <p>Строка босс-бара центрируется клиентом, поэтому «левый верхний угол» —
+     * это сдвиг влево примерно на половину ширины интерфейса. Ширина интерфейса
+     * зависит от разрешения окна и масштаба GUI ({@code Настройки → Графика →
+     * Масштаб интерфейса}), который сервер узнать не может. -384 подобрано под
+     * GUI scale 4 на 1920×1080 (ширина интерфейса 480 px, панель ≈ 80 px);
+     * если у вас другой масштаб, поправьте командой {@code /hud offsetx}.</p>
+     */
+    public static final int DEFAULT_OFFSET_X = -384;
+
+    private int offsetX;
     private long updateIntervalTicks;
-    private boolean seeThrough;
-    private boolean resourcePackEnabled;
-    private String resourcePackUrl;
 
     private HudSettings() {
     }
@@ -20,84 +26,29 @@ public final class HudSettings {
     public static HudSettings load(JavaPlugin plugin) {
         var config = plugin.getConfig();
         HudSettings settings = new HudSettings();
-        settings.distance = config.getDouble("hud.distance", DEFAULT_DISTANCE);
-        settings.offsetX = config.getDouble("hud.offset-x", DEFAULT_OFFSET_X);
-        settings.offsetY = config.getDouble("hud.offset-y", DEFAULT_OFFSET_Y);
-        settings.scale = (float) config.getDouble("hud.scale", DEFAULT_SCALE);
-        settings.updateIntervalTicks = Math.max(1L, config.getLong("hud.update-interval-ticks", 1L));
-        settings.seeThrough = config.getBoolean("hud.see-through", true);
-        settings.resourcePackEnabled = config.getBoolean("resource-pack.enabled", false);
-        settings.resourcePackUrl = config.getString("resource-pack.url", "");
-        if (settings.distance <= 0.0D) {
-            plugin.getLogger().warning("hud.distance <= 0, ставлю 0.9");
-            settings.distance = 0.9D;
-        }
-        if (settings.scale <= 0.0F) {
-            plugin.getLogger().warning("hud.scale <= 0, ставлю " + DEFAULT_SCALE);
-            settings.scale = DEFAULT_SCALE;
+        settings.offsetX = config.getInt("hud.offset-x", DEFAULT_OFFSET_X);
+        settings.updateIntervalTicks = Math.max(1L, config.getLong("hud.update-interval-ticks", 2L));
+        if (settings.offsetX > 0) {
+            plugin.getLogger().warning("hud.offset-x > 0 уводит панель вправо от центра");
         }
         return settings;
     }
 
-    public double distance() {
-        return distance;
-    }
-
-    public double offsetX() {
+    /** Сдвиг панели по горизонтали, в пикселях интерфейса. */
+    public int offsetX() {
         return offsetX;
     }
 
-    public double offsetY() {
-        return offsetY;
-    }
-
-    public float scale() {
-        return scale;
+    public void offsetX(int value) {
+        this.offsetX = value;
     }
 
     public long updateIntervalTicks() {
         return updateIntervalTicks;
     }
 
-    public boolean seeThrough() {
-        return seeThrough;
-    }
-
-    public boolean resourcePackEnabled() {
-        return resourcePackEnabled && !resourcePackUrl.isBlank();
-    }
-
-    public String resourcePackUrl() {
-        return resourcePackUrl;
-    }
-
-    /** Заводские значения: панель в левом верхнем углу. */
-    public static final double DEFAULT_DISTANCE = 1.0D;
-    public static final double DEFAULT_OFFSET_X = -0.92D;
-    public static final double DEFAULT_OFFSET_Y = 0.60D;
-    public static final float DEFAULT_SCALE = 0.30F;
-
-    /** Вернуть заводские значения (после неудачной подстройки). */
+    /** Вернуть заводские значения. */
     public void reset() {
-        this.distance = DEFAULT_DISTANCE;
         this.offsetX = DEFAULT_OFFSET_X;
-        this.offsetY = DEFAULT_OFFSET_Y;
-        this.scale = DEFAULT_SCALE;
-    }
-
-    public void scale(float newScale) {
-        this.scale = newScale;
-    }
-
-    public void distance(double newDistance) {
-        this.distance = newDistance;
-    }
-
-    public void offsetX(double value) {
-        this.offsetX = value;
-    }
-
-    public void offsetY(double value) {
-        this.offsetY = value;
     }
 }

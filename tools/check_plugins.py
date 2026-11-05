@@ -74,6 +74,14 @@ def check_jar(path: Path, expected_name: str) -> None:
             fail(f"{path.name}: нет главного класса {class_path}")
         if not any(n.startswith("ru/servermmo/") for n in names):
             fail(f"{path.name}: нет классов ru.servermmo")
+        if expected_name == "ServerMMOHud":
+            # ширины глифов: без них строки панели разъедутся
+            if "font-metrics.properties" not in names:
+                fail(f"{path.name}: нет font-metrics.properties (ширины глифов)")
+            else:
+                metrics = jar.read("font-metrics.properties").decode("utf-8")
+                if "advances=" not in metrics:
+                    fail(f"{path.name}: font-metrics.properties без строки advances=")
         print(f"  ok {path.name}: {name} (api {api}), классов "
               f"{sum(1 for n in names if n.endswith('.class'))}")
 

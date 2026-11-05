@@ -32,8 +32,10 @@ bash   tools/test-linux.sh          # поведение .sh (Linux/macOS)
 ### `gen_resourcepack.py` — сборка HUD-пака
 
 Берёт готовые PNG из `tools/pack_assets/`, пишет шрифт
-`assets/servermmo/font/hud.json`, прозрачные заглушки ванильных сердец и
-полос, упаковывает всё в `server/resourcepack/servermmo-hud.zip`.
+`assets/servermmo/font/hud.json` (bitmap-провайдеры + пробелы-сдвиги),
+прозрачные заглушки ванильных сердец, полосы опыта и спрайтов босс-бара
+`boss_bar/white_*`, упаковывает всё в `server/resourcepack/servermmo-hud.zip`
+(67 файлов, ~27 КБ).
 
 `pack.mcmeta` пишется под Minecraft 26.3: формат ресурспака **97.1**
 (`min_format: [97, 1]`, `max_format: 97`).
@@ -45,15 +47,22 @@ bash   tools/test-linux.sh          # поведение .sh (Linux/macOS)
 * `tools/build_hud_assets.py` — вырезает фон, уменьшает до пиксель-арта и
   собирает `tools/pack_assets/` (результат коммитится): иконки в ячейке 8x8
   высотой 7 px, атласы цифр, букв `LVL`/`XP` и иконок, `pack_icon.png`,
-  `hud_preview.png`. Чернила всех глифов лежат в строках 1..7 ячейки — как у
-  заглавных букв ванильного `ascii.png`, иначе рядом с ванильным именем моба
-  значки «прыгают». Нужен Pillow, запускается вручную, в CI не нужен.
+  `hud_preview.png`. Чернила всех глифов лежат в строках 0..6 ячейки — как у
+  заглавных букв и цифр ванильного `ascii.png` (там ровно те же строки,
+  строка 7 пустая), иначе рядом с ванильным именем моба значки «прыгают».
+  Нужен Pillow, запускается вручную, в CI не нужен.
+* `tools/gen_font_metrics.py` — считает ширину каждого глифа по атласам
+  (последний непрозрачный пиксель + 1) и пишет
+  `plugins/servermmo-hud/src/main/resources/font-metrics.properties`. Без этой
+  таблицы плагин не сможет выровнять строки панели.
 * `tools/gen_resourcepack.py` — без сторонних библиотек: раскладывает PNG по
   структуре ресурспака, пишет `hud.json`, прячет ванильные сердца и собирает
   zip с фиксированными таймстампами.
 * `tools/check_pack.py` — проверяет готовый zip: шрифт на месте, все
-  bitmap-провайдеры 8x8, нет дублей символов, чернила глифов в строках 1..7,
-  47 спрайтов сердец прозрачные.
+  bitmap-провайдеры 8x8, нет дублей символов, чернила глифов в строках 0..6,
+  пустые глифы и сдвиги пробелов, `font-metrics.properties` совпадает с
+  атласами, спрайты `boss_bar/white_*` полностью прозрачные, 47 спрайтов
+  сердец прозрачные.
 
 Важно: в шрифте Minecraft ячейка глифа квадратная (`height`x`height`), а
 ширина символа считается по правому непрозрачному пикселю + 1. Поэтому одна
@@ -62,30 +71,24 @@ bash   tools/test-linux.sh          # поведение .sh (Linux/macOS)
 
 ### Раздача ресурспака
 
-По умолчанию пак отдаёт сам Paper — HTTP-сервер живёт
-внутри `ServerMMOCore` (`core/src/main/java/ru/servermmo/core/web/ResourcePackServer.java`,
-настраивается в `config.yml`, раздел `resourcepack`). Smoke-тест поднимает
-настоящий сервер и проверяет `/health`, `/sha1`, `/`, скачивание zip со сверкой
-SHA-1, 404 на неизвестный путь и 405 на POST.
-
-`server/pack-server.bat` + `server/resourcepack/PackServer.java` — тот же
-протокол отдельным процессом, на случай раздачи при выключенном Minecraft.
+Пак **не раздаётся сервером**: ни плагин, ни отдельный процесс его не
+хостит. В `server.properties` лежат только `resource-pack` (прямая ссылка)
+и `resource-pack-sha1`, клиент качает zip сам. Файл `servermmo-hud.zip`
+прикладывается к каждому релизу, поэтому рабочая ссылка есть сразу после
+`gh release create`.
 
 `server/setup-resourcepack.bat` вызывает
-`server/resourcepack/SetupPack.java`: тот считает SHA-1 и правит
-`server.properties` (читается как ISO-8859-1, поэтому остальной файл
-сохраняется байт в байт; делается бэкап `server.properties.bak`).
-Оба файла запускаются в режиме `java File.java` — компилятор не нужен,
-но нужен именно JDK (модуль `jdk.compiler`), а не голый JRE.
+`server/resourcepack/SetupPack.java`: тот считает SHA-1,
+спрашивает ссылку (Enter = последний релиз) и правит `server.properties`
+(читается как ISO-8859-1, поэтому остальной файл сохраняется байт в байт;
+делается бэкап `server.properties.bak`). Файл запускается в режиме
+`java SetupPack.java` — компилятор не нужен, но нужен именно JDK
+(модуль `jdk.compiler`), а не голый JRE.
 
 Проверяется автоматически в `.github/workflows/smoke-test.yml` на JDK 25:
-
-* `PackServer.java` — скачивается zip, сверяется SHA-1, проверяются
-  `Content-Length`, 404 на неизвестный путь, 405 на POST, индексная страница;
-  лог складывается в `packserver-test.log`;
-* `SetupPack.java` — правится копия `server.properties`: проверяются
-  `resource-pack`, `resource-pack-sha1`, `require-resource-pack`, промпт,
-  отсутствие дублей, сохранение не-ASCII байтов и создание `.bak`.
+`SetupPack.java` правит копию `server.properties` — проверяются
+`resource-pack`, `resource-pack-sha1`, `require-resource-pack`, промпт,
+отсутствие дублей, сохранение не-ASCII байтов и создание `.bak`.
 
 ### `check_plugins.py` — проверка артефактов
 

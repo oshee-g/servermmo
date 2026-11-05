@@ -103,6 +103,31 @@ def write_blank_png(path: Path, width: int, height: int) -> None:
                      + chunk(b"IDAT", zlib.compress(bytes(raw), 9)) + chunk(b"IEND", b""))
 
 
+# Пустые глифы для раскладки панели (ширина в пикселях шрифта).
+BLANK_ADVANCES = {
+    "\ue100": 2,    # щель между иконкой и числом
+    "\ue101": 4,
+    "\ue10a": 6,    # ровно ширина цифры
+    "\ue10b": 10,   # дотягивает иконку 8 px до ширины "LVL" (18 px)
+    "\ue10c": 8,    # щель между блоками панели
+    "\ue102": -1,   # микроподгонка
+    "\ue103": -2,
+}
+# Сдвиги: \ue110+i = +2^i, \ue120+i = -2^i. Из них собирается любой сдвиг
+# панели по горизонтали — так панель ставится в левый верхний угол.
+SHIFT_MIN_BIT = 0
+SHIFT_MAX_BIT = 9
+
+
+def build_space_advances() -> dict:
+    """Таблица пробелов: пустые глифы и сдвиги для раскладки HUD."""
+    advances = dict(BLANK_ADVANCES)
+    for bit in range(SHIFT_MIN_BIT, SHIFT_MAX_BIT + 1):
+        advances[chr(0xE110 + bit)] = 1 << bit
+        advances[chr(0xE120 + bit)] = -(1 << bit)
+    return dict(sorted(advances.items()))
+
+
 def build_font_json() -> dict:
     """Шрифт HUD.
 
@@ -135,13 +160,8 @@ def build_font_json() -> dict:
             },
             {
                 "type": "space",
-                "advances": {
-                    # служебные символы: тонкая подгонка отступов
-                    "\ue100": 2,
-                    "\ue101": 4,
-                    "\ue102": -1,
-                    "\ue103": -2,
-                },
+                # пустые глифы и сдвиги для раскладки панели HUD
+                "advances": build_space_advances(),
             },
         ]
     }
@@ -201,6 +221,16 @@ def main() -> int:
     # Старые клиенты рисуют сердца из одного атласа: пустая текстура 256x256
     # гасит и его. Новые спрайты берутся выше.
     write_blank_png(gui / "icons.png", 256, 256)
+
+    # --- полоса босс-бара ------------------------------------------------
+    # Панель HUD рисуется строками босс-бара (это единственный элемент
+    # интерфейса, который клиент рисует вверху экрана). Сама полоса нам не
+    # нужна: гасим только белый вариант, который использует наш плагин, —
+    # полосы Хранителя, Дракона и рейда остаются на месте.
+    boss_bar = gui / "sprites" / "boss_bar"
+    boss_bar.mkdir(parents=True, exist_ok=True)
+    for name in ("white_background.png", "white_progress.png"):
+        write_blank_png(boss_bar / name, 182, 5)
 
     # --- zip для раздачи ----------------------------------------------------
     ZIP_OUT.parent.mkdir(parents=True, exist_ok=True)

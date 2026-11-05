@@ -1,16 +1,24 @@
 package ru.servermmo.hud;
 
+import java.io.InputStream;
 import java.util.Objects;
 import org.bukkit.Bukkit;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.java.JavaPlugin;
 import ru.servermmo.core.ServerMMOCore;
 
-/** Плагин HUD: рисует здоровье, урон, уровень и опыт в левом верхнем углу. */
+/**
+ * Плагин HUD: здоровье, урон, уровень и опыт в левом верхнем углу экрана.
+ *
+ * <p>Рисует панель клиент: строки босс-бара + глифы ресурспака. Плагин только
+ * подставляет числа, поэтому HUD не зависит от камеры и не висит сущностью в
+ * мире.</p>
+ */
 public final class ServerMMOHud extends JavaPlugin {
 
     private HudSettings settings;
     private HudManager manager;
+    private HudText text;
 
     @Override
     public void onEnable() {
@@ -21,19 +29,25 @@ public final class ServerMMOHud extends JavaPlugin {
         }
         saveDefaultConfig();
         settings = HudSettings.load(this);
-        manager = new HudManager(this, settings);
-        manager.runTaskTimer(this, 20L, Math.max(1L, settings.updateIntervalTicks()));
 
-        Bukkit.getPluginManager().registerEvents(new HudListener(this, manager, settings), this);
+        try (InputStream metrics = getResource("font-metrics.properties")) {
+            text = new HudText(metrics);
+        } catch (Exception ex) {
+            getLogger().warning("Нет font-metrics.properties, беру ширины по умолчанию: "
+                    + ex.getMessage());
+            text = new HudText(null);
+        }
+
+        manager = new HudManager(this, settings, text);
+        manager.runTaskTimer(this, 20L, settings.updateIntervalTicks());
+
+        Bukkit.getPluginManager().registerEvents(new HudListener(manager), this);
 
         PluginCommand hud = Objects.requireNonNull(getCommand("hud"), "команда hud не описана");
         hud.setExecutor(new HudCommand(this, settings));
 
-        getLogger().info("ServerMMOHud включён: distance=" + settings.distance()
-                + " offsetX=" + settings.offsetX()
-                + " offsetY=" + settings.offsetY()
-                + " scale=" + settings.scale()
-                + ", подстройка: /hud scale|distance|offsetx|offsety, /hud reset");
+        getLogger().info("ServerMMOHud включён: панель строками босс-бара, offset-x="
+                + settings.offsetX() + " px, подстройка: /hud offsetx <px>, /hud reset");
     }
 
     @Override

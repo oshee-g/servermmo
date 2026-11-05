@@ -6,10 +6,10 @@ on:
     branches: ['**']
     paths:
       - 'plugins/**'
+      - 'tools/**'
       - 'server/resourcepack/**'
-      - 'server/scripts/resourcepack.ps1'
-      - 'server/pack-server.bat'
       - 'server/setup-resourcepack.bat'
+      - 'server/server.properties'
       - '.github/workflows/smoke-test.yml'
 
 permissions:
@@ -32,60 +32,16 @@ jobs:
       - name: Build plugins
         run: mvn -B -ntp -f plugins/pom.xml clean package
 
-      - name: Test the resource pack HTTP server
-        run: |
-          set -euo pipefail
-          cd server/resourcepack
-          java PackServer.java 8099 servermmo-hud.zip > /tmp/packserver.log 2>&1 &
-          echo $! > /tmp/packserver.pid
-
-          started=0
-          for i in $(seq 1 40); do
-            if curl -fsS http://127.0.0.1:8099/health >/dev/null 2>&1; then started=1; break; fi
-            sleep 1
-          done
-          echo "---------- лог сервера ----------"
-          cat /tmp/packserver.log
-          echo "---------------------------------"
-          if [ "$started" -ne 1 ]; then
-            echo "::error::PackServer не запустился"
-            exit 1
-          fi
-
-          expected=$(sha1sum servermmo-hud.zip | cut -d' ' -f1)
-          curl -fsS -o /tmp/downloaded.zip http://127.0.0.1:8099/servermmo-hud.zip
-          actual=$(sha1sum /tmp/downloaded.zip | cut -d' ' -f1)
-          echo "sha1 файла:      $expected"
-          echo "sha1 скачанного: $actual"
-          [ "$expected" = "$actual" ] || { echo "::error::скачанный ресурспак отличается"; exit 1; }
-          grep -q "$expected" /tmp/packserver.log || { echo "::error::в баннере неверный SHA-1"; exit 1; }
-
-          code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8099/missing.txt)
-          echo "неизвестный путь -> $code"
-          [ "$code" = "404" ] || { echo "::error::ожидался 404"; exit 1; }
-
-          code=$(curl -s -o /dev/null -w '%{http_code}' -X POST http://127.0.0.1:8099/)
-          echo "POST -> $code"
-          [ "$code" = "405" ] || { echo "::error::ожидался 405"; exit 1; }
-
-          length=$(curl -sI http://127.0.0.1:8099/servermmo-hud.zip | tr -d '\r' | awk -F': ' 'tolower($1)=="content-length"{print $2}')
-          real=$(stat -c%s servermmo-hud.zip)
-          echo "HEAD Content-Length=$length, размер файла=$real"
-          [ "$length" = "$real" ] || { echo "::error::неверный Content-Length"; exit 1; }
-
-          body=$(curl -fsS http://127.0.0.1:8099/)
-          echo "$body" | grep -q "ServerMMO HUD" || { echo "::error::нет индексной страницы"; exit 1; }
-
-          kill "$(cat /tmp/packserver.pid)" 2>/dev/null || true
-          cp /tmp/packserver.log "$GITHUB_WORKSPACE/packserver-test.log"
-          echo "PACK SERVER OK"
-
       - name: Test the resource pack contents
         run: |
           set -euo pipefail
           python3 tools/gen_resourcepack.py
           python3 tools/check_pack.py
           sha1sum server/resourcepack/servermmo-hud.zip
+          # таблица ширин глифов должна быть пересобрана вместе с атласами
+          python3 tools/gen_font_metrics.py
+          git diff --exit-code -- plugins/servermmo-hud/src/main/resources/font-metrics.properties \
+            || { echo "::error::font-metrics.properties устарел: запусти tools/gen_font_metrics.py"; exit 1; }
 
       - name: Test the resource pack setup tool
         run: |
@@ -97,13 +53,13 @@ jobs:
           printf '# motd test: \xe2\x9c\x93\n' >> "$work/server.properties"
 
           echo "--- первый прогон (URL из аргумента) ---"
-          java SetupPack.java --url "http://192.168.1.50:8080/servermmo-hud.zip" \
-              --props "$work/server.properties" --port 8080
+          java SetupPack.java --url "https://cdn.example.com/servermmo-hud.zip" \
+              --props "$work/server.properties"
 
           props="$work/server.properties"
           expected=$(sha1sum servermmo-hud.zip | cut -d' ' -f1)
 
-          grep -qx 'resource-pack=http://192.168.1.50:8080/servermmo-hud.zip' "$props" \
+          grep -qx 'resource-pack=https://cdn.example.com/servermmo-hud.zip' "$props" \
             || { echo "::error::resource-pack не записан"; exit 1; }
           grep -qx "resource-pack-sha1=$expected" "$props" \
             || { echo "::error::resource-pack-sha1 неверный"; exit 1; }
@@ -119,9 +75,9 @@ jobs:
           [ -f "$props.bak" ] || { echo "::error::нет бэкапа server.properties.bak"; exit 1; }
 
           echo "--- второй прогон (идемпотентность + --require true) ---"
-          java SetupPack.java --url "https://cdn.example.com/servermmo-hud.zip" \
+          java SetupPack.java --url "https://example.org/packs/servermmo-hud.zip" \
               --props "$props" --require true > /dev/null
-          grep -qx 'resource-pack=https://cdn.example.com/servermmo-hud.zip' "$props"
+          grep -qx 'resource-pack=https://example.org/packs/servermmo-hud.zip' "$props"
           grep -qx 'require-resource-pack=true' "$props"
           [ "$(grep -c '^resource-pack=' "$props")" = "1" ] \
             || { echo "::error::resource-pack продублирован во втором прогоне"; exit 1; }
@@ -206,38 +162,6 @@ jobs:
           fi
           echo "Сервер запустился"
 
-          echo "--- встроенная раздача ресурспака (порт 8080) ---"
-          PACK_FAIL=0
-          PACK_SHA=$(sha1sum ../server/resourcepack/servermmo-hud.zip | cut -d' ' -f1)
-          PACK_UP=0
-          for i in $(seq 1 30); do
-            if curl -fsS --max-time 2 http://127.0.0.1:8080/health > /dev/null 2>&1; then PACK_UP=1; break; fi
-            sleep 1
-          done
-          if [ "$PACK_UP" -ne 1 ]; then
-            echo "::error::Плагин не поднял раздачу ресурспака на порту 8080"
-            grep -iE 'ресурспак|resourcepack|порт' console.log | tail -20 || true
-            PACK_FAIL=1
-          else
-            curl -fsS http://127.0.0.1:8080/health | grep -qx ok \
-              || { echo "::error::/health вернул не ok"; PACK_FAIL=1; }
-            curl -fsS -o /tmp/pack-embedded.zip http://127.0.0.1:8080/servermmo-hud.zip \
-              || { echo "::error::пак не скачался"; PACK_FAIL=1; }
-            echo "$PACK_SHA  /tmp/pack-embedded.zip" | sha1sum -c - \
-              || { echo "::error::SHA-1 скачанного пака не совпал"; PACK_FAIL=1; }
-            [ "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/missing.txt)" = "404" ] \
-              || { echo "::error::неизвестный путь не дал 404"; PACK_FAIL=1; }
-            [ "$(curl -s -o /dev/null -w '%{http_code}' -X POST http://127.0.0.1:8080/)" = "405" ] \
-              || { echo "::error::POST не дал 405"; PACK_FAIL=1; }
-            [ "$(curl -sI http://127.0.0.1:8080/servermmo-hud.zip | tr -d '\r' | awk -F': ' 'tolower($1)=="content-length"{print $2}')" = "$(stat -c %s /tmp/pack-embedded.zip)" ] \
-              || { echo "::error::Content-Length не совпал с размером файла"; PACK_FAIL=1; }
-            curl -fsS http://127.0.0.1:8080/sha1 | grep -qx "$PACK_SHA" \
-              || { echo "::error::/sha1 вернул неверный хеш"; PACK_FAIL=1; }
-            curl -fsS http://127.0.0.1:8080/ | grep -q 'ServerMMO HUD' \
-              || { echo "::error::нет индексной страницы"; PACK_FAIL=1; }
-            echo "раздача отвечает, SHA-1 $PACK_SHA"
-          fi
-
           echo "plugins" >&3
           sleep 8
           echo "stats" >&3
@@ -288,7 +212,7 @@ jobs:
           grep -E 'ServerMMO|Done \(|Plugin:|enabled' console.log | head -60 || true
           echo "==============================================="
 
-          FAIL=${PACK_FAIL:-0}
+          FAIL=0
           for name in ServerMMOCore ServerMMOMobs ServerMMOPlayers ServerMMOHud; do
             if grep -q "$name включён" console.log; then
               echo "OK: $name"
@@ -377,14 +301,13 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           if [ -f console.log ]; then cp console.log smoke-test.log; fi
-          if [ -f packserver-test.log ]; then echo "лог мини-сервера ресурспака:"; head -40 packserver-test.log; fi
           if [ -f smoke-test.log ]; then
             echo "=== ключевые строки лога ==="
             grep -E 'ServerMMO|Done \(|Starting minecraft server' smoke-test.log | head -20 || true
             git stash push --include-untracked -- smoke-test.log 2>/dev/null || true
             git pull --rebase origin "${GITHUB_REF_NAME}" 2>/dev/null || true
             git stash pop 2>/dev/null || true
-            git add -f smoke-test.log packserver-test.log 2>/dev/null || git add -f smoke-test.log
+            git add -f smoke-test.log
             git commit -m "ci: smoke test log" 2>/dev/null || echo "нечего коммитить"
             for attempt in 1 2 3; do
               if git push origin "HEAD:${GITHUB_REF_NAME}"; then echo "лог опубликован"; break; fi

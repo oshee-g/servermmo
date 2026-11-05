@@ -4,7 +4,7 @@ rem  Writes the resource-pack settings into server.properties.
 rem
 rem  Usage:
 rem     setup-resourcepack.bat
-rem        asks for the URL, suggests http://<your-ip>:8080/servermmo-hud.zip
+rem        asks for the URL, suggests the direct link from the latest release
 rem     setup-resourcepack.bat http://example.com/servermmo-hud.zip
 rem        uses the given URL without questions
 rem     setup-resourcepack.bat http://example.com/servermmo-hud.zip --require true
@@ -20,7 +20,6 @@ if not exist "settings.bat" goto :no_settings
 call "%~dp0settings.bat"
 
 if "%JAVA_CMD%"==""  set "JAVA_CMD=java"
-if "%PACK_PORT%"=="" set "PACK_PORT=8080"
 
 if not exist "server.properties" goto :no_props
 if not exist "resourcepack\servermmo-hud.zip" goto :no_pack
@@ -30,7 +29,7 @@ rem Source-file mode needs the JDK (jdk.compiler), a plain JRE cannot do it.
 if errorlevel 1 goto :no_jdk
 
 cd /d "%~dp0resourcepack"
-"%JAVA_CMD%" SetupPack.java --port %PACK_PORT% %*
+"%JAVA_CMD%" SetupPack.java %*
 set "EXIT_CODE=%ERRORLEVEL%"
 echo.
 if not "%EXIT_CODE%"=="0" echo [WARN] server.properties was not updated ^(exit code %EXIT_CODE%^).

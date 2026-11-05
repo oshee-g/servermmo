@@ -25,24 +25,27 @@ import java.util.regex.Pattern;
  * server.properties, keeping the rest of the file byte for byte.
  *
  * Usage:
- *   java SetupPack.java [url] [--require true|false] [--port 8080]
+ *   java SetupPack.java [url] [--require true|false]
  *                       [--pack servermmo-hud.zip] [--props ../server.properties]
  *
  * Run it from the resourcepack folder (that is what setup-resourcepack.bat
- * does). Without a URL it suggests http://&lt;lan-ip&gt;:&lt;port&gt;/servermmo-hud.zip
- * and asks for confirmation.
+ * does). Without a URL it suggests the direct GitHub release link and asks
+ * for confirmation: the server does not host the pack itself, the URL just
+ * has to be reachable from the players' machines.
  *
  * Console output is ASCII only: Windows consoles use legacy code pages.
  */
 public final class SetupPack {
 
     private static final String DEFAULT_PACK = "servermmo-hud.zip";
+    /** Прямая ссылка на пак из последнего релиза: раздавать его самим не нужно. */
+    private static final String DEFAULT_PACK_URL =
+            "https://github.com/oshee-g/servermmo/releases/latest/download/servermmo-hud.zip";
     private static final String DEFAULT_PROMPT = "{\"text\":\"ServerMMO HUD resource pack\",\"color\":\"gold\"}";
 
     public static void main(String[] args) {
         Map<String, String> options = parseOptions(args);
         String url = options.getOrDefault("url", "").trim();
-        int port = parseInt(options.get("port"), 8080);
         boolean require = Boolean.parseBoolean(options.getOrDefault("require", "false"));
 
         Path pack = Paths.get(options.getOrDefault("pack", DEFAULT_PACK)).toAbsolutePath().normalize();
@@ -71,10 +74,8 @@ public final class SetupPack {
         }
 
         if (url.isEmpty()) {
-            String address = lanAddress();
-            String suggested = "http://" + address + ":" + port + "/" + pack.getFileName();
-            printHeader(pack, packBytes.length, sha1, port, suggested);
-            url = ask("URL", suggested);
+            printHeader(pack, packBytes.length, sha1);
+            url = ask("URL", DEFAULT_PACK_URL);
         }
 
         if (!url.startsWith("http://") && !url.startsWith("https://")) {
@@ -126,7 +127,7 @@ public final class SetupPack {
         }
     }
 
-    private static void printHeader(Path pack, long size, String sha1, int port, String suggested) {
+    private static void printHeader(Path pack, long size, String sha1) {
         System.out.println("==============================================================");
         System.out.println("  ServerMMO HUD - resource pack URL");
         System.out.println("==============================================================");
@@ -135,10 +136,9 @@ public final class SetupPack {
         System.out.println("  sha1: " + sha1);
         System.out.println();
         System.out.println("  The link must open on the players' computers:");
-        System.out.println("    LAN (same Wi-Fi):  " + suggested);
-        System.out.println("    Internet:          http://<public-ip>:" + port + "/" + pack.getFileName());
-        System.out.println("                       (port " + port + " must be forwarded on the router)");
-        System.out.println("    Web hosting:       https://your-site.example/" + pack.getFileName());
+        System.out.println("    this release:  " + DEFAULT_PACK_URL);
+        System.out.println("    web hosting:   https://your-site.example/" + pack.getFileName());
+        System.out.println("    local server:  http://192.168.1.50/" + pack.getFileName());
         System.out.println();
     }
 

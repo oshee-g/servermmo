@@ -31,12 +31,6 @@ set "XMX=4G"
 rem --- Core jar file name (paper.jar = the Paper server core) --------
 set "SERVER_JAR=paper.jar"
 
-rem --- Resource pack HTTP server (pack-server.bat) --------------------
-rem  Port on which the HUD resource pack is shared with players.
-rem  setup-resourcepack.bat writes resource-pack=http://<ip>:<port>/...
-rem  into server.properties. If the port is busy, pick another one here.
-set "PACK_PORT=8080"
-
 rem --- What to do after the server process stops ---------------------
 rem  ask = ask, and auto-answer "no" after 20 seconds   [default]
 rem  yes = restart automatically (survives crashes)

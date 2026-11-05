@@ -33,7 +33,7 @@ public final class HudSettings {
             settings.distance = 0.9D;
         }
         if (settings.scale <= 0.0F) {
-            plugin.getLogger().warning("hud.scale <= 0, ставлю 0.20");
+            plugin.getLogger().warning("hud.scale <= 0, ставлю " + DEFAULT_SCALE);
             settings.scale = DEFAULT_SCALE;
         }
         return settings;
@@ -75,7 +75,7 @@ public final class HudSettings {
     public static final double DEFAULT_DISTANCE = 1.0D;
     public static final double DEFAULT_OFFSET_X = -0.92D;
     public static final double DEFAULT_OFFSET_Y = 0.60D;
-    public static final float DEFAULT_SCALE = 0.20F;
+    public static final float DEFAULT_SCALE = 0.30F;
 
     /** Вернуть заводские значения (после неудачной подстройки). */
     public void reset() {

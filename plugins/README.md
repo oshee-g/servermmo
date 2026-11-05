@@ -202,7 +202,7 @@ setup-resourcepack.bat https://example.com/servermmo-hud.zip
 | `/stats` | всем | свои уровень, здоровье, урон и опыт |
 | `/stats <ник>` | всем | статы другого игрока |
 | `/stats reset [ник]` | оператор | сброс к 1 уровню |
-| `/hud scale 0.20` | оператор | размер рамки |
+| `/hud scale 0.30` | оператор | размер рамки |
 | `/hud distance 1.0` | оператор | расстояние до плоскости HUD |
 | `/hud offsetx -0.92` | оператор | сдвиг влево/вправо |
 | `/hud offsety 0.60` | оператор | сдвиг вверх/вниз |
@@ -252,7 +252,7 @@ hud:
   distance: 1.0        # расстояние до плоскости HUD
   offset-x: -0.92      # влево от центра
   offset-y: 0.60       # вверх
-  scale: 0.20          # размер
+  scale: 0.30          # размер
   update-interval-ticks: 1
   see-through: true    # рисовать поверх блоков
 

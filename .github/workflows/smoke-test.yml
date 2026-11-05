@@ -94,25 +94,26 @@ jobs:
           echo "hud" >&3
           sleep 2
 
+          echo "forceload add 0 0" >&3
           echo "gamerule doMobSpawning false" >&3
           echo "gamerule doMobLoot false" >&3
-          sleep 2
-          echo "summon minecraft:zombie 0 -59 0 {NoAI:0b,NoGravity:1b}" >&3
+          sleep 3
+          echo "execute in minecraft:overworld run summon minecraft:zombie 0 -59 0 {NoAI:1b,NoGravity:1b,PersistenceRequired:1b,Silent:0b}" >&3
           sleep 4
           echo "say STEP1_SUMMONED" >&3
-          echo "execute if entity @e[type=minecraft:zombie]" >&3
+          echo "execute in minecraft:overworld if entity @e[type=minecraft:zombie]" >&3
           sleep 3
-          echo "damage @e[type=minecraft:zombie,limit=1] 5" >&3
+          echo "execute in minecraft:overworld run damage @e[type=minecraft:zombie,limit=1] 5" >&3
           sleep 2
           echo "say STEP2_AFTER_5" >&3
-          echo "execute if entity @e[type=minecraft:zombie]" >&3
+          echo "execute in minecraft:overworld if entity @e[type=minecraft:zombie]" >&3
           sleep 3
-          echo "damage @e[type=minecraft:zombie,limit=1] 99999999" >&3
+          echo "execute in minecraft:overworld run damage @e[type=minecraft:zombie,limit=1] 99999999" >&3
           sleep 2
           echo "say STEP3_AFTER_LETHAL" >&3
-          echo "execute if entity @e[type=minecraft:zombie]" >&3
+          echo "execute in minecraft:overworld if entity @e[type=minecraft:zombie]" >&3
           sleep 3
-          echo "summon minecraft:chicken 2 -59 0 {NoGravity:1b}" >&3
+          echo "execute in minecraft:overworld run summon minecraft:chicken 2 -59 0 {NoGravity:1b,PersistenceRequired:1b}" >&3\n          sleep 2\n          echo "execute in minecraft:overworld if entity @e[type=minecraft:chicken]" >&3
           sleep 3
           echo "stop" >&3
 

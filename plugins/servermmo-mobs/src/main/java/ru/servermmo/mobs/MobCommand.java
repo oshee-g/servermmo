@@ -102,7 +102,6 @@ public final class MobCommand implements CommandExecutor, TabCompleter {
                     + "» — это не моб.", NamedTextColor.RED));
             return true;
         }
-        plugin.tags().apply(mob);
         sender.sendMessage(Component.text("Создан " + stats.mobName() + " " + level
                 + " уровня: " + stats.health() + " HP, " + stats.damage() + " урона",
                 NamedTextColor.GREEN));

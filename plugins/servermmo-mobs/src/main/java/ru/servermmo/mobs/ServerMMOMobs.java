@@ -29,15 +29,20 @@ public final class ServerMMOMobs extends JavaPlugin {
             return;
         }
 
-        MobSpawner spawner = new MobSpawner(this, core);
+        tags = new MobTags(this, core);
+        long tagInterval = Math.max(1L, getConfig().getLong("tag.update-interval-ticks", 10L));
+        tags.runTaskTimer(this, 20L, tagInterval);
+
+        MobSpawner spawner = new MobSpawner(this, core, tags);
         MobCommand mobCommand = new MobCommand(this, spawner);
         PluginCommand command = Objects.requireNonNull(getCommand("mob"), "команда mob не описана");
         command.setExecutor(mobCommand);
         command.setTabCompleter(mobCommand);
 
-        tags = new MobTags(this, core);
-        long tagInterval = Math.max(1L, getConfig().getLong("tag.update-interval-ticks", 10L));
-        tags.runTaskTimer(this, 20L, tagInterval);
+        int configured = spawner.spawnConfigured();
+        if (configured > 0) {
+            getLogger().info("Заспавнено кастомных мобов из config.yml: " + configured);
+        }
 
         aggression = new AggressionTask(this, core);
         long interval = Math.max(1L, getConfig().getLong("aggression.check-interval-ticks", 10L));

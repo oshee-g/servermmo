@@ -138,16 +138,18 @@ HEART = [
     "....1....",
 ]
 
+# Вертикальный меч 9x9: лезвие, гарда, рукоять.
+# 1 - светлая сталь, 2 - тёмная сталь, # - кромка, h - рукоять
 SWORD = [
-    "........11",
-    ".......111",
-    "......111.",
-    ".....111..",
-    "..1.111...",
-    "..1111....",
-    ".1111.....",
-    "11.1......",
-    "1.........",
+    ".......33",
+    "......331",
+    ".....331.",
+    "....331..",
+    "...331...",
+    "..g331...",
+    ".ggg3....",
+    "hgg......",
+    "h........",
 ]
 
 LETTERS_3x5 = {
@@ -186,31 +188,31 @@ def row_strip(kind: str) -> Canvas:
     c.rect(ROW_W - 2, 0, ROW_W - 2, ROW_H - 1, WOOD)
     c.rect(ROW_W - 1, 0, ROW_W - 1, ROW_H - 1, OUTLINE)
     # прожилки дерева на боковинах
-    for y in range(0, ROW_H, 3):
+    for y in (2, 7, 11):
         c.set(1, y, WOOD_DARK)
         c.set(ROW_W - 2, y + 1, WOOD_DARK)
 
     if kind == "top":
+        # ровная верхняя кромка: тёмный контур, светлое дерево, блик, тень
         c.rect(0, 0, ROW_W - 1, 0, OUTLINE)
         c.rect(0, 1, ROW_W - 1, 2, WOOD)
+        c.rect(4, 1, ROW_W - 5, 1, WOOD_LIGHT)
+        c.rect(4, 2, ROW_W - 5, 2, WOOD_DARK)
         c.rect(0, 3, ROW_W - 1, 3, WOOD_HI)
-        for x in range(4, ROW_W - 4, 7):
-            c.set(x, 1, WOOD_LIGHT)
-            c.set(x + 3, 2, WOOD_DARK)
-        for x0 in (0, ROW_W - 7):
-            c.rect(x0, 0, x0 + 6, 3, WOOD_LIGHT)
-            c.frame(x0, 0, x0 + 6, 3, OUTLINE)
-            c.set(x0 + 3, 1, WOOD_HI)
+        # угловые накладки
+        for x0 in (0, ROW_W - 8):
+            c.rect(x0, 0, x0 + 7, 3, WOOD_LIGHT)
+            c.frame(x0, 0, x0 + 7, 3, OUTLINE)
+            c.rect(x0 + 2, 1, x0 + 5, 2, WOOD_HI)
     elif kind == "bottom":
         c.rect(0, ROW_H - 4, ROW_W - 1, ROW_H - 4, WOOD_DARK)
-        c.rect(0, ROW_H - 3, ROW_W - 1, ROW_H - 2, WOOD)
+        c.rect(4, ROW_H - 3, ROW_W - 5, ROW_H - 3, WOOD)
+        c.rect(0, ROW_H - 2, ROW_W - 1, ROW_H - 2, WOOD)
         c.rect(0, ROW_H - 1, ROW_W - 1, ROW_H - 1, OUTLINE)
-        for x in range(6, ROW_W - 6, 9):
-            c.set(x, ROW_H - 3, WOOD_LIGHT)
-            c.set(x + 4, ROW_H - 2, WOOD_DARK)
-        for x0 in (0, ROW_W - 7):
-            c.rect(x0, ROW_H - 4, x0 + 6, ROW_H - 1, WOOD_LIGHT)
-            c.frame(x0, ROW_H - 4, x0 + 6, ROW_H - 1, OUTLINE)
+        for x0 in (0, ROW_W - 8):
+            c.rect(x0, ROW_H - 4, x0 + 7, ROW_H - 1, WOOD_LIGHT)
+            c.frame(x0, ROW_H - 4, x0 + 7, ROW_H - 1, OUTLINE)
+            c.rect(x0 + 2, ROW_H - 3, x0 + 5, ROW_H - 2, WOOD_HI)
     return c
 def draw_icon_row(kind: str) -> Canvas:
     c = row_strip(kind)
@@ -220,11 +222,15 @@ def draw_icon_row(kind: str) -> Canvas:
         icon.outline(RED_DARK)
         icon.copy_into(c, 8, 3)
     elif kind == "sword":
-        icon = Canvas(10, 9)
-        icon.blit_pattern(0, 0, SWORD, STEEL)
-        icon.outline(STEEL_DARK)
-        icon.rect(0, 7, 3, 8, HANDLE)
-        icon.copy_into(c, 7, 2)
+        icon = Canvas(9, 9)
+        palette = {"1": STEEL, "2": STEEL_DARK, "3": (250, 250, 255, 255),
+                   "h": HANDLE, "g": (206, 172, 76, 255)}
+        for y, line in enumerate(SWORD):
+            for x, ch in enumerate(line):
+                color = palette.get(ch)
+                if color is not None:
+                    icon.set(x, y, color)
+        icon.copy_into(c, 7, 3)
     elif kind == "lvl":
         x = 8
         for ch in "LVL":

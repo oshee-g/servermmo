@@ -1,6 +1,7 @@
 package ru.servermmo.core.web;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -124,7 +125,35 @@ public final class PackService {
             plugin.getLogger().warning("Быстрый способ: запустите setup-resourcepack.bat и перезапустите сервер.");
             return;
         }
+        checkPort(root, server, url);
         plugin.getLogger().info("server.properties настроен верно, пак раздаётся игрокам по " + url);
+    }
+
+    /** Ссылка на локальный адрес должна вести на тот порт, который слушает плагин. */
+    private void checkPort(Path root, ResourcePackServer server, String url) {
+        String publicUrl = settings.packPublicUrl();
+        if (publicUrl != null && !publicUrl.isBlank()) {
+            return; // внешний адрес может быть за прокси — сверять порты бессмысленно
+        }
+        try {
+            URI uri = URI.create(url);
+            int urlPort = uri.getPort();
+            if (urlPort == -1) {
+                urlPort = "https".equalsIgnoreCase(uri.getScheme()) ? 443 : 80;
+            }
+            String host = uri.getHost();
+            boolean local = host != null && (host.equalsIgnoreCase("localhost")
+                    || host.equals("127.0.0.1")
+                    || ResourcePackServer.localAddresses().contains(host));
+            if (local && urlPort != server.port()) {
+                plugin.getLogger().warning("resource-pack ссылается на порт " + urlPort
+                        + ", а раздача идёт на " + server.port() + ": игроки не скачают пак.");
+                plugin.getLogger().warning("Поменяйте resourcepack.port в config.yml на " + urlPort
+                        + " или запустите setup-resourcepack.bat заново.");
+            }
+        } catch (IllegalArgumentException ex) {
+            plugin.getLogger().warning("resource-pack не похож на URL: " + url);
+        }
     }
 
     /** Значение ключа из server.properties (или пустая строка). */

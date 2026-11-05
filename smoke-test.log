@@ -1,127 +1,127 @@
 Downloading mojang_26.3.jar
 Applying patches
 Starting org.bukkit.craftbukkit.Main
-2026-11-05T17:12:11.223493607Z ServerMain WARN Advanced terminal features are not available in this environment
-[17:12:11 INFO]: [bootstrap] Running Java 25 (OpenJDK 64-Bit Server VM 25.0.5+8-LTS; Eclipse Adoptium Temurin-25.0.5+8) on Linux 7.0.0-1019-azure (amd64)
-[17:12:11 INFO]: [bootstrap] Loading Paper 26.3-242-main@fd28d65 (2026-11-05T02:15:21Z) for Minecraft 26.3
-[17:12:11 INFO]: [PluginInitializerManager] Initializing plugins...
-[17:12:12 INFO]: [PluginInitializerManager] Initialized 4 plugins
-[17:12:12 INFO]: [PluginInitializerManager] Bukkit plugins (4):
+2026-11-05T17:35:41.017725366Z ServerMain WARN Advanced terminal features are not available in this environment
+[17:35:41 INFO]: [bootstrap] Running Java 25 (OpenJDK 64-Bit Server VM 25.0.5+8-LTS; Eclipse Adoptium Temurin-25.0.5+8) on Linux 7.0.0-1017-azure (amd64)
+[17:35:41 INFO]: [bootstrap] Loading Paper 26.3-242-main@fd28d65 (2026-11-05T02:15:21Z) for Minecraft 26.3
+[17:35:41 INFO]: [PluginInitializerManager] Initializing plugins...
+[17:35:41 INFO]: [PluginInitializerManager] Initialized 4 plugins
+[17:35:41 INFO]: [PluginInitializerManager] Bukkit plugins (4):
  - ServerMMOCore (1.0.0), ServerMMOHud (1.0.0), ServerMMOMobs (1.0.0), ServerMMOPlayers (1.0.0)
-[17:12:17 INFO]: [ca.spottedleaf.dataconverter.minecraft.datatypes.MCTypeRegistry] Initialising converters for DataConverter...
-[17:12:18 INFO]: [com.destroystokyo.paper.profile.PaperServicesDiscoveryService] Environment: Environment[discoveryUrl=https://discovery.minecraftservices.com/minecraft/client, name=PROD]
-[17:12:18 INFO]: [ca.spottedleaf.dataconverter.minecraft.datatypes.MCTypeRegistry] Finished initialising converters for DataConverter in 1,050.1ms
-[17:12:19 INFO]: Found new data pack paper, loading it automatically
-[17:12:20 INFO]: No existing world data, creating new world
-[17:12:20 ERROR]: No key layers in MapLike[{}]
-[17:12:22 INFO]: Loaded 1866 advancements
-[17:12:22 INFO]: Starting minecraft server version 26.3
-[17:12:22 INFO]: Loading properties
-[17:12:22 INFO]: This server is running Paper version 26.3-242-main@fd28d65 (2026-11-05T02:15:21Z) (Implementing API version 26.3.build.242-stable)
-[17:12:22 INFO]: [spark] This server bundles the spark profiler. For more information please visit https://docs.papermc.io/paper/profiling
-[17:12:22 INFO]: Server Ping Player Sample Count: 12
-[17:12:22 INFO]: Using 4 threads for Netty based IO
-[17:12:22 INFO]: [ca.spottedleaf.moonrise.common.util.FMA] FMA supported: true for Linux platform with feature flag: flags		: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl tsc_reliable nonstop_tsc cpuid extd_apicid aperfmperf tsc_known_freq pni pclmulqdq ssse3 fma cx16 pcid sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand hypervisor lahf_lm cmp_legacy svm cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw topoext vmmcall fsgsbase bmi1 avx2 smep bmi2 erms invpcid rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves user_shstk clzero xsaveerptr rdpru arat npt nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold v_vmsave_vmload umip vaes vpclmulqdq rdpid fsrm
-[17:12:22 INFO]: [MoonriseCommon] Paper is using 1 worker threads, 1 I/O threads
-[17:12:23 INFO]: Default game type: SURVIVAL
-[17:12:23 INFO]: Generating keypair
-[17:12:23 INFO]: Starting Minecraft server on *:25599
-[17:12:23 INFO]: Paper: Using libdeflate (Linux x86_64) compression from Velocity.
-[17:12:23 INFO]: Paper: Using OpenSSL 3.x.x (Linux x86_64) cipher from Velocity.
-[17:12:23 INFO]: [ServerMMOCore] Loading server plugin ServerMMOCore v1.0.0
-[17:12:23 INFO]: [ServerMMOMobs] Loading server plugin ServerMMOMobs v1.0.0
-[17:12:23 INFO]: [ServerMMOHud] Loading server plugin ServerMMOHud v1.0.0
-[17:12:23 INFO]: [ServerMMOPlayers] Loading server plugin ServerMMOPlayers v1.0.0
-[17:12:23 WARN]: **** SERVER IS RUNNING IN OFFLINE/INSECURE MODE!
-[17:12:23 WARN]: The server will make no attempt to authenticate usernames. Beware.
-[17:12:23 WARN]: While this makes the game possible to play without internet access, it also opens up the ability for hackers to connect with any username they choose.
-[17:12:23 WARN]: To change this, set "online-mode" to "true" in the server.properties file.
-[17:12:23 INFO]: Preparing level "world"
-[17:12:24 INFO]: Selecting spawn point for level 'minecraft:overworld'...
-[17:12:24 INFO]: Selecting spawn point for level 'minecraft:the_nether'...
-[17:12:26 INFO]: Selecting spawn point for level 'minecraft:the_end'...
-[17:12:26 INFO]: Loading 0 persistent chunks for level 'minecraft:overworld'...
-[17:12:26 INFO]: Preparing spawn area: 100%
-[17:12:26 INFO]: Prepared spawn area in 2505 ms
-[17:12:26 INFO]: Loading 0 persistent chunks for level 'minecraft:the_nether'...
-[17:12:26 INFO]: Preparing spawn area: 100%
-[17:12:26 INFO]: Prepared spawn area in 1729 ms
-[17:12:26 INFO]: Loading 0 persistent chunks for level 'minecraft:the_end'...
-[17:12:26 INFO]: Preparing spawn area: 100%
-[17:12:26 INFO]: Prepared spawn area in 327 ms
-[17:12:26 INFO]: Done preparing level "world" (2.860s)
-[17:12:26 INFO]: [ServerMMOCore] Enabling ServerMMOCore v1.0.0
-[17:12:26 INFO]: [ServerMMOCore] ServerMMOCore включён: уровней 90, статов игрока 90
-[17:12:26 INFO]: [ServerMMOMobs] Enabling ServerMMOMobs v1.0.0
-[17:12:26 INFO]: [ServerMMOMobs] ServerMMOMobs включён: кастомные мобы только по команде /mob spawn, радиус агро 20.0 блоков
-[17:12:26 INFO]: [ServerMMOHud] Enabling ServerMMOHud v1.0.0
-[17:12:26 INFO]: [ServerMMOHud] ServerMMOHud включён: панель строками босс-бара, offset-x=-384 px, здоровье и индикатор урона — строкой хотбара; без загруженного ресурспака HUD полностью скрыт; подстройка: /hud offsetx <px>, /hud reset
-[17:12:26 INFO]: [ServerMMOPlayers] Enabling ServerMMOPlayers v1.0.0
-[17:12:26 INFO]: [ServerMMOPlayers] ServerMMOPlayers включён
-[17:12:27 INFO]: [spark] Starting background profiler...
-[17:12:27 INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:overworld
-[17:12:28 INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:the_nether
-[17:12:28 INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:the_end
-[17:12:28 INFO]: Running delayed init tasks
-[17:12:28 INFO]: Done (18.101s)! For help, type "help"
-[17:12:28 INFO]: *************************************************************************************
-[17:12:28 INFO]: This is the first time you're starting this server.
-[17:12:28 INFO]: It's recommended you read our 'Getting Started' documentation for guidance.
-[17:12:28 INFO]: View this and more helpful information here: https://docs.papermc.io/paper/next-steps
-[17:12:28 INFO]: *************************************************************************************
-[17:12:29 INFO]: ℹ Server Plugins (4):
-[17:12:29 INFO]: Bukkit Plugins:
-[17:12:29 INFO]:  - ServerMMOCore, ServerMMOHud, ServerMMOMobs, ServerMMOPlayers
-[17:12:37 INFO]: Укажите игрока: /stats <ник>
-[17:12:39 INFO]: /hud offsetx <пиксели>  — сдвиг панели влево (минус) или вправо (плюс)
-[17:12:39 INFO]: сейчас offset-x=-384   (заводское -384)
-[17:12:39 INFO]: Если панель уехала за левый край — увеличьте минус, если стоит слишком близко к центру — уменьшите.
-[17:12:41 INFO]: System chat: Marked chunk [0, 0] in minecraft:overworld to be force loaded
-[17:12:41 INFO]: System chat: Incorrect argument for command
+[17:35:47 INFO]: [ca.spottedleaf.dataconverter.minecraft.datatypes.MCTypeRegistry] Initialising converters for DataConverter...
+[17:35:48 INFO]: [com.destroystokyo.paper.profile.PaperServicesDiscoveryService] Environment: Environment[discoveryUrl=https://discovery.minecraftservices.com/minecraft/client, name=PROD]
+[17:35:49 INFO]: [ca.spottedleaf.dataconverter.minecraft.datatypes.MCTypeRegistry] Finished initialising converters for DataConverter in 1,077.2ms
+[17:35:49 INFO]: Found new data pack paper, loading it automatically
+[17:35:50 INFO]: No existing world data, creating new world
+[17:35:50 ERROR]: No key layers in MapLike[{}]
+[17:35:52 INFO]: Loaded 1866 advancements
+[17:35:52 INFO]: Starting minecraft server version 26.3
+[17:35:52 INFO]: Loading properties
+[17:35:52 INFO]: This server is running Paper version 26.3-242-main@fd28d65 (2026-11-05T02:15:21Z) (Implementing API version 26.3.build.242-stable)
+[17:35:52 INFO]: [spark] This server bundles the spark profiler. For more information please visit https://docs.papermc.io/paper/profiling
+[17:35:53 INFO]: Server Ping Player Sample Count: 12
+[17:35:53 INFO]: Using 4 threads for Netty based IO
+[17:35:53 INFO]: [MoonriseCommon] Paper is using 1 worker threads, 1 I/O threads
+[17:35:53 INFO]: [ca.spottedleaf.moonrise.common.util.FMA] FMA supported: true for Linux platform with feature flag: flags		: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl tsc_reliable nonstop_tsc cpuid extd_apicid aperfmperf tsc_known_freq pni pclmulqdq ssse3 fma cx16 pcid sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand hypervisor lahf_lm cmp_legacy svm cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw topoext vmmcall fsgsbase bmi1 avx2 smep bmi2 erms invpcid rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves user_shstk clzero xsaveerptr rdpru arat npt nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold v_vmsave_vmload umip vaes vpclmulqdq rdpid fsrm
+[17:35:53 INFO]: Default game type: SURVIVAL
+[17:35:53 INFO]: Generating keypair
+[17:35:53 INFO]: Starting Minecraft server on *:25599
+[17:35:54 INFO]: Paper: Using libdeflate (Linux x86_64) compression from Velocity.
+[17:35:54 INFO]: Paper: Using OpenSSL 3.x.x (Linux x86_64) cipher from Velocity.
+[17:35:54 INFO]: [ServerMMOCore] Loading server plugin ServerMMOCore v1.0.0
+[17:35:54 INFO]: [ServerMMOPlayers] Loading server plugin ServerMMOPlayers v1.0.0
+[17:35:54 INFO]: [ServerMMOMobs] Loading server plugin ServerMMOMobs v1.0.0
+[17:35:54 INFO]: [ServerMMOHud] Loading server plugin ServerMMOHud v1.0.0
+[17:35:54 WARN]: **** SERVER IS RUNNING IN OFFLINE/INSECURE MODE!
+[17:35:54 WARN]: The server will make no attempt to authenticate usernames. Beware.
+[17:35:54 WARN]: While this makes the game possible to play without internet access, it also opens up the ability for hackers to connect with any username they choose.
+[17:35:54 WARN]: To change this, set "online-mode" to "true" in the server.properties file.
+[17:35:54 INFO]: Preparing level "world"
+[17:35:54 INFO]: Selecting spawn point for level 'minecraft:overworld'...
+[17:35:55 INFO]: Selecting spawn point for level 'minecraft:the_nether'...
+[17:35:56 INFO]: Selecting spawn point for level 'minecraft:the_end'...
+[17:35:57 INFO]: Loading 0 persistent chunks for level 'minecraft:overworld'...
+[17:35:57 INFO]: Preparing spawn area: 100%
+[17:35:57 INFO]: Prepared spawn area in 2734 ms
+[17:35:57 INFO]: Loading 0 persistent chunks for level 'minecraft:the_nether'...
+[17:35:57 INFO]: Preparing spawn area: 100%
+[17:35:57 INFO]: Prepared spawn area in 1888 ms
+[17:35:57 INFO]: Loading 0 persistent chunks for level 'minecraft:the_end'...
+[17:35:57 INFO]: Preparing spawn area: 100%
+[17:35:57 INFO]: Prepared spawn area in 376 ms
+[17:35:57 INFO]: Done preparing level "world" (3.073s)
+[17:35:57 INFO]: [ServerMMOCore] Enabling ServerMMOCore v1.0.0
+[17:35:57 INFO]: [ServerMMOCore] ServerMMOCore включён: уровней 90, статов игрока 90
+[17:35:57 INFO]: [ServerMMOPlayers] Enabling ServerMMOPlayers v1.0.0
+[17:35:57 INFO]: [ServerMMOPlayers] ServerMMOPlayers включён
+[17:35:57 INFO]: [ServerMMOMobs] Enabling ServerMMOMobs v1.0.0
+[17:35:57 INFO]: [ServerMMOMobs] ServerMMOMobs включён: кастомные мобы только по команде /mob spawn, радиус агро 20.0 блоков
+[17:35:57 INFO]: [ServerMMOHud] Enabling ServerMMOHud v1.0.0
+[17:35:57 INFO]: [ServerMMOHud] ServerMMOHud включён: панель строками босс-бара, offset-x=-384 px, здоровье и индикатор урона — строкой хотбара; без загруженного ресурспака HUD полностью скрыт; подстройка: /hud offsetx <px>, /hud reset
+[17:35:57 INFO]: [spark] Starting background profiler...
+[17:35:58 INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:overworld
+[17:35:58 INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:the_nether
+[17:35:58 INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:the_end
+[17:35:58 INFO]: Running delayed init tasks
+[17:35:58 INFO]: Done (18.578s)! For help, type "help"
+[17:35:58 INFO]: *************************************************************************************
+[17:35:58 INFO]: This is the first time you're starting this server.
+[17:35:58 INFO]: It's recommended you read our 'Getting Started' documentation for guidance.
+[17:35:58 INFO]: View this and more helpful information here: https://docs.papermc.io/paper/next-steps
+[17:35:58 INFO]: *************************************************************************************
+[17:35:59 INFO]: ℹ Server Plugins (4):
+[17:35:59 INFO]: Bukkit Plugins:
+[17:35:59 INFO]:  - ServerMMOCore, ServerMMOHud, ServerMMOMobs, ServerMMOPlayers
+[17:36:07 INFO]: Укажите игрока: /stats <ник>
+[17:36:09 INFO]: /hud offsetx <пиксели>  — сдвиг панели влево (минус) или вправо (плюс)
+[17:36:09 INFO]: сейчас offset-x=-384   (заводское -384)
+[17:36:09 INFO]: Если панель уехала за левый край — увеличьте минус, если стоит слишком близко к центру — уменьшите.
+[17:36:11 INFO]: System chat: Marked chunk [0, 0] in minecraft:overworld to be force loaded
+[17:36:11 INFO]: System chat: Incorrect argument for command
 gamerule doMobSpawning false<--[HERE]
-[17:12:44 INFO]: System chat: Summoned new Zombie
-[17:12:48 INFO]: System chat: Zombie has the following entity data: 18.0f
-[17:12:48 INFO]: [Not Secure] [Server] STEP1_VANILLA
-[17:12:51 INFO]: Создан Курица 2 уровня: 11 HP, 3 урона
-[17:12:55 INFO]: System chat: Test passed. Count: 1
-[17:12:55 INFO]: [Not Secure] [Server] STEP2_CUSTOM
-[17:12:57 INFO]: System chat: LVL2 Курица 11 has the following entity data: {extra: [{color: "white", font: "servermmo:hud", text: "LVL"}, {color: "white", font: "servermmo:hud", text: ""}, {color: "white", font: "servermmo:hud", text: "2"}, {color: "white", text: " Курица "}, {color: "white", font: "servermmo:hud", text: "11"}], text: ""}
-[17:13:00 INFO]: System chat: Target is invulnerable to the given damage type
-[17:13:02 INFO]: System chat: Test passed. Count: 1
-[17:13:02 INFO]: [Not Secure] [Server] STEP3_AFTER_5
-[17:13:05 INFO]: System chat: Applied 1.0E8 damage to LVL2 Курица 6
-[17:13:07 INFO]: System chat: Test failed
-[17:13:07 INFO]: [Not Secure] [Server] STEP4_AFTER_LETHAL
-[17:13:10 INFO]: System chat: Stopping the server
-[17:13:10 INFO]: Stopping server
-[17:13:10 INFO]: [ServerMMOPlayers] Disabling ServerMMOPlayers v1.0.0
-[17:13:10 INFO]: [ServerMMOHud] Disabling ServerMMOHud v1.0.0
-[17:13:10 INFO]: [ServerMMOMobs] Disabling ServerMMOMobs v1.0.0
-[17:13:10 INFO]: [ServerMMOCore] Disabling ServerMMOCore v1.0.0
-[17:13:10 INFO]: Saving players
-[17:13:10 INFO]: Saving worlds
-[17:13:10 INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:overworld
-[17:13:10 INFO]: [ChunkHolderManager] Waiting 60s for chunk system to halt for world 'minecraft:overworld'
-[17:13:10 INFO]: [ChunkHolderManager] Halted chunk system for world 'minecraft:overworld'
-[17:13:10 INFO]: [ChunkHolderManager] Saving all chunkholders for world 'minecraft:overworld'
-[17:13:10 INFO]: [ChunkHolderManager] Saved 729 block chunks, 25 entity chunks, 0 poi chunks in world 'minecraft:overworld' in 0.28s
-[17:13:10 INFO]: [ChunkHolderManager] Waiting 60s for chunk I/O to halt for world 'minecraft:overworld'
-[17:13:10 INFO]: [ChunkHolderManager] Halted I/O scheduler for world 'minecraft:overworld'
-[17:13:10 INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:the_nether
-[17:13:10 INFO]: [ChunkHolderManager] Waiting 60s for chunk system to halt for world 'minecraft:the_nether'
-[17:13:10 INFO]: [ChunkHolderManager] Halted chunk system for world 'minecraft:the_nether'
-[17:13:10 INFO]: [ChunkHolderManager] Saving all chunkholders for world 'minecraft:the_nether'
-[17:13:10 INFO]: [ChunkHolderManager] Saved 0 block chunks, 0 entity chunks, 0 poi chunks in world 'minecraft:the_nether' in 0.00s
-[17:13:10 INFO]: [ChunkHolderManager] Waiting 60s for chunk I/O to halt for world 'minecraft:the_nether'
-[17:13:10 INFO]: [ChunkHolderManager] Halted I/O scheduler for world 'minecraft:the_nether'
-[17:13:10 INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:the_end
-[17:13:10 INFO]: [ChunkHolderManager] Waiting 60s for chunk system to halt for world 'minecraft:the_end'
-[17:13:10 INFO]: [ChunkHolderManager] Halted chunk system for world 'minecraft:the_end'
-[17:13:10 INFO]: [ChunkHolderManager] Saving all chunkholders for world 'minecraft:the_end'
-[17:13:10 INFO]: [ChunkHolderManager] Saved 0 block chunks, 0 entity chunks, 0 poi chunks in world 'minecraft:the_end' in 0.00s
-[17:13:10 INFO]: [ChunkHolderManager] Waiting 60s for chunk I/O to halt for world 'minecraft:the_end'
-[17:13:10 INFO]: [ChunkHolderManager] Halted I/O scheduler for world 'minecraft:the_end'
-[17:13:10 INFO]: Waiting for all RegionFile I/O tasks to complete...
-[17:13:10 INFO]: All RegionFile I/O tasks to complete
-[17:13:10 INFO]: [MoonriseCommon] Awaiting termination of worker pool for up to 60s...
-[17:13:10 INFO]: [MoonriseCommon] Awaiting termination of I/O pool for up to 60s...
+[17:36:14 INFO]: System chat: Summoned new Zombie
+[17:36:18 INFO]: System chat: Zombie has the following entity data: 19.0f
+[17:36:18 INFO]: [Not Secure] [Server] STEP1_VANILLA
+[17:36:21 INFO]: Создан Курица 2 уровня: 11 HP, 3 урона
+[17:36:25 INFO]: System chat: Test passed. Count: 1
+[17:36:25 INFO]: [Not Secure] [Server] STEP2_CUSTOM
+[17:36:27 INFO]: System chat: LVL2 Курица 11 has the following entity data: {extra: [{color: "white", font: "servermmo:hud", text: "LVL"}, {color: "white", font: "servermmo:hud", text: ""}, {color: "white", font: "servermmo:hud", text: "2"}, {color: "white", text: " Курица "}, {color: "white", font: "servermmo:hud", text: "11"}], text: ""}
+[17:36:30 INFO]: System chat: Target is invulnerable to the given damage type
+[17:36:32 INFO]: System chat: Test passed. Count: 1
+[17:36:32 INFO]: [Not Secure] [Server] STEP3_AFTER_5
+[17:36:35 INFO]: System chat: Applied 1.0E8 damage to LVL2 Курица 6
+[17:36:37 INFO]: System chat: Test failed
+[17:36:37 INFO]: [Not Secure] [Server] STEP4_AFTER_LETHAL
+[17:36:40 INFO]: System chat: Stopping the server
+[17:36:40 INFO]: Stopping server
+[17:36:40 INFO]: [ServerMMOHud] Disabling ServerMMOHud v1.0.0
+[17:36:40 INFO]: [ServerMMOMobs] Disabling ServerMMOMobs v1.0.0
+[17:36:40 INFO]: [ServerMMOPlayers] Disabling ServerMMOPlayers v1.0.0
+[17:36:40 INFO]: [ServerMMOCore] Disabling ServerMMOCore v1.0.0
+[17:36:40 INFO]: Saving players
+[17:36:40 INFO]: Saving worlds
+[17:36:40 INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:overworld
+[17:36:40 INFO]: [ChunkHolderManager] Waiting 60s for chunk system to halt for world 'minecraft:overworld'
+[17:36:40 INFO]: [ChunkHolderManager] Halted chunk system for world 'minecraft:overworld'
+[17:36:40 INFO]: [ChunkHolderManager] Saving all chunkholders for world 'minecraft:overworld'
+[17:36:40 INFO]: [ChunkHolderManager] Saved 729 block chunks, 25 entity chunks, 0 poi chunks in world 'minecraft:overworld' in 0.28s
+[17:36:40 INFO]: [ChunkHolderManager] Waiting 60s for chunk I/O to halt for world 'minecraft:overworld'
+[17:36:40 INFO]: [ChunkHolderManager] Halted I/O scheduler for world 'minecraft:overworld'
+[17:36:40 INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:the_nether
+[17:36:40 INFO]: [ChunkHolderManager] Waiting 60s for chunk system to halt for world 'minecraft:the_nether'
+[17:36:40 INFO]: [ChunkHolderManager] Halted chunk system for world 'minecraft:the_nether'
+[17:36:40 INFO]: [ChunkHolderManager] Saving all chunkholders for world 'minecraft:the_nether'
+[17:36:40 INFO]: [ChunkHolderManager] Saved 0 block chunks, 0 entity chunks, 0 poi chunks in world 'minecraft:the_nether' in 0.00s
+[17:36:40 INFO]: [ChunkHolderManager] Waiting 60s for chunk I/O to halt for world 'minecraft:the_nether'
+[17:36:40 INFO]: [ChunkHolderManager] Halted I/O scheduler for world 'minecraft:the_nether'
+[17:36:40 INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:the_end
+[17:36:40 INFO]: [ChunkHolderManager] Waiting 60s for chunk system to halt for world 'minecraft:the_end'
+[17:36:40 INFO]: [ChunkHolderManager] Halted chunk system for world 'minecraft:the_end'
+[17:36:40 INFO]: [ChunkHolderManager] Saving all chunkholders for world 'minecraft:the_end'
+[17:36:40 INFO]: [ChunkHolderManager] Saved 0 block chunks, 0 entity chunks, 0 poi chunks in world 'minecraft:the_end' in 0.00s
+[17:36:40 INFO]: [ChunkHolderManager] Waiting 60s for chunk I/O to halt for world 'minecraft:the_end'
+[17:36:40 INFO]: [ChunkHolderManager] Halted I/O scheduler for world 'minecraft:the_end'
+[17:36:40 INFO]: Waiting for all RegionFile I/O tasks to complete...
+[17:36:40 INFO]: All RegionFile I/O tasks to complete
+[17:36:40 INFO]: [MoonriseCommon] Awaiting termination of worker pool for up to 60s...
+[17:36:40 INFO]: [MoonriseCommon] Awaiting termination of I/O pool for up to 60s...

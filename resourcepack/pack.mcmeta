@@ -1,10 +1,10 @@
 {
   "pack": {
-    "pack_format": 75,
-    "supported_formats": {
-      "min_inclusive": 1,
-      "max_inclusive": 999
-    },
-    "description": "ServerMMO HUD: рамка, иконки и пиксельный шрифт"
+    "description": "ServerMMO HUD: рамка, иконки и пиксельный шрифт",
+    "min_format": [
+      97,
+      1
+    ],
+    "max_format": 97
   }
 }

@@ -287,11 +287,17 @@ def build_font_json() -> dict:
 
 
 def build_pack_meta() -> dict:
+    """pack.mcmeta для Minecraft 26.3: формат ресурспака 97.1.
+
+    Начиная с 1.21.9 игра читает min_format/max_format вместо pack_format.
+    """
     return {
         "pack": {
-            "pack_format": 75,
-            "supported_formats": {"min_inclusive": 1, "max_inclusive": 999},
-            "description": "ServerMMO HUD: рамка, иконки и пиксельный шрифт",
+            "description": "ServerMMO HUD: \u0440\u0430\u043c\u043a\u0430, "
+                           "\u0438\u043a\u043e\u043d\u043a\u0438 \u0438 "
+                           "\u043f\u0438\u043a\u0441\u0435\u043b\u044c\u043d\u044b\u0439 \u0448\u0440\u0438\u0444\u0442",
+            "min_format": [97, 1],
+            "max_format": 97,
         }
     }
 

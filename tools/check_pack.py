@@ -6,9 +6,10 @@
 
 * шрифт HUD на месте и все bitmap-провайдеры — квадратные ячейки 8x8;
 * текстуры глифов действительно 8x8 (или кратны 8 по ширине);
-* чернила глифов лежат в строках 1..7 ячейки — как заглавные буквы и цифры
-  ванильного ``ascii.png``; иначе в подписи моба значки «прыгают» относительно
-  имени, которое рисуется ванильным шрифтом;
+* чернила глифов лежат в строках 0..6 ячейки — ровно как заглавные буквы и
+  цифры ванильного ``ascii.png`` (height 8, ascent 7, строка 7 — базовая
+  линия); иначе в подписи моба значки «прыгают» относительно имени, которое
+  рисуется ванильным шрифтом;
 * ванильные сердца (включая ``_blinking``, ``hardcore_`` и ``vehicle_``)
   перекрыты прозрачными спрайтами;
 * старые спрайты ``icons.png`` тоже пустые.
@@ -116,7 +117,11 @@ def png_rgba(data: bytes) -> tuple[int, int, bytes]:
 
 def check_ink_rows(width: int, height: int, pixels: bytes, cells: int,
                    file: str, problems: list[str]) -> None:
-    """Чернила каждого глифа обязаны лежать в строках 1..7 ячейки 8x8."""
+    """Чернила каждого глифа обязаны лежать в строках 0..6 ячейки 8x8.
+
+    Нижняя строка ячейки — базовая линия ванильного шрифта; если чернила
+    попадут в неё, глиф окажется на пиксель ниже ванильного текста.
+    """
     stride = width * 4
     cell_width = width // cells
     for index in range(cells):
@@ -127,12 +132,10 @@ def check_ink_rows(width: int, height: int, pixels: bytes, cells: int,
                     rows_with_ink.add(y)
         if not rows_with_ink:
             continue  # пустой глиф-пробел
-        if 0 in rows_with_ink:
-            problems.append(f"{file}: у глифа #{index} чернила в строке 0 —"
-                            f" он выше ванильных заглавных и сдвинет строку")
-        for y in rows_with_ink:
-            if y > GLYPH_HEIGHT - 1:
-                problems.append(f"{file}: глиф #{index} вылезает ниже ячейки")
+        if GLYPH_HEIGHT - 1 in rows_with_ink:
+            problems.append(f"{file}: у глифа #{index} чернила в строке"
+                            f" {GLYPH_HEIGHT - 1} (базовая линия) — он окажется"
+                            f" ниже ванильного текста")
 
 
 def main() -> int:

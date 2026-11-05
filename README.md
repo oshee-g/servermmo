@@ -263,7 +263,7 @@ WorldEdit/WorldGuard, Simple Voice Chat. Подробнее — в `plugins/READ
 
    ```properties
    resource-pack=http://192.168.1.50:8080/servermmo-hud.zip
-   resource-pack-sha1=1ae261416f0ac24d925725bdafdca176dca57dfe
+   resource-pack-sha1=567182b00b316ba001855cebc5d298ed6139efe4
    resource-pack-prompt={"text":"ServerMMO HUD resource pack","color":"gold"}
    require-resource-pack=false
    ```
@@ -336,7 +336,7 @@ setup-resourcepack.bat https://example.com/servermmo-hud.zip
 
 Открой ссылку из `server.properties` в браузере **на другом устройстве**
 (например, телефон в том же Wi-Fi). Должен скачаться `servermmo-hud.zip`
-на 26488 байт. Быстрая проверка раздачи: `http://<адрес>:8080/health` отвечает
+на 26491 байт. Быстрая проверка раздачи: `http://<адрес>:8080/health` отвечает
 `ok`, `http://<адрес>:8080/sha1` показывает хеш файла. Если не открывается —
 дело в адресе/порту/брандмауэре, а не в Minecraft.
 

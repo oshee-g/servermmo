@@ -105,8 +105,10 @@ def main() -> int:
                 problems.append("старые сердца не скрыты: icons.png")
 
         hidden = sum(1 for n in names if "/heart/" in n and n.endswith(".png"))
-        if hidden < 80:
-            problems.append(f"скрыто только {hidden} спрайтов сердец (ожидалось ~90)")
+        # в 1.21.9/26.3 ванильных спрайтов сердец 47; меньше — значит список
+        # имён устарел и часть сердец останется на экране
+        if hidden < 47:
+            problems.append(f"скрыто только {hidden} спрайтов сердец (нужно 47)")
 
     if problems:
         print("[ERROR] Ресурспак не готов:")

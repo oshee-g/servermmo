@@ -310,10 +310,18 @@ jobs:
             FAIL=1
           fi
 
-          if grep -q 'STEP1_VANILLA' console.log && grep -Eq 'Health: 20\.0f' console.log; then
-            echo "OK: ванильный зомби остался с ванильным здоровьем"
+          if awk '/STEP1_VANILLA/{f=1} f && /Zombie has the following entity data/{print; exit}' console.log \
+              | grep -Eq '[0-9]+\.[0-9]+f'; then
+            ZOMBIE_HP=$(awk '/STEP1_VANILLA/{f=1} f && /Zombie has the following entity data/{print; exit}' console.log \
+              | grep -oE '[0-9]+\.[0-9]+f' | head -1)
+            if [ "${ZOMBIE_HP%.*}" -ge 2 ]; then
+              echo "OK: ванильный зомби не тронут кастомной системой (Health $ZOMBIE_HP)"
+            else
+              echo "::error::Ванильному зомби урезали здоровье ($ZOMBIE_HP)"
+              FAIL=1
+            fi
           else
-            echo "[warn] не удалось подтвердить ванильное здоровье зомби"
+            echo "[warn] не удалось прочитать здоровье ванильного зомби"
           fi
 
           if grep -q 'STEP4_AFTER_LETHAL' console.log && \

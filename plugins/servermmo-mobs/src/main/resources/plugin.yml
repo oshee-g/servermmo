@@ -10,7 +10,7 @@ commands:
   mob:
     description: Создать кастомного моба с уровнем
     usage: /mob spawn <уровень> <тип> [x y z]
-    aliases: [моб, mobs]
+    aliases: [mobs]
     permission: servermmo.mob.spawn
 permissions:
   servermmo.mob.spawn:

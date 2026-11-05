@@ -21,9 +21,9 @@ public final class HudSettings {
         var config = plugin.getConfig();
         HudSettings settings = new HudSettings();
         settings.distance = config.getDouble("hud.distance", 1.0D);
-        settings.offsetX = config.getDouble("hud.offset-x", -0.55D);
-        settings.offsetY = config.getDouble("hud.offset-y", 0.28D);
-        settings.scale = (float) config.getDouble("hud.scale", 0.04D);
+        settings.offsetX = config.getDouble("hud.offset-x", -0.52D);
+        settings.offsetY = config.getDouble("hud.offset-y", 0.30D);
+        settings.scale = (float) config.getDouble("hud.scale", 0.06D);
         settings.updateIntervalTicks = Math.max(1L, config.getLong("hud.update-interval-ticks", 2L));
         settings.seeThrough = config.getBoolean("hud.see-through", true);
         settings.resourcePackEnabled = config.getBoolean("resource-pack.enabled", false);

@@ -40,13 +40,35 @@ HEART_CHAR = "\ue010"
 # Ванильные спрайты HUD, которые надо спрятать. Список снят с настоящих
 # ресурсов 1.21.9: имена с суффиксом _blinking появились в 1.21.2, а
 # vehicle_* рисуются, когда игрок едет на мобе.
-HEART_STATES = ["full", "half", "container",
-                "poisoned_full", "poisoned_half", "poisoned_container",
-                "withered_full", "withered_half", "withered_container",
-                "frozen_full", "frozen_half", "frozen_container",
-                "absorbing_full", "absorbing_half", "absorbing_container"]
-HEART_TYPES = ["", "hardcore_", "vehicle_"]
-HEART_VARIANTS = ["", "_blinking"]
+# Точные имена спрайтов сердец из ванильных ассетов 1.21.9 (формат пака
+# тот же, что у 26.3). Обрати внимание: у полных сердец префикс
+# hardcore_, а у контейнеров - суффикс _hardcore, отсюда список целиком,
+# а не генерация по шаблону.
+HEART_SPRITES = [
+    "container", "container_blinking",
+    "container_hardcore", "container_hardcore_blinking",
+    "full", "full_blinking",
+    "half", "half_blinking",
+    "hardcore_full", "hardcore_full_blinking",
+    "hardcore_half", "hardcore_half_blinking",
+    "absorbing_full", "absorbing_full_blinking",
+    "absorbing_half", "absorbing_half_blinking",
+    "absorbing_hardcore_full", "absorbing_hardcore_full_blinking",
+    "absorbing_hardcore_half", "absorbing_hardcore_half_blinking",
+    "frozen_full", "frozen_full_blinking",
+    "frozen_half", "frozen_half_blinking",
+    "frozen_hardcore_full", "frozen_hardcore_full_blinking",
+    "frozen_hardcore_half", "frozen_hardcore_half_blinking",
+    "poisoned_full", "poisoned_full_blinking",
+    "poisoned_half", "poisoned_half_blinking",
+    "poisoned_hardcore_full", "poisoned_hardcore_full_blinking",
+    "poisoned_hardcore_half", "poisoned_hardcore_half_blinking",
+    "withered_full", "withered_full_blinking",
+    "withered_half", "withered_half_blinking",
+    "withered_hardcore_full", "withered_hardcore_full_blinking",
+    "withered_hardcore_half", "withered_hardcore_half_blinking",
+    "vehicle_container", "vehicle_full", "vehicle_half",
+]
 
 EXTRA_HUD_SPRITES = {
     "armor_empty.png": (9, 9),
@@ -61,15 +83,6 @@ EXTRA_HUD_SPRITES = {
     "experience_bar_background.png": (182, 5),
     "experience_bar_progress.png": (182, 5),
 }
-
-
-def heart_sprites() -> list[str]:
-    names = []
-    for kind in HEART_TYPES:
-        for state in HEART_STATES:
-            for variant in HEART_VARIANTS:
-                names.append(f"{kind}{state}{variant}")
-    return sorted(set(names))
 
 
 def write_blank_png(path: Path, width: int, height: int) -> None:
@@ -179,7 +192,7 @@ def main() -> int:
     gui = PACK / "assets" / "minecraft" / "textures" / "gui"
     heart_dir = gui / "sprites" / "hud" / "heart"
     heart_dir.mkdir(parents=True, exist_ok=True)
-    hearts = heart_sprites()
+    hearts = HEART_SPRITES
     for name in hearts:
         write_blank_png(heart_dir / f"{name}.png", 9, 9)
     for name, (width, height) in EXTRA_HUD_SPRITES.items():

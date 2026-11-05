@@ -33,8 +33,8 @@ final class PlayerHud {
     private static final String GLYPH_LEVEL = "\uE012";
     /** Кристалл (опыт). */
     private static final String GLYPH_XP = "\uE013";
-    /** Пустая строка-разделитель заданной высоты. */
-    private static final String GLYPH_SPACER = "\uE102";
+    /** Пустой глиф-разделитель шириной 2 пикселя. */
+    private static final String GLYPH_SPACER = "\uE100";
 
     /** Шрифт ресурспака с иконками и цифрами. */
     private static final Style HUD_STYLE = Style.style()

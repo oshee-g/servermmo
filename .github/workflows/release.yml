@@ -1,0 +1,52 @@
+name: Release server pack
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+
+      - name: Build plugins
+        run: mvn -B -ntp -f plugins/pom.xml clean package
+
+      - name: Assemble server pack
+        run: |
+          set -euo pipefail
+          cp plugins/servermmo-core/target/servermmo-core-*.jar server/plugins/
+          cp plugins/servermmo-mobs/target/servermmo-mobs-*.jar server/plugins/
+          cp plugins/servermmo-players/target/servermmo-players-*.jar server/plugins/
+          cp plugins/servermmo-hud/target/servermmo-hud-*.jar server/plugins/
+          python3 tools/gen_resourcepack.py
+          python3 tools/check_plugins.py
+          python3 tools/build_pack.py "$RUNNER_TEMP/servermmo-paper-26.3-server-pack.zip"
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF_NAME}"
+          if [ "${GITHUB_REF_TYPE}" != "tag" ]; then TAG="v1.0.0"; fi
+          ZIP="$RUNNER_TEMP/servermmo-paper-26.3-server-pack.zip"
+          gh release delete "$TAG" --yes --cleanup-tag 2>/dev/null || true
+          gh release create "$TAG" "$ZIP#servermmo-paper-26.3-server-pack.zip" \
+            --target "${GITHUB_SHA}" \
+            --title "ServerMMO Pack ${TAG} (Paper 26.3)" \
+            --notes-file .github/release-notes.md
+          gh release view "$TAG" --json assets --jq '.assets[].name'

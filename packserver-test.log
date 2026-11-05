@@ -2,16 +2,16 @@
   ServerMMO resource pack server
 ==================================================================
   File:  /home/runner/work/servermmo/servermmo/server/resourcepack/servermmo-hud.zip
-  Size:  39647 bytes
-  SHA-1: 63bf1ef28664f3d0c892c852ce147f2cf7cef308
+  Size:  26914 bytes
+  SHA-1: 16c89c727c291490fc3f5e4066fdaa1470984290
   Port:  8099
 
   URL for players on the same network (LAN):
-     http://10.1.0.135:8099/servermmo-hud.zip
+     http://10.1.0.126:8099/servermmo-hud.zip
 
   Put these lines into server.properties:
-     resource-pack=http://10.1.0.135:8099/servermmo-hud.zip
-     resource-pack-sha1=63bf1ef28664f3d0c892c852ce147f2cf7cef308
+     resource-pack=http://10.1.0.126:8099/servermmo-hud.zip
+     resource-pack-sha1=16c89c727c291490fc3f5e4066fdaa1470984290
      require-resource-pack=false
 
   Players outside your home network need port 8099
@@ -21,9 +21,9 @@
   Keep this window open while people join. Ctrl+C to stop.
 ==================================================================
 
-[14:37:02] 127.0.0.1 GET /servermmo-hud.zip -> 200 (39647 bytes)
-[14:37:02] 127.0.0.1 GET /health -> 200 (3 bytes)
-[14:37:02] 127.0.0.1 GET /missing.txt -> 404 (41 bytes)
-[14:37:02] 127.0.0.1 POST / -> 405 (32 bytes)
-[14:37:02] 127.0.0.1 HEAD /servermmo-hud.zip -> 200 (39647 bytes)
-[14:37:02] 127.0.0.1 GET / -> 200 (694 bytes)
+[14:40:02] 127.0.0.1 GET /health -> 200 (3 bytes)
+[14:40:02] 127.0.0.1 GET /servermmo-hud.zip -> 200 (26914 bytes)
+[14:40:02] 127.0.0.1 GET /missing.txt -> 404 (41 bytes)
+[14:40:02] 127.0.0.1 POST / -> 405 (32 bytes)
+[14:40:02] 127.0.0.1 HEAD /servermmo-hud.zip -> 200 (26914 bytes)
+[14:40:02] 127.0.0.1 GET / -> 200 (694 bytes)

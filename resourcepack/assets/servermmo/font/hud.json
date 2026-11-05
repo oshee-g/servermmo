@@ -1,0 +1,88 @@
+{
+  "providers": [
+    {
+      "type": "bitmap",
+      "file": "servermmo:font/hud_row_top.png",
+      "ascent": 11,
+      "height": 14,
+      "chars": [
+        ""
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "servermmo:font/hud_row_heart.png",
+      "ascent": 11,
+      "height": 14,
+      "chars": [
+        ""
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "servermmo:font/hud_row_sword.png",
+      "ascent": 11,
+      "height": 14,
+      "chars": [
+        ""
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "servermmo:font/hud_row_lvl.png",
+      "ascent": 11,
+      "height": 14,
+      "chars": [
+        ""
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "servermmo:font/hud_row_orb.png",
+      "ascent": 11,
+      "height": 14,
+      "chars": [
+        ""
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "servermmo:font/hud_row_bottom.png",
+      "ascent": 11,
+      "height": 14,
+      "chars": [
+        ""
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "servermmo:font/hud_digits.png",
+      "ascent": 11,
+      "height": 14,
+      "chars": [
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "/",
+        " "
+      ]
+    },
+    {
+      "type": "space",
+      "advances": {
+        "": -136,
+        "": -10,
+        "": -1,
+        "": -4,
+        "": 4
+      }
+    }
+  ]
+}

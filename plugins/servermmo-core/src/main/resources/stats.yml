@@ -1,0 +1,641 @@
+# ==========================================================================
+# ServerMMOCore - таблица статов мобов (90 уровней)
+# ==========================================================================
+# Все числа - целые long (64 бита), ограничение ~9.2e18 на значение.
+# health  - здоровье моба этого уровня
+# damage  - базовый урон моба этого уровня
+# xp      - сколько опыта получает игрок за убийство моба
+# xp-to-next - сколько опыта нужно игроку, чтобы перейти с этого уровня на следующий
+# type    - EntityType Paper (https://jd.papermc.io/paper/26.3/org/bukkit/entity/EntityType.html)
+# Файл сгенерирован tools/gen_stats.py из tools/mobs_stats.txt - правки вручную допустимы.
+levels:
+  1:
+    mob: "Лосось"
+    type: SALMON
+    health: 3
+    damage: 1
+    xp: 4
+    xp-to-next: 12
+  2:
+    mob: "Курица"
+    type: CHICKEN
+    health: 11
+    damage: 3
+    xp: 18
+    xp-to-next: 72
+  3:
+    mob: "Головастик"
+    type: TADPOLE
+    health: 29
+    damage: 6
+    xp: 53
+    xp-to-next: 212
+  4:
+    mob: "Летучая мышь"
+    type: BAT
+    health: 53
+    damage: 10
+    xp: 116
+    xp-to-next: 464
+  5:
+    mob: "Треска"
+    type: COD
+    health: 68
+    damage: 15
+    xp: 199
+    xp-to-next: 796
+  6:
+    mob: "Тропическая рыба"
+    type: TROPICAL_FISH
+    health: 86
+    damage: 21
+    xp: 306
+    xp-to-next: 1224
+  7:
+    mob: "Попугай"
+    type: PARROT
+    health: 128
+    damage: 28
+    xp: 462
+    xp-to-next: 1848
+  8:
+    mob: "Овца"
+    type: SHEEP
+    health: 192
+    damage: 36
+    xp: 690
+    xp-to-next: 2760
+  9:
+    mob: "Корова"
+    type: COW
+    health: 282
+    damage: 45
+    xp: 1017
+    xp-to-next: 4068
+  10:
+    mob: "Чешуйница"
+    type: SILVERFISH
+    health: 362
+    damage: 55
+    xp: 1434
+    xp-to-next: 7170
+  11:
+    mob: "Муушрум"
+    type: MOOSHROOM
+    health: 472
+    damage: 66
+    xp: 1972
+    xp-to-next: 9860
+  12:
+    mob: "Светящийся спрут"
+    type: GLOW_SQUID
+    health: 592
+    damage: 78
+    xp: 2642
+    xp-to-next: 13210
+  13:
+    mob: "Свинья"
+    type: PIG
+    health: 722
+    damage: 91
+    xp: 3455
+    xp-to-next: 17275
+  14:
+    mob: "Спрут"
+    type: SQUID
+    health: 862
+    damage: 105
+    xp: 4422
+    xp-to-next: 22110
+  15:
+    mob: "Броненосец"
+    type: ARMADILLO
+    health: 1042
+    damage: 120
+    xp: 5584
+    xp-to-next: 27920
+  16:
+    mob: "Снежный голем"
+    type: SNOW_GOLEM
+    health: 1106
+    damage: 168
+    xp: 6858
+    xp-to-next: 34290
+  17:
+    mob: "Медный голем"
+    type: COPPER_GOLEM
+    health: 1310
+    damage: 185
+    xp: 8353
+    xp-to-next: 41765
+  18:
+    mob: "Коза"
+    type: GOAT
+    health: 1490
+    damage: 239
+    xp: 10082
+    xp-to-next: 50410
+  19:
+    mob: "Иглобрюх"
+    type: PUFFERFISH
+    health: 1547
+    damage: 315
+    xp: 11944
+    xp-to-next: 71664
+  20:
+    mob: "Кошка"
+    type: CAT
+    health: 1747
+    damage: 375
+    xp: 14066
+    xp-to-next: 84396
+  21:
+    mob: "Нюхач"
+    type: SNIFFER
+    health: 2041
+    damage: 396
+    xp: 16503
+    xp-to-next: 99018
+  22:
+    mob: "Эндермит"
+    type: ENDERMITE
+    health: 2217
+    damage: 462
+    xp: 19182
+    xp-to-next: 115092
+  23:
+    mob: "Лиса"
+    type: FOX
+    health: 2447
+    damage: 531
+    xp: 22160
+    xp-to-next: 132960
+  24:
+    mob: "Скрипун"
+    type: CREAKING
+    health: 2471
+    damage: 627
+    xp: 25258
+    xp-to-next: 151548
+  25:
+    mob: "Лошадь-скелет"
+    type: SKELETON_HORSE
+    health: 2846
+    damage: 652
+    xp: 28756
+    xp-to-next: 172536
+  26:
+    mob: "Оцелот"
+    type: OCELOT
+    health: 3106
+    damage: 730
+    xp: 32592
+    xp-to-next: 195552
+  27:
+    mob: "Аксолотль"
+    type: AXOLOTL
+    health: 3484
+    damage: 784
+    xp: 36860
+    xp-to-next: 221160
+  28:
+    mob: "Дельфин"
+    type: DOLPHIN
+    health: 3764
+    damage: 896
+    xp: 41520
+    xp-to-next: 249120
+  29:
+    mob: "Паук"
+    type: SPIDER
+    health: 4228
+    damage: 983
+    xp: 46731
+    xp-to-next: 280386
+  30:
+    mob: "Страйдер"
+    type: STRIDER
+    health: 4828
+    damage: 1043
+    xp: 52602
+    xp-to-next: 315612
+  31:
+    mob: "Странствующий торговец"
+    type: WANDERING_TRADER
+    health: 5448
+    damage: 1105
+    xp: 59155
+    xp-to-next: 354930
+  32:
+    mob: "Наутилус"
+    type: NAUTILUS
+    health: 5928
+    damage: 1233
+    xp: 66316
+    xp-to-next: 397896
+  33:
+    mob: "Счастливый гаст"
+    type: HAPPY_GHAST
+    health: 6588
+    damage: 1299
+    xp: 74203
+    xp-to-next: 445218
+  34:
+    mob: "Наутилус-зомби"
+    type: ZOMBIE_NAUTILUS
+    health: 7098
+    damage: 1435
+    xp: 82736
+    xp-to-next: 496416
+  35:
+    mob: "Тихоня"
+    type: ALLAY
+    health: 7798
+    damage: 1505
+    xp: 92039
+    xp-to-next: 552234
+  36:
+    mob: "Фантом"
+    type: PHANTOM
+    health: 8518
+    damage: 1613
+    xp: 102170
+    xp-to-next: 613020
+  37:
+    mob: "Слизень"
+    type: SLIME
+    health: 9110
+    damage: 1835
+    xp: 113115
+    xp-to-next: 678690
+  38:
+    mob: "Лошадь-зомби"
+    type: ZOMBIE_HORSE
+    health: 10060
+    damage: 1911
+    xp: 125086
+    xp-to-next: 875602
+  39:
+    mob: "Лягушка"
+    type: FROG
+    health: 10450
+    damage: 2301
+    xp: 137837
+    xp-to-next: 964859
+  40:
+    mob: "Болотник"
+    type: BOGGED
+    health: 11090
+    damage: 2621
+    xp: 151548
+    xp-to-next: 1060836
+  41:
+    mob: "Кролик"
+    type: RABBIT
+    health: 11213
+    damage: 3113
+    xp: 165874
+    xp-to-next: 1161118
+  42:
+    mob: "Пустынник"
+    type: PARCHED
+    health: 11885
+    damage: 3449
+    xp: 181208
+    xp-to-next: 1268456
+  43:
+    mob: "Зимогор"
+    type: STRAY
+    health: 12745
+    damage: 3793
+    xp: 197746
+    xp-to-next: 1384222
+  44:
+    mob: "Лошадь"
+    type: HORSE
+    health: 14065
+    damage: 3925
+    xp: 215736
+    xp-to-next: 1510152
+  45:
+    mob: "Магмовый куб"
+    type: MAGMA_CUBE
+    health: 14785
+    damage: 4330
+    xp: 234851
+    xp-to-next: 1643957
+  46:
+    mob: "Мул"
+    type: MULE
+    health: 16165
+    damage: 4468
+    xp: 255484
+    xp-to-next: 1788388
+  47:
+    mob: "Скелет"
+    type: SKELETON
+    health: 17105
+    damage: 4844
+    xp: 277433
+    xp-to-next: 2219464
+  48:
+    mob: "Осёл"
+    type: DONKEY
+    health: 18545
+    damage: 4988
+    xp: 300966
+    xp-to-next: 2407728
+  49:
+    mob: "Пещерный паук"
+    type: CAVE_SPIDER
+    health: 19133
+    damage: 5576
+    xp: 325675
+    xp-to-next: 2605400
+  50:
+    mob: "Ифрит"
+    type: BLAZE
+    health: 20133
+    damage: 6026
+    xp: 351834
+    xp-to-next: 2814672
+  51:
+    mob: "Черепаха"
+    type: TURTLE
+    health: 21663
+    damage: 6179
+    xp: 379676
+    xp-to-next: 3037408
+  52:
+    mob: "Панда"
+    type: PANDA
+    health: 22703
+    damage: 6647
+    xp: 409026
+    xp-to-next: 3272208
+  53:
+    mob: "Вихрь"
+    type: BREEZE
+    health: 24293
+    damage: 6700
+    xp: 440019
+    xp-to-next: 3520152
+  54:
+    mob: "Лама"
+    type: LLAMA
+    health: 25913
+    damage: 6754
+    xp: 472686
+    xp-to-next: 3781488
+  55:
+    mob: "Разбойник"
+    type: PILLAGER
+    health: 27233
+    damage: 7139
+    xp: 507058
+    xp-to-next: 4563522
+  56:
+    mob: "Пиглин"
+    type: PIGLIN
+    health: 28129
+    damage: 7811
+    xp: 542998
+    xp-to-next: 4886982
+  57:
+    mob: "Лама торговца"
+    type: TRADER_LLAMA
+    health: 29839
+    damage: 7868
+    xp: 580705
+    xp-to-next: 5226345
+  58:
+    mob: "Пчела"
+    type: BEE
+    health: 30419
+    damage: 8680
+    xp: 619804
+    xp-to-next: 5578236
+  59:
+    mob: "Верблюд"
+    type: CAMEL
+    health: 32307
+    damage: 8857
+    xp: 660968
+    xp-to-next: 5948712
+  60:
+    mob: "Досаждатель"
+    type: VEX
+    health: 33147
+    damage: 9637
+    xp: 703752
+    xp-to-next: 6333768
+  61:
+    mob: "Верблюд-кадавр"
+    type: CAMEL_HUSK
+    health: 35099
+    damage: 9820
+    xp: 748671
+    xp-to-next: 7486710
+  62:
+    mob: "Шалкер"
+    type: SHULKER
+    health: 36959
+    damage: 10192
+    xp: 795822
+    xp-to-next: 7958220
+  63:
+    mob: "Иллюзор"
+    type: ILLUSIONER
+    health: 38975
+    damage: 10507
+    xp: 845304
+    xp-to-next: 8453040
+  64:
+    mob: "Деревенский житель"
+    type: VILLAGER
+    health: 40255
+    damage: 11275
+    xp: 896834
+    xp-to-next: 8968340
+  65:
+    mob: "Белый медведь"
+    type: POLAR_BEAR
+    health: 42205
+    damage: 11860
+    xp: 950899
+    xp-to-next: 9508990
+  66:
+    mob: "Скелет-иссушитель"
+    type: WITHER_SKELETON
+    health: 43525
+    damage: 12652
+    xp: 1007076
+    xp-to-next: 10070760
+  67:
+    mob: "Волк"
+    type: WOLF
+    health: 46205
+    damage: 13054
+    xp: 1066335
+    xp-to-next: 10663350
+  68:
+    mob: "Страж"
+    type: GUARDIAN
+    health: 48245
+    damage: 13666
+    xp: 1128246
+    xp-to-next: 12410706
+  69:
+    mob: "Вызыватель"
+    type: EVOKER
+    health: 49901
+    damage: 14563
+    xp: 1192710
+    xp-to-next: 13119810
+  70:
+    mob: "Эндермен"
+    type: ENDERMAN
+    health: 52701
+    damage: 15263
+    xp: 1260674
+    xp-to-next: 13867414
+  71:
+    mob: "Гаст"
+    type: GHAST
+    health: 53411
+    damage: 17038
+    xp: 1331123
+    xp-to-next: 14642353
+  72:
+    mob: "Зоглин"
+    type: ZOGLIN
+    health: 56291
+    damage: 17902
+    xp: 1405316
+    xp-to-next: 15458476
+  73:
+    mob: "Поборник"
+    type: VINDICATOR
+    health: 58043
+    damage: 19289
+    xp: 1482648
+    xp-to-next: 16309128
+  74:
+    mob: "Хоглин"
+    type: HOGLIN
+    health: 61003
+    damage: 20177
+    xp: 1563828
+    xp-to-next: 18765936
+  75:
+    mob: "Зомби"
+    type: ZOMBIE
+    health: 68503
+    damage: 20477
+    xp: 1652808
+    xp-to-next: 19833696
+  76:
+    mob: "Древний страж"
+    type: ELDER_GUARDIAN
+    health: 74583
+    damage: 21389
+    xp: 1748780
+    xp-to-next: 20985360
+  77:
+    mob: "Зомби-житель"
+    type: ZOMBIE_VILLAGER
+    health: 82283
+    damage: 21697
+    xp: 1852760
+    xp-to-next: 22233120
+  78:
+    mob: "Брутальный пиглин"
+    type: PIGLIN_BRUTE
+    health: 86183
+    damage: 23179
+    xp: 1962122
+    xp-to-next: 23545464
+  79:
+    mob: "Ведьма"
+    type: WITCH
+    health: 88237
+    damage: 26023
+    xp: 2076382
+    xp-to-next: 24916584
+  80:
+    mob: "Кадавр"
+    type: HUSK
+    health: 96237
+    damage: 26343
+    xp: 2198962
+    xp-to-next: 28586506
+  81:
+    mob: "Серный куб"
+    type: SULFUR_CUBE
+    health: 96885
+    damage: 31527
+    xp: 2327374
+    xp-to-next: 30255862
+  82:
+    mob: "Утопленник"
+    type: DROWNED
+    health: 105085
+    damage: 32511
+    xp: 2464970
+    xp-to-next: 32044610
+  83:
+    mob: "Зомбифицированный пиглин"
+    type: ZOMBIFIED_PIGLIN
+    health: 113385
+    damage: 33839
+    xp: 2612194
+    xp-to-next: 36570716
+  84:
+    mob: "Разоритель"
+    type: RAVAGER
+    health: 121785
+    damage: 35351
+    xp: 2769330
+    xp-to-next: 41539950
+  85:
+    mob: "Железный голем"
+    type: IRON_GOLEM
+    health: 130285
+    damage: 38071
+    xp: 2937686
+    xp-to-next: 44065290
+  86:
+    mob: "Дракон Края"
+    type: ENDER_DRAGON
+    health: 147485
+    damage: 39361
+    xp: 3124532
+    xp-to-next: 49992512
+  87:
+    mob: "Гигант"
+    type: GIANT
+    health: 156185
+    damage: 45886
+    xp: 3326603
+    xp-to-next: 53225648
+  88:
+    mob: "Крипер"
+    type: CREEPER
+    health: 157945
+    damage: 57062
+    xp: 3541610
+    xp-to-next: 60207370
+  89:
+    mob: "Иссушитель"
+    type: WITHER
+    health: 184645
+    damage: 66229
+    xp: 3792484
+    xp-to-next: 79642164
+  90:
+    mob: "Хранитель"
+    type: WARDEN
+    health: 229645
+    damage: 70279
+    xp: 4092408
+    xp-to-next: 94125384

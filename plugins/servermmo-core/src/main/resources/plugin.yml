@@ -1,0 +1,8 @@
+name: ServerMMOCore
+version: '1.0.0'
+main: ru.servermmo.core.ServerMMOCore
+api-version: '26.3'
+description: Ядро ServerMMO - таблицы статов на long, кастомное здоровье и урон
+author: ServerMMO
+website: https://github.com/oshee-g/servermmo
+load: POSTWORLD

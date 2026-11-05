@@ -1,0 +1,43 @@
+name: Build ServerMMO plugins
+
+on:
+  push:
+    branches: ['**']
+    paths:
+      - 'plugins/**'
+      - '.github/workflows/build-plugins.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+
+      - name: Build with Maven
+        run: mvn -B -ntp -f plugins/pom.xml clean package
+
+      - name: Collect jars
+        run: |
+          mkdir -p dist
+          cp plugins/servermmo-core/target/servermmo-core-*.jar dist/
+          cp plugins/servermmo-mobs/target/servermmo-mobs-*.jar dist/
+          cp plugins/servermmo-players/target/servermmo-players-*.jar dist/
+          cp plugins/servermmo-hud/target/servermmo-hud-*.jar dist/
+          cp server/resourcepack/servermmo-hud.zip dist/
+          ls -la dist
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: servermmo-plugins
+          path: dist/*
+          if-no-files-found: error

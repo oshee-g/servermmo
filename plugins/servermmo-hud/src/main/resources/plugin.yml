@@ -1,0 +1,17 @@
+name: ServerMMOHud
+version: '1.0.0'
+main: ru.servermmo.hud.ServerMMOHud
+api-version: '26.3'
+description: HUD в левом верхнем углу - здоровье, урон, уровень, опыт
+author: ServerMMO
+website: https://github.com/oshee-g/servermmo
+depend: [ServerMMOCore]
+commands:
+  hud:
+    description: Подстройка HUD
+    usage: /hud <scale|distance|offsetx|offsety> <значение>
+    permission: servermmo.hud
+permissions:
+  servermmo.hud:
+    description: Настройка HUD
+    default: op

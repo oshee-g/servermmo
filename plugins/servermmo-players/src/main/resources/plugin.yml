@@ -1,0 +1,21 @@
+name: ServerMMOPlayers
+version: '1.0.0'
+main: ru.servermmo.players.ServerMMOPlayers
+api-version: '26.3'
+description: Уровни и опыт игроков по таблице ServerMMO
+author: ServerMMO
+website: https://github.com/oshee-g/servermmo
+depend: [ServerMMOCore]
+commands:
+  stats:
+    description: Показать кастомные статы игрока
+    usage: /stats [игрок|reset [игрок]]
+    aliases: [статы, stat]
+    permission: servermmo.stats
+permissions:
+  servermmo.stats:
+    description: Просмотр статов
+    default: true
+  servermmo.stats.reset:
+    description: Сброс статов к первому уровню
+    default: op

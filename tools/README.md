@@ -44,13 +44,20 @@ bash   tools/test-linux.sh          # поведение .sh (Linux/macOS)
 `server/pack-server.bat` запускает `server/resourcepack/PackServer.java` —
 маленький HTTP-сервер на `java.base` (никаких зависимостей), который отдаёт
 `servermmo-hud.zip` игрокам. `server/setup-resourcepack.bat` вызывает
-`server/scripts/resourcepack.ps1`: тот считает SHA-1 и правит
-`server.properties` (кодировка ISO-8859-1, чтобы не попортить остальной файл).
+`server/resourcepack/SetupPack.java`: тот считает SHA-1 и правит
+`server.properties` (читается как ISO-8859-1, поэтому остальной файл
+сохраняется байт в байт; делается бэкап `server.properties.bak`).
+Оба файла запускаются в режиме `java File.java` — компилятор не нужен,
+но нужен именно JDK (модуль `jdk.compiler`), а не голый JRE.
 
-Проверяется автоматически в `.github/workflows/smoke-test.yml`: сервер
-запускается на JDK 25, скачивается zip, сверяется SHA-1, проверяются
-`Content-Length`, 404 на неизвестный путь и 405 на POST. Лог складывается
-в `packserver-test.log`.
+Проверяется автоматически в `.github/workflows/smoke-test.yml` на JDK 25:
+
+* `PackServer.java` — скачивается zip, сверяется SHA-1, проверяются
+  `Content-Length`, 404 на неизвестный путь, 405 на POST, индексная страница;
+  лог складывается в `packserver-test.log`;
+* `SetupPack.java` — правится копия `server.properties`: проверяются
+  `resource-pack`, `resource-pack-sha1`, `require-resource-pack`, промпт,
+  отсутствие дублей, сохранение не-ASCII байтов и создание `.bak`.
 
 ### `check_plugins.py` — проверка артефактов
 

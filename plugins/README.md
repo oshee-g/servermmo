@@ -119,7 +119,9 @@ setup-resourcepack.bat https://example.com/servermmo-hud.zip
    (`%APPDATA%\.minecraft\resourcepacks`).
 2. В игре: **Настройки → Наборы ресурсов** → включить «ServerMMO HUD».
 
-Посчитать SHA-1 вручную: `Get-FileHash servermmo-hud.zip -Algorithm SHA1` (PowerShell).
+Посчитать SHA-1 вручную (если правишь `server.properties` без скрипта):
+`Get-FileHash servermmo-hud.zip -Algorithm SHA1` в PowerShell или
+`sha1sum servermmo-hud.zip` в Linux/macOS.
 
 `require-resource-pack=true` заставляет принять пак (отказ = кик).
 По умолчанию `false`: игрок без пака зайдёт, но увидит пустые квадраты.

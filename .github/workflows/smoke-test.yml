@@ -90,8 +90,19 @@ jobs:
           echo "plugins" >&3
           sleep 8
           echo "stats" >&3
-          sleep 3
+          sleep 2
           echo "hud" >&3
+          sleep 2
+
+          echo "summon minecraft:zombie 0 70 0 {NoAI:0b}" >&3
+          sleep 4
+          echo "damage @e[type=minecraft:zombie,limit=1] 5" >&3
+          sleep 3
+          echo "damage @e[type=minecraft:zombie,limit=1] 99999999" >&3
+          sleep 3
+          echo "execute if entity @e[type=minecraft:zombie]" >&3
+          sleep 3
+          echo "summon minecraft:chicken 2 70 0" >&3
           sleep 3
           echo "stop" >&3
 
@@ -114,6 +125,10 @@ jobs:
               FAIL=1
             fi
           done
+
+          if grep -q 'ServerMMOMobs\] .*ударил' console.log || grep -q '\[debug\]' console.log; then
+            echo "debug-сообщения боя есть в логе"
+          fi
 
           if grep -Eq 'Could not load|Failed to enable|java\.lang\.[A-Za-z]*Exception' console.log; then
             echo "::error::В логе есть ошибки:"

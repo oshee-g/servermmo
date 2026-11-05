@@ -5,7 +5,7 @@
   * plugin.yml внутри каждого jar (name, main, api-version 26.3);
   * наличие main-класса в jar;
   * таблицу stats.yml (90 уровней, long-диапазон, известные EntityType);
-  * player-stats.yml (1 уровень = 20/5/200, 90 уровней);
+  * player-stats.yml (1 уровень = 10/1/200, 90 уровней);
   * ресурспак: pack.mcmeta, шрифт, текстуры, zip.
 
 Запуск: python3 tools/check_plugins.py
@@ -109,8 +109,8 @@ def check_stats_yaml() -> None:
         fail("player-stats.yml: не разобрать 1 уровень")
     else:
         hp, dmg, need = (int(v) for v in first.groups())
-        if (hp, dmg, need) != (20, 5, 200):
-            fail(f"player-stats.yml: 1 уровень = {hp}/{dmg}/{need}, ожидалось 20/5/200")
+        if (hp, dmg, need) != (10, 1, 200):
+            fail(f"player-stats.yml: 1 уровень = {hp}/{dmg}/{need}, ожидалось 10/1/200")
     print(f"  ok stats.yml: {len(levels)} уровней, player-stats.yml: {len(plevels)} уровней")
 
 
@@ -144,13 +144,16 @@ def check_resourcepack() -> None:
             texture = RESOURCEPACK / "assets" / namespace / "textures" / path
             if not texture.is_file():
                 fail(f"шрифт ссылается на отсутствующую текстуру {file_name}")
-            chars.update(provider.get("chars", []))
-    needed = {"\ue001", "\ue002", "\ue003", "\ue004", "\ue005", "\ue006", *"0123456789"}
+            # в JSON строка символов может быть одной строкой ("0123456789")
+            for row in provider.get("chars", []):
+                chars.update(row)
+    # иконки HUD: сердце, меч, щит, кристалл; плюс цифры и "/" для опыта
+    needed = {"\ue010", "\ue011", "\ue012", "\ue013", *"0123456789/"}
     missing = sorted(needed - chars)
     if missing:
         fail(f"в шрифте нет глифов: {[hex(ord(c)) for c in missing]}")
     if "\ue100" not in advances:
-        fail("в шрифте нет отрицательного сдвига \ue100")
+        fail("в шрифте нет служебного сдвига \ue100 (разделитель иконка-число)")
 
     if not RESOURCEPACK_ZIP.is_file():
         fail("нет server/resourcepack/servermmo-hud.zip")

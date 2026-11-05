@@ -41,7 +41,7 @@
 
 СВОИ ПЛАГИНЫ (уже в plugins\)
   servermmo-core     здоровье и урон на long, таблица 90 уровней
-  servermmo-mobs     мобы видят игрока за 20 блоков, поворачивают голову
+  servermmo-mobs     кастомные мобы по команде /mob spawn (обычные - ванильные)
   servermmo-players  опыт за мобов и уровни
   servermmo-hud      рамка в левом верхнем углу
 

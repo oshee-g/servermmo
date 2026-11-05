@@ -6,6 +6,10 @@ on:
     branches: ['**']
     paths:
       - 'plugins/**'
+      - 'server/resourcepack/**'
+      - 'server/scripts/resourcepack.ps1'
+      - 'server/pack-server.bat'
+      - 'server/setup-resourcepack.bat'
       - '.github/workflows/smoke-test.yml'
 
 permissions:
@@ -27,6 +31,53 @@ jobs:
 
       - name: Build plugins
         run: mvn -B -ntp -f plugins/pom.xml clean package
+
+      - name: Test the resource pack HTTP server
+        run: |
+          set -euo pipefail
+          cd server/resourcepack
+          java PackServer.java 8099 servermmo-hud.zip > /tmp/packserver.log 2>&1 &
+          echo $! > /tmp/packserver.pid
+
+          started=0
+          for i in $(seq 1 40); do
+            if curl -fsS http://127.0.0.1:8099/health >/dev/null 2>&1; then started=1; break; fi
+            sleep 1
+          done
+          echo "---------- лог сервера ----------"
+          cat /tmp/packserver.log
+          echo "---------------------------------"
+          if [ "$started" -ne 1 ]; then
+            echo "::error::PackServer не запустился"
+            exit 1
+          fi
+
+          expected=$(sha1sum servermmo-hud.zip | cut -d' ' -f1)
+          curl -fsS -o /tmp/downloaded.zip http://127.0.0.1:8099/servermmo-hud.zip
+          actual=$(sha1sum /tmp/downloaded.zip | cut -d' ' -f1)
+          echo "sha1 файла:      $expected"
+          echo "sha1 скачанного: $actual"
+          [ "$expected" = "$actual" ] || { echo "::error::скачанный ресурспак отличается"; exit 1; }
+          grep -q "$expected" /tmp/packserver.log || { echo "::error::в баннере неверный SHA-1"; exit 1; }
+
+          code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8099/missing.txt)
+          echo "неизвестный путь -> $code"
+          [ "$code" = "404" ] || { echo "::error::ожидался 404"; exit 1; }
+
+          code=$(curl -s -o /dev/null -w '%{http_code}' -X POST http://127.0.0.1:8099/)
+          echo "POST -> $code"
+          [ "$code" = "405" ] || { echo "::error::ожидался 405"; exit 1; }
+
+          length=$(curl -sI http://127.0.0.1:8099/servermmo-hud.zip | tr -d '\r' | awk -F': ' 'tolower($1)=="content-length"{print $2}')
+          real=$(stat -c%s servermmo-hud.zip)
+          echo "HEAD Content-Length=$length, размер файла=$real"
+          [ "$length" = "$real" ] || { echo "::error::неверный Content-Length"; exit 1; }
+
+          body=$(curl -fsS http://127.0.0.1:8099/)
+          echo "$body" | grep -q "ServerMMO HUD" || { echo "::error::нет индексной страницы"; exit 1; }
+
+          kill "$(cat /tmp/packserver.pid)" 2>/dev/null || true
+          echo "PACK SERVER OK"
 
       - name: Download Paper 26.3
         run: |

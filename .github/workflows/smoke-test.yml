@@ -127,9 +127,21 @@ jobs:
       - name: Publish server log
         if: always()
         run: |
+          set -uo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           if [ -f console.log ]; then cp console.log smoke-test.log; fi
-          git add -f smoke-test.log 2>/dev/null || true
-          git commit -m "ci: smoke test log" 2>/dev/null || echo "нечего коммитить"
-          git push origin HEAD 2>/dev/null || echo "push не удался"
+          if [ -f smoke-test.log ]; then
+            echo "=== ключевые строки лога ==="
+            grep -E 'ServerMMO|Done \(|Starting minecraft server' smoke-test.log | head -20 || true
+            git stash push --include-untracked -- smoke-test.log 2>/dev/null || true
+            git pull --rebase origin "${GITHUB_REF_NAME}" 2>/dev/null || true
+            git stash pop 2>/dev/null || true
+            git add -f smoke-test.log
+            git commit -m "ci: smoke test log" 2>/dev/null || echo "нечего коммитить"
+            for attempt in 1 2 3; do
+              if git push origin "HEAD:${GITHUB_REF_NAME}"; then echo "лог опубликован"; break; fi
+              git pull --rebase origin "${GITHUB_REF_NAME}" 2>/dev/null || true
+              sleep 5
+            done
+          fi

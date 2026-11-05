@@ -7,10 +7,10 @@
   Port:  8099
 
   URL for players on the same network (LAN):
-     http://10.1.1.101:8099/servermmo-hud.zip
+     http://10.1.1.112:8099/servermmo-hud.zip
 
   Put these lines into server.properties:
-     resource-pack=http://10.1.1.101:8099/servermmo-hud.zip
+     resource-pack=http://10.1.1.112:8099/servermmo-hud.zip
      resource-pack-sha1=5f742a5a945c2b1c33a6097e656dbdab1f7ffde2
      require-resource-pack=false
 
@@ -21,9 +21,9 @@
   Keep this window open while people join. Ctrl+C to stop.
 ==================================================================
 
-[13:10:25] 127.0.0.1 GET /health -> 200 (3 bytes)
-[13:10:25] 127.0.0.1 GET /servermmo-hud.zip -> 200 (13418 bytes)
-[13:10:25] 127.0.0.1 GET /missing.txt -> 404 (41 bytes)
-[13:10:26] 127.0.0.1 POST / -> 405 (32 bytes)
-[13:10:26] 127.0.0.1 HEAD /servermmo-hud.zip -> 200 (13418 bytes)
-[13:10:26] 127.0.0.1 GET / -> 200 (694 bytes)
+[13:19:58] 127.0.0.1 GET /health -> 200 (3 bytes)
+[13:19:58] 127.0.0.1 GET /servermmo-hud.zip -> 200 (13418 bytes)
+[13:19:58] 127.0.0.1 GET /missing.txt -> 404 (41 bytes)
+[13:19:58] 127.0.0.1 POST / -> 405 (32 bytes)
+[13:19:58] 127.0.0.1 HEAD /servermmo-hud.zip -> 200 (13418 bytes)
+[13:19:58] 127.0.0.1 GET / -> 200 (694 bytes)

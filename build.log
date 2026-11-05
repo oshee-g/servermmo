@@ -1,0 +1,173 @@
+[INFO] Scanning for projects...
+[INFO] ------------------------------------------------------------------------
+[INFO] Reactor Build Order:
+[INFO] 
+[INFO] ServerMMO                                                          [pom]
+[INFO] ServerMMOCore                                                      [jar]
+[INFO] ServerMMOMobs                                                      [jar]
+[INFO] ServerMMOPlayers                                                   [jar]
+[INFO] ServerMMOHud                                                       [jar]
+[INFO] 
+[INFO] -------------------< ru.servermmo:servermmo-parent >--------------------
+[INFO] Building ServerMMO 1.0.0                                           [1/5]
+[INFO]   from pom.xml
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO] 
+[INFO] --- clean:3.2.0:clean (default-clean) @ servermmo-parent ---
+[INFO] 
+[INFO] --------------------< ru.servermmo:servermmo-core >---------------------
+[INFO] Building ServerMMOCore 1.0.0                                       [2/5]
+[INFO]   from servermmo-core/pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- clean:3.2.0:clean (default-clean) @ servermmo-core ---
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ servermmo-core ---
+[INFO] Copying 4 resources from src/main/resources to target/classes
+[INFO] 
+[INFO] --- compiler:3.13.0:compile (default-compile) @ servermmo-core ---
+[INFO] Recompiling the module because of changed source code.
+[INFO] Compiling 12 source files with javac [debug parameters release 25] to target/classes
+[INFO] /home/runner/work/servermmo/servermmo/plugins/servermmo-core/src/main/java/ru/servermmo/core/combat/CombatService.java: /home/runner/work/servermmo/servermmo/plugins/servermmo-core/src/main/java/ru/servermmo/core/combat/CombatService.java uses or overrides a deprecated API.
+[INFO] /home/runner/work/servermmo/servermmo/plugins/servermmo-core/src/main/java/ru/servermmo/core/combat/CombatService.java: Recompile with -Xlint:deprecation for details.
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ servermmo-core ---
+[INFO] skip non existing resourceDirectory /home/runner/work/servermmo/servermmo/plugins/servermmo-core/src/test/resources
+[INFO] 
+[INFO] --- compiler:3.13.0:testCompile (default-testCompile) @ servermmo-core ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- surefire:3.5.4:test (default-test) @ servermmo-core ---
+[INFO] No tests to run.
+[INFO] 
+[INFO] --- jar:3.4.1:jar (default-jar) @ servermmo-core ---
+[INFO] Building jar: /home/runner/work/servermmo/servermmo/plugins/servermmo-core/target/servermmo-core-1.0.0.jar
+[INFO] 
+[INFO] --------------------< ru.servermmo:servermmo-mobs >---------------------
+[INFO] Building ServerMMOMobs 1.0.0                                       [3/5]
+[INFO]   from servermmo-mobs/pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- clean:3.2.0:clean (default-clean) @ servermmo-mobs ---
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ servermmo-mobs ---
+[INFO] Copying 2 resources from src/main/resources to target/classes
+[INFO] 
+[INFO] --- compiler:3.13.0:compile (default-compile) @ servermmo-mobs ---
+[INFO] Recompiling the module because of changed dependency.
+[INFO] Compiling 2 source files with javac [debug parameters release 25] to target/classes
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ servermmo-mobs ---
+[INFO] skip non existing resourceDirectory /home/runner/work/servermmo/servermmo/plugins/servermmo-mobs/src/test/resources
+[INFO] 
+[INFO] --- compiler:3.13.0:testCompile (default-testCompile) @ servermmo-mobs ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- surefire:3.5.4:test (default-test) @ servermmo-mobs ---
+[INFO] No tests to run.
+[INFO] 
+[INFO] --- jar:3.4.1:jar (default-jar) @ servermmo-mobs ---
+[INFO] Building jar: /home/runner/work/servermmo/servermmo/plugins/servermmo-mobs/target/servermmo-mobs-1.0.0.jar
+[INFO] 
+[INFO] -------------------< ru.servermmo:servermmo-players >-------------------
+[INFO] Building ServerMMOPlayers 1.0.0                                    [4/5]
+[INFO]   from servermmo-players/pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- clean:3.2.0:clean (default-clean) @ servermmo-players ---
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ servermmo-players ---
+[INFO] Copying 1 resource from src/main/resources to target/classes
+[INFO] 
+[INFO] --- compiler:3.13.0:compile (default-compile) @ servermmo-players ---
+[INFO] Recompiling the module because of changed dependency.
+[INFO] Compiling 3 source files with javac [debug parameters release 25] to target/classes
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ servermmo-players ---
+[INFO] skip non existing resourceDirectory /home/runner/work/servermmo/servermmo/plugins/servermmo-players/src/test/resources
+[INFO] 
+[INFO] --- compiler:3.13.0:testCompile (default-testCompile) @ servermmo-players ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- surefire:3.5.4:test (default-test) @ servermmo-players ---
+[INFO] No tests to run.
+[INFO] 
+[INFO] --- jar:3.4.1:jar (default-jar) @ servermmo-players ---
+[INFO] Building jar: /home/runner/work/servermmo/servermmo/plugins/servermmo-players/target/servermmo-players-1.0.0.jar
+[INFO] 
+[INFO] ---------------------< ru.servermmo:servermmo-hud >---------------------
+[INFO] Building ServerMMOHud 1.0.0                                        [5/5]
+[INFO]   from servermmo-hud/pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- clean:3.2.0:clean (default-clean) @ servermmo-hud ---
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ servermmo-hud ---
+[INFO] Copying 2 resources from src/main/resources to target/classes
+[INFO] 
+[INFO] --- compiler:3.13.0:compile (default-compile) @ servermmo-hud ---
+[INFO] Recompiling the module because of changed dependency.
+[INFO] Compiling 6 source files with javac [debug parameters release 25] to target/classes
+[INFO] /home/runner/work/servermmo/servermmo/plugins/servermmo-hud/src/main/java/ru/servermmo/hud/HudListener.java: /home/runner/work/servermmo/servermmo/plugins/servermmo-hud/src/main/java/ru/servermmo/hud/HudListener.java uses or overrides a deprecated API.
+[INFO] /home/runner/work/servermmo/servermmo/plugins/servermmo-hud/src/main/java/ru/servermmo/hud/HudListener.java: Recompile with -Xlint:deprecation for details.
+[INFO] Some messages have been simplified; recompile with -Xdiags:verbose to get full output
+[INFO] -------------------------------------------------------------
+[ERROR] COMPILATION ERROR : 
+[INFO] -------------------------------------------------------------
+[ERROR] /home/runner/work/servermmo/servermmo/plugins/servermmo-hud/src/main/java/ru/servermmo/hud/PlayerHud.java:[31,49] error: no suitable method found for style(net.kyori.adventure.key.Key)
+    private static final Style HUD_STYLE = Style.style(Key.key("servermmo", "hud"));
+                                                ^
+    method net.kyori.adventure.text.format.Style.style(java.util.function.Consumer<net.kyori.adventure.text.format.Style.Builder>) is not applicable
+      (argument mismatch; net.kyori.adventure.key.Key cannot be converted to java.util.function.Consumer<net.kyori.adventure.text.format.Style.Builder>)
+    method net.kyori.adventure.text.format.Style.style(@org.jspecify.annotations.Nullable net.kyori.adventure.text.format.TextColor) is not applicable
+      (argument mismatch; net.kyori.adventure.key.Key cannot be converted to net.kyori.adventure.text.format.TextColor)
+    method net.kyori.adventure.text.format.Style.style(net.kyori.adventure.text.format.TextDecoration) is not applicable
+      (argument mismatch; net.kyori.adventure.key.Key cannot be converted to net.kyori.adventure.text.format.TextDecoration)
+    method net.kyori.adventure.text.format.Style.style(@org.jspecify.annotations.Nullable net.kyori.adventure.text.format.TextColor,net.kyori.adventure.text.format.TextDecoration...) is not applicable
+      (argument mismatch; net.kyori.adventure.key.Key cannot be converted to net.kyori.adventure.text.format.TextColor)
+    method net.kyori.adventure.text.format.Style.style(@org.jspecify.annotations.Nullable net.kyori.adventure.text.format.StyleBuilderApplicable...) is not applicable
+      (varargs mismatch; net.kyori.adventure.key.Key cannot be converted to net.kyori.adventure.text.format.StyleBuilderApplicable)
+    method net.kyori.adventure.text.format.Style.style(java.lang.Iterable<? extends net.kyori.adventure.text.format.StyleBuilderApplicable>) is not applicable
+      (argument mismatch; net.kyori.adventure.key.Key cannot be converted to java.lang.Iterable<? extends net.kyori.adventure.text.format.StyleBuilderApplicable>)
+[INFO] 1 error
+[INFO] -------------------------------------------------------------
+[INFO] ------------------------------------------------------------------------
+[INFO] Reactor Summary for ServerMMO 1.0.0:
+[INFO] 
+[INFO] ServerMMO .......................................... SUCCESS [  0.325 s]
+[INFO] ServerMMOCore ...................................... SUCCESS [  3.954 s]
+[INFO] ServerMMOMobs ...................................... SUCCESS [  0.444 s]
+[INFO] ServerMMOPlayers ................................... SUCCESS [  0.597 s]
+[INFO] ServerMMOHud ....................................... FAILURE [  0.376 s]
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  5.978 s
+[INFO] Finished at: 2026-11-05T12:22:23Z
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.13.0:compile (default-compile) on project servermmo-hud: Compilation failure
+[ERROR] /home/runner/work/servermmo/servermmo/plugins/servermmo-hud/src/main/java/ru/servermmo/hud/PlayerHud.java:[31,49] error: no suitable method found for style(net.kyori.adventure.key.Key)
+[ERROR]     private static final Style HUD_STYLE = Style.style(Key.key("servermmo", "hud"));
+[ERROR]                                                 ^
+[ERROR]     method net.kyori.adventure.text.format.Style.style(java.util.function.Consumer<net.kyori.adventure.text.format.Style.Builder>) is not applicable
+[ERROR]       (argument mismatch; net.kyori.adventure.key.Key cannot be converted to java.util.function.Consumer<net.kyori.adventure.text.format.Style.Builder>)
+[ERROR]     method net.kyori.adventure.text.format.Style.style(@org.jspecify.annotations.Nullable net.kyori.adventure.text.format.TextColor) is not applicable
+[ERROR]       (argument mismatch; net.kyori.adventure.key.Key cannot be converted to net.kyori.adventure.text.format.TextColor)
+[ERROR]     method net.kyori.adventure.text.format.Style.style(net.kyori.adventure.text.format.TextDecoration) is not applicable
+[ERROR]       (argument mismatch; net.kyori.adventure.key.Key cannot be converted to net.kyori.adventure.text.format.TextDecoration)
+[ERROR]     method net.kyori.adventure.text.format.Style.style(@org.jspecify.annotations.Nullable net.kyori.adventure.text.format.TextColor,net.kyori.adventure.text.format.TextDecoration...) is not applicable
+[ERROR]       (argument mismatch; net.kyori.adventure.key.Key cannot be converted to net.kyori.adventure.text.format.TextColor)
+[ERROR]     method net.kyori.adventure.text.format.Style.style(@org.jspecify.annotations.Nullable net.kyori.adventure.text.format.StyleBuilderApplicable...) is not applicable
+[ERROR]       (varargs mismatch; net.kyori.adventure.key.Key cannot be converted to net.kyori.adventure.text.format.StyleBuilderApplicable)
+[ERROR]     method net.kyori.adventure.text.format.Style.style(java.lang.Iterable<? extends net.kyori.adventure.text.format.StyleBuilderApplicable>) is not applicable
+[ERROR]       (argument mismatch; net.kyori.adventure.key.Key cannot be converted to java.lang.Iterable<? extends net.kyori.adventure.text.format.StyleBuilderApplicable>)
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException
+[ERROR] 
+[ERROR] After correcting the problems, you can resume the build with the command
+[ERROR]   mvn <args> -rf :servermmo-hud

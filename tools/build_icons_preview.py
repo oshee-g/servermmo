@@ -40,11 +40,6 @@ GROUPS: list[tuple[str, list[tuple[str, str]] | None]] = [
         ("боевые очки", "battle_points"), ("нанагемы", "nanogem"),
         ("клан", "clan"),
     ]),
-    ("Эмблемы классов", [
-        ("воин", "warrior"), ("маг", "mage"), ("лучник", "archer"),
-        ("паладин", "paladin"), ("фермер", "farmer"), ("викинг", "viking"),
-        ("некромант", "necromancer"), ("копейщик", "spearman"),
-    ]),
     ("Способности (заглушки)", [
         ("удар", "ability_slash"), ("огонь", "ability_flame"),
         ("молния", "ability_bolt"), ("щит", "ability_shield"),

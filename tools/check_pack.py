@@ -24,7 +24,7 @@ import sys
 import zipfile
 from pathlib import Path
 
-from png_io import glyph_advance, png_rgba
+from png_io import glyph_advance_grid, png_rgba
 
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_ZIP = ROOT / "server" / "resourcepack" / "servermmo-hud.zip"
@@ -132,14 +132,19 @@ def check_metrics(font: dict, names: set[str], zf: zipfile.ZipFile,
         texture = f"assets/servermmo/textures/{file}"
         if texture not in names:
             continue
-        chars = [ch for row in provider.get("chars", []) for ch in row]
+        rows_chars = provider.get("chars", [])
+        cols = max(1, len(rows_chars[0])) if rows_chars else 1
+        rows_count = max(1, len(rows_chars))
         try:
             width, height, pixels = png_rgba(zf.read(texture))
         except ValueError:
             continue
-        cell = width // max(1, len(chars))
-        for index, char in enumerate(chars):
-            measured[char] = glyph_advance(width, height, pixels, cell, index)
+        cell_w, cell_h = width // cols, height // rows_count
+        for row_index, row in enumerate(rows_chars):
+            for col_index, char in enumerate(row):
+                measured[char] = glyph_advance_grid(width, height, pixels,
+                                                    cell_w, cell_h,
+                                                    col_index, row_index)
     expected = ",".join(f"{ord(ch):x}:{adv}" for ch, adv in sorted(measured.items()))
     if not METRICS_FILE.is_file():
         problems.append("нет font-metrics.properties — запусти tools/gen_font_metrics.py")
@@ -186,18 +191,41 @@ def main() -> int:
                 if provider.get("type") != "bitmap":
                     continue
                 bitmaps += 1
-                if provider.get("height") != GLYPH_HEIGHT:
-                    problems.append(f"height={provider.get('height')} в {provider.get('file')},"
-                                    f" нужен {GLYPH_HEIGHT}")
+                height = provider.get("height")
+                if not isinstance(height, int) or height <= 0:
+                    problems.append(f"нет height в {provider.get('file')}")
+                    continue
+                ascent = provider.get("ascent")
+                if not isinstance(ascent, int) or ascent > height:
+                    problems.append(f"ascent={ascent} больше height={height} "
+                                    f"в {provider.get('file')} — игра такое не примет")
+                rows_chars = provider.get("chars", [])
+                cols = len(rows_chars[0]) if rows_chars else 0
+                rows_count = len(rows_chars)
+                if not cols or any(len(row) != cols for row in rows_chars):
+                    problems.append(f"{provider.get('file')}: неровная сетка chars")
+                    continue
                 file = provider.get("file", "").split(":", 1)[-1]
                 texture = f"assets/servermmo/textures/{file}"
                 if texture not in names:
                     problems.append(f"нет текстуры {texture}")
                     continue
-                width, height = png_size(zf.read(texture))
-                if height != GLYPH_HEIGHT or width % GLYPH_HEIGHT != 0:
-                    problems.append(f"{texture}: {width}x{height},"
-                                    f" нужна ячейка {GLYPH_HEIGHT}x{GLYPH_HEIGHT}")
+                width, image_height = png_size(zf.read(texture))
+                # Ячейка = (ширина / столбцов) x (высота / строк); height из
+                # провайдера её масштабирует. Для цифр и букв это 8x8, для
+                # значков 32x32, для панелей классов 256x64.
+                if image_height % rows_count != 0 or width % cols != 0:
+                    problems.append(f"{texture}: {width}x{image_height} не делится "
+                                    f"на сетку {cols}x{rows_count}")
+                    continue
+                cell_w, cell_h = width // cols, image_height // rows_count
+                if cell_h != height:
+                    problems.append(f"{texture}: ячейка {cell_w}x{cell_h}, а height="
+                                    f"{height} — значок растянется по вертикали")
+                if height != GLYPH_HEIGHT and cell_h == GLYPH_HEIGHT:
+                    problems.append(f"{texture}: ячейка {cell_w}x{cell_h}, а height="
+                                    f"{height} — игра растянет её, нужна ячейка "
+                                    f"высотой {height}")
             if bitmaps == 0:
                 problems.append("в шрифте нет ни одного bitmap-провайдера")
 
@@ -228,6 +256,11 @@ def main() -> int:
                 file = provider.get("file", "").split(":", 1)[-1]
                 texture = f"assets/servermmo/textures/{file}"
                 if texture not in names:
+                    continue
+                # На базовой линии сверяем только 8-пиксельные глифы — те,
+                # что стоят в одной строке с ванильным текстом. Крупные значки
+                # намеренно выступают ниже строки, это не ошибка.
+                if provider.get("height") != GLYPH_HEIGHT:
                     continue
                 cells = sum(len(row) for row in provider.get("chars", []))
                 try:

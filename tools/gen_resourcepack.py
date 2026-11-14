@@ -32,11 +32,47 @@ PACK = ROOT / "resourcepack"
 ASSETS = ROOT / "tools" / "pack_assets"
 ZIP_OUT = ROOT / "server" / "resourcepack" / "servermmo-hud.zip"
 
-GLYPH_HEIGHT = 8  # ячейка 8x8, как у ванильного шрифта
+GLYPH_HEIGHT = 8  # ячейка 8x8, как у ванильного шрифта: цифры и буквы
 DIGIT_CHARS = "0123456789/ "
 # Значки: сердце, меч, кристалл и три буквы LVL / XP — всё одной сеткой.
 ICON_CHARS = "\ue010\ue011\ue013"
 LETTER_CHARS = "LVXP"
+
+# --- Значки 32x32 ------------------------------------------------------
+# Игрок решил: шрифт (цифры, буквы) остаётся 8 px, а значки рисуются
+# ячейкой 32x32 — в 4 раза крупнее, чтобы оружие, монеты и ромб уровня
+# читались. height задаёт и размер ячейки, и масштаб: ячейка 32x32 при
+# height=32 рисуется 1:1 (pixelScale = height / высота_ячейки).
+ICON_HEIGHT = 32
+# ascent — сколько пикселей значка выше базовой линии. Текст 8 px с ascent 7
+# занимает строки -7..0, его середина на -3.5; значит середина значка 32 px
+# должна быть там же: ascent - 16 = -3.5 -> 19 (с округлением).
+ICON_ASCENT = 19
+# Панель класса — подложка всей панели HUD: ячейка 256x64, и она должна
+# начинаться чуть выше первой строки, поэтому ascent маленький.
+PANEL_HEIGHT = 64
+PANEL_ASCENT = 10
+
+# Кодовые точки. Занято: 0xE010/11/13 (старые значки), 0xE100-0xE10C
+# (пробелы), 0xE110+ (сдвиги вправо), 0xE120+ (сдвиги влево),
+# 0xE200-0xE24B (ступени затухания урона). Новое — с 0xE300.
+def chars(base: int, count: int) -> str:
+    return "".join(chr(base + i) for i in range(count))
+
+
+GEAR_CHARS = chars(0xE300, 10)      # сердце, меч, топор, посох, молот,
+                                    # коса, вилы, лук, копьё, щит
+MONEY_CHARS = chars(0xE310, 5)      # монеты, коины, боевые очки, нанагемы, клан
+ABILITY_CHARS = chars(0xE320, 8)    # восемь слотов способностей
+LEVEL_CHARS = chars(0xE400, 100)    # ромбы уровней 1..100
+PANEL_CHARS = chars(0xE500, 8)      # панели классов
+LEVEL_COLS = 10                     # сетка 10x10
+PANEL_COLS = 2                      # сетка 2x4
+
+
+def grid(chars_row: str, cols: int) -> list[list[str]]:
+    """Режет строку символов на сетку cols столбцов (как в атласе)."""
+    return [list(chars_row[i:i + cols]) for i in range(0, len(chars_row), cols)]
 
 # Ванильные спрайты HUD, которые надо спрятать. Список снят с настоящих
 # ресурсов 1.21.9: имена с суффиксом _blinking появились в 1.21.2, а
@@ -168,6 +204,41 @@ def build_font_json() -> dict:
                 "height": GLYPH_HEIGHT,
                 "chars": [LETTER_CHARS],
             },
+            {
+                "type": "bitmap",
+                "file": "servermmo:font/hud_gear.png",
+                "ascent": ICON_ASCENT,
+                "height": ICON_HEIGHT,
+                "chars": [GEAR_CHARS],
+            },
+            {
+                "type": "bitmap",
+                "file": "servermmo:font/hud_money.png",
+                "ascent": ICON_ASCENT,
+                "height": ICON_HEIGHT,
+                "chars": [MONEY_CHARS],
+            },
+            {
+                "type": "bitmap",
+                "file": "servermmo:font/hud_ability.png",
+                "ascent": ICON_ASCENT,
+                "height": ICON_HEIGHT,
+                "chars": [ABILITY_CHARS],
+            },
+            {
+                "type": "bitmap",
+                "file": "servermmo:font/hud_level.png",
+                "ascent": ICON_ASCENT,
+                "height": ICON_HEIGHT,
+                "chars": grid(LEVEL_CHARS, LEVEL_COLS),
+            },
+            {
+                "type": "bitmap",
+                "file": "servermmo:font/hud_panel.png",
+                "ascent": PANEL_ASCENT,
+                "height": PANEL_HEIGHT,
+                "chars": grid(PANEL_CHARS, PANEL_COLS),
+            },
             *[
                 {
                     "type": "bitmap",
@@ -226,7 +297,9 @@ def main() -> int:
         json.dumps(build_font_json(), ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
     for name in ("hud_digits.png", "hud_icons.png", "hud_letters.png",
-                 *(f"hud_fade{step}.png" for step in range(FADE_STEPS))):
+                 *(f"hud_fade{step}.png" for step in range(FADE_STEPS)),
+                 "hud_gear.png", "hud_money.png", "hud_ability.png",
+                 "hud_level.png", "hud_panel.png"):
         copy_asset(name, textures / name)
     copy_asset("pack_icon.png", PACK / "pack.png")
 

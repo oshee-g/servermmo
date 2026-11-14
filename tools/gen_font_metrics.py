@@ -16,7 +16,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from png_io import glyph_advance, png_rgba
+from gen_resourcepack import (ABILITY_CHARS, DIGIT_CHARS, FADE_STEPS, GEAR_CHARS,
+                              ICON_CHARS, LEVEL_CHARS, LETTER_CHARS, MONEY_CHARS,
+                              PANEL_CHARS, LEVEL_COLS, PANEL_COLS, fade_chars)
+from png_io import glyph_advance, glyph_advance_grid, png_rgba
 
 ROOT = Path(__file__).resolve().parent.parent
 ASSETS = ROOT / "tools" / "pack_assets"
@@ -28,21 +31,33 @@ def _fade_chars(step: int) -> str:
     return "".join(chr(base + i) for i in range(12))
 
 
+# (файл, символы, столбцов в сетке). Значки идут ячейкой 32x32 (height=32,
+# масштаб 1:1), панели — 256x64, поэтому считать ширину надо по своей сетке,
+# а не «ширина / число символов».
 ATLASES = (
-    ("hud_digits.png", "0123456789/ "),
-    ("hud_icons.png", "\ue010\ue011\ue013"),
-    ("hud_letters.png", "LVXP"),
-    *(("hud_fade%d.png" % step, _fade_chars(step)) for step in range(5)),
+    ("hud_digits.png", DIGIT_CHARS, len(DIGIT_CHARS)),
+    ("hud_icons.png", ICON_CHARS, len(ICON_CHARS)),
+    ("hud_letters.png", LETTER_CHARS, len(LETTER_CHARS)),
+    *(("hud_fade%d.png" % step, _fade_chars(step), len(_fade_chars(step)))
+      for step in range(FADE_STEPS)),
+    ("hud_gear.png", GEAR_CHARS, len(GEAR_CHARS)),
+    ("hud_money.png", MONEY_CHARS, len(MONEY_CHARS)),
+    ("hud_ability.png", ABILITY_CHARS, len(ABILITY_CHARS)),
+    ("hud_level.png", LEVEL_CHARS, LEVEL_COLS),
+    ("hud_panel.png", PANEL_CHARS, PANEL_COLS),
 )
 
 
 def collect() -> dict[str, int]:
     metrics: dict[str, int] = {}
-    for name, chars in ATLASES:
+    for name, chars, cols in ATLASES:
         width, height, pixels = png_rgba((ASSETS / name).read_bytes())
-        cell = width // len(chars)
+        rows = (len(chars) + cols - 1) // cols
+        cell_w, cell_h = width // cols, height // rows
         for index, char in enumerate(chars):
-            metrics[char] = glyph_advance(width, height, pixels, cell, index)
+            col, row = index % cols, index // cols
+            metrics[char] = glyph_advance_grid(width, height, pixels,
+                                               cell_w, cell_h, col, row)
     return metrics
 
 

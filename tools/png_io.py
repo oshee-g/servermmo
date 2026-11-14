@@ -71,3 +71,27 @@ def glyph_advance(width: int, height: int, pixels: bytes, cell: int, index: int)
     if rightmost < 0:
         return 1  # пустой глиф всё равно занимает пиксель
     return rightmost - index * cell + 1
+
+
+def glyph_advance_grid(width: int, height: int, pixels: bytes,
+                       cell_w: int, cell_h: int, col: int, row: int) -> int:
+    """Ширина глифа в сетке из ячеек cell_w x cell_h.
+
+    Обобщение glyph_advance(): атласы значков уровня и панелей классов
+    многстрочные (10x10 и 2x4), а ширина всё так же считается по последнему
+    непрозрачному столбцу внутри своей ячейки — ровно как это делает игра.
+    """
+    stride = width * 4
+    rightmost = -1
+    x0, y0 = col * cell_w, row * cell_h
+    for y in range(y0, min(y0 + cell_h, height)):
+        for x in range(x0, min(x0 + cell_w, width)):
+            if pixels[y * stride + x * 4 + 3] > 0:
+                rightmost = max(rightmost, x)
+    if rightmost < 0:
+        # Пустой глиф: видимая ширина 0, и игра всё равно добавляет 1.
+        return 1
+    # Формула игры (BitmapProvider.Definition.load):
+    # advance = round(видимая_ширина * масштаб) + 1. Без этого +1 плагин
+    # считал строки на пиксель уже, чем их рисует клиент, и панель ехала.
+    return rightmost - x0 + 2

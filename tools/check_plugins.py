@@ -204,17 +204,18 @@ def check_server_properties() -> None:
         fail("server.properties: resource-pack задан, а zip ресурспака отсутствует")
         return
     # Клиент качает пак через HttpURLConnection и сверяет SHA-1, поэтому
-    # ссылка обязана вести прямо на zip. Канал ровно один — файл
-    # servermmo-hud.zip в релизе GitHub: /releases/latest/download/ нельзя,
-    # он плавающий, и клиент может получить пак, не совпадающий с SHA-1.
-    if not url.startswith("https://github.com/oshee-g/servermmo/releases/download/"):
-        fail("server.properties: resource-pack должен вести на файл релиза "
-             "GitHub: https://github.com/oshee-g/servermmo/releases/download/"
-             "<тег>/servermmo-hud.zip")
+    # ссылка обязана отдавать байты zip сразу. Обычная ссылка «поделиться» и
+    # старый drive.google.com/uc отдают HTML-страницу проверки на вирусы,
+    # в игре это «не удалось загрузить ресурспак».
+    if "drive.google.com/uc" in url:
+        fail("server.properties: resource-pack ведёт на drive.google.com/uc - "
+             "клиент получит HTML вместо zip. Нужен "
+             "drive.usercontent.google.com/download?id=<ID>&export=download&confirm=t")
         return
-    if "/releases/latest/" in url or not url.endswith(".zip"):
-        fail("server.properties: ссылка должна быть на конкретный тег и "
-             "оканчиваться на .zip (плавающий /latest/ ломает сверку SHA-1)")
+    if "drive.usercontent.google.com/download" not in url or "confirm=t" not in url:
+        fail("server.properties: ссылка на пак с Диска должна быть прямой: "
+             "drive.usercontent.google.com/download?id=<ID>&export=download"
+             "&confirm=t (без confirm=t Диск отдаёт HTML)")
         return
 
     real = hashlib.sha1(pack.read_bytes()).hexdigest()
@@ -222,7 +223,10 @@ def check_server_properties() -> None:
         fail(f"server.properties: resource-pack-sha1={sha1 or '(пусто)'} не совпадает "
              f"с файлом ({real}). Обнови resource-pack-sha1 под новый zip")
         return
-    print(f"  ok server.properties: ресурспак из релиза GitHub, SHA-1 совпадает ({url})")
+    size = pack.stat().st_size
+    print(f"  ok server.properties: ресурспак с Диска, SHA-1 совпадает ({url})")
+    print(f"     файл на Диске должен быть ровно {size} байт - сверь в свойствах файла")
+
 
 
 def main() -> int:

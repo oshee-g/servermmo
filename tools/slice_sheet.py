@@ -22,7 +22,7 @@ import sys
 from pathlib import Path
 
 try:
-    from PIL import Image
+    from PIL import Image, ImageOps
 except ImportError:  # pragma: no cover - только для локального запуска
     sys.exit("нужен Pillow: /tmp/venv/bin/python tools/slice_sheet.py ...")
 
@@ -171,6 +171,8 @@ def main() -> int:
     ap.add_argument("--names", required=True, help="имена файлов через запятую")
     ap.add_argument("--min-area", type=float, default=0.0004,
                     help="минимальная доля площади листа на область")
+    ap.add_argument("--pad", type=int, default=0,
+                    help="добавить рамку цветом фона, чтобы иконки у края не терялись")
     ap.add_argument("--take", type=int, default=0,
                     help="взять только первые N иконок (порядок чтения)")
     args = ap.parse_args()
@@ -181,7 +183,10 @@ def main() -> int:
         size = (int(args.size), int(args.size))
     names = [n.strip() for n in args.names.split(",") if n.strip()]
 
-    img = key_out_magenta(Image.open(args.sheet))
+    img = Image.open(args.sheet)
+    if args.pad:  # рамка цветом фона: иконка у края листа не обрежется фильтром
+        img = ImageOps.expand(img.convert("RGB"), args.pad, fill=(255, 0, 255))
+    img = key_out_magenta(img)
     w, h = img.size
     comps = [c for c in components(img)
              if c[4] >= args.min_area * w * h

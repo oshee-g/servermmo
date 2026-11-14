@@ -247,9 +247,8 @@ WorldEdit/WorldGuard, Simple Voice Chat. Подробнее — в `plugins/READ
   и полное лечение;
 * игрок начинает с 10 HP / 1 урона / 1 уровня / 0 из 200 опыта.
 
-**Обязательно поставь ресурспак** — без него вместо значков будут пустые квадраты.
-Проще всего раздать его сервером (тогда игра сама предложит скачать), но можно и
-вручную — оба варианта ниже.
+**Обязательно поставь ресурспак** — без него HUD не виден: сервер скрывает и
+панель, и строку хотбара, пока клиент не загрузит пак.
 
 ### Как раздать ресурспак всем игрокам
 
@@ -259,7 +258,7 @@ WorldEdit/WorldGuard, Simple Voice Chat. Подробнее — в `plugins/READ
 ничего не конфликтовало:
 
 ```properties
-resource-pack=https://drive.google.com/uc?export=download&id=17tX_yNScUcmUIe3KGoRGgOzTKWbbzM4P
+resource-pack=https://drive.usercontent.google.com/download?id=17tX_yNScUcmUIe3KGoRGgOzTKWbbzM4P&export=download&confirm=t
 resource-pack-sha1=СЧИТАЕТСЯ_ИЗ_ФАЙЛА
 resource-pack-prompt={"text":"ServerMMO HUD resource pack","color":"gold"}
 require-resource-pack=false
@@ -267,6 +266,12 @@ require-resource-pack=false
 
 Эти строки уже стоят в `server/server.properties`. Сервер пак не хранит и не
 раздаёт: клиент качает zip сам при входе и сам предлагает его скачать.
+
+**Ссылка обязана быть именно такой:** `drive.usercontent.google.com/download`
+с `confirm=t`. Обычная ссылка «Поделиться» и старый вариант
+`drive.google.com/uc?export=download&id=…` отдают не zip, а HTML-страницу
+проверки на вирусы — клиент скачает её, не сойдётся SHA-1 и будет ошибка
+«не удалось загрузить 1 из 1».
 
 **Что важно знать:**
 
@@ -277,8 +282,10 @@ require-resource-pack=false
 * Если игрок отказался от пака, он зайдёт, но HUD у него будет полностью
   скрыт: сервер видит статус загрузки пака и не показывает ни панели, ни
   строки хотбара.
+* Проверить ссылку: открой её в браузере — должен скачаться zip (если
+  открылась страница Диска или HTML, ссылка не та).
 
-
+#### Если хочется заставить, а не предлагать
 
 Поставь `require-resource-pack=true` в `server.properties`: тогда игрок либо
 принимает пак, либо его не пускает на сервер. Текст предложения меняется в

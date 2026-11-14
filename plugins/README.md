@@ -157,7 +157,7 @@ Paper сам выстроит порядок загрузки по `depend:` в 
 ссылка и SHA-1, клиент качает zip сам при входе. Пак лежит одним файлом на
 Google Диске (доступ «все, у кого есть ссылка»):
 
-    https://drive.google.com/uc?export=download&id=17tX_yNScUcmUIe3KGoRGgOzTKWbbzM4P
+    https://drive.usercontent.google.com/download?id=17tX_yNScUcmUIe3KGoRGgOzTKWbbzM4P&export=download&confirm=t
 
 Эти строки уже стоят в `server/server.properties` — обычно ничего делать не
 нужно:
@@ -167,6 +167,11 @@ Google Диске (доступ «все, у кого есть ссылка»):
 
 Других способов (установщик, ассет в релизе, ручная копия файла в клиент)
 нет — один способ, чтобы ничего не конфликтовало.
+
+Ссылка обязана быть прямой: `drive.usercontent.google.com/download` с
+`confirm=t`. Обычная «поделиться»-ссылка и старый `drive.google.com/uc?…`
+отдают HTML-страницу проверки на вирусы: клиент её скачает, SHA-1 не
+совпадёт и будет «не удалось загрузить 1 из 1».
 
 Обновление пака: заменить файл на Google Диске (ссылка при замене не
 меняется) и обновить `resource-pack-sha1` в `server.properties` под новый

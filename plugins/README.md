@@ -151,13 +151,13 @@ Paper сам выстроит порядок загрузки по `depend:` в 
 Файл: [`server/resourcepack/servermmo-hud.zip`](../server/resourcepack/servermmo-hud.zip)
 (SHA-1 и размер печатает `python3 tools/check_pack.py`).
 
-**Единственный способ — ссылка на Google Диск:**
+**Единственный способ — файл релиза GitHub:**
 
 Сервер пак **не хранит и не раздаёт**: в `server.properties` лежат только
-ссылка и SHA-1, клиент качает zip сам при входе. Пак лежит одним файлом на
-Google Диске (доступ «все, у кого есть ссылка»):
+ссылка и SHA-1, клиент качает zip сам при входе. Пак лежит одним файлом в
+релизе этой версии:
 
-    https://drive.usercontent.google.com/download?id=17tX_yNScUcmUIe3KGoRGgOzTKWbbzM4P&export=download&confirm=t
+    https://github.com/oshee-g/servermmo/releases/download/v1.3.3/servermmo-hud.zip
 
 Эти строки уже стоят в `server/server.properties` — обычно ничего делать не
 нужно:
@@ -165,18 +165,16 @@ Google Диске (доступ «все, у кого есть ссылка»):
 1. Запустить `start.bat`.
 2. Игроки получают предложение скачать пак при входе.
 
-Других способов (установщик, ассет в релизе, ручная копия файла в клиент)
+Других способов (установщик, свой хостинг, ручная копия файла в клиент)
 нет — один способ, чтобы ничего не конфликтовало.
 
-Ссылка обязана быть прямой: `drive.usercontent.google.com/download` с
-`confirm=t`. Обычная «поделиться»-ссылка и старый `drive.google.com/uc?…`
-отдают HTML-страницу проверки на вирусы: клиент её скачает, SHA-1 не
-совпадёт и будет «не удалось загрузить 1 из 1».
+Ссылка обязана вести на **конкретный тег**: `…/releases/latest/download/…`
+плавает и ломает сверку SHA-1.
 
-Обновление пака: заменить файл на Google Диске (ссылка при замене не
-меняется) и обновить `resource-pack-sha1` в `server.properties` под новый
-`server/resourcepack/servermmo-hud.zip`. Пару «ссылка + SHA-1» сверяет
-`tools/check_plugins.py`.
+Обновление пака: выпустить новый тег — релиз-воркфлоу сам приложит
+`servermmo-hud.zip`; затем обновить в `server.properties` и ссылку, и
+`resource-pack-sha1` под новый `server/resourcepack/servermmo-hud.zip`.
+Эту пару сверяет `tools/check_plugins.py`.
 
 Посчитать SHA-1 вручную: `Get-FileHash servermmo-hud.zip -Algorithm SHA1` в
 PowerShell или `sha1sum servermmo-hud.zip` в Linux/macOS.

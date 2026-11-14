@@ -72,26 +72,27 @@ bash   tools/test-linux.sh          # поведение .sh (Linux/macOS)
 ### Раздача ресурспака
 
 Пак **не раздаётся сервером**: ни плагин, ни отдельный процесс его не
-хостит. Единственный канал — один файл на Google Диске с доступом
-«все, у кого есть ссылка»:
+хостит. Единственный канал — файл `servermmo-hud.zip`, который
+`.github/workflows/release.yml` прикладывает к релизу каждого тега:
 
-    https://drive.usercontent.google.com/download?id=17tX_yNScUcmUIe3KGoRGgOzTKWbbzM4P&export=download&confirm=t
+    https://github.com/oshee-g/servermmo/releases/download/v1.3.3/servermmo-hud.zip
 
 В `server.properties` лежат только `resource-pack` (эта ссылка) и
 `resource-pack-sha1` (SHA-1 файла `server/resourcepack/servermmo-hud.zip`),
-клиент качает zip сам. Обновление пака = замена файла на Диске (ссылка при
-замене не меняется) и, если изменился zip, правка `resource-pack-sha1` —
-пару «ссылка+SHA-1» сверяет `tools/check_plugins.py` в CI.
+клиент качает zip сам. Ссылка обязана вести на **конкретный тег**:
+`…/releases/latest/download/…` плавает, и клиент может получить файл, не
+совпадающий с прописанным SHA-1 (в игре — «не удалось загрузить 1 из 1»).
 
-Именно `drive.usercontent.google.com/download` с `confirm=t`: обычная
-«поделиться»-ссылка и старый `drive.google.com/uc?export=download&id=…`
-отдают HTML-страницу проверки на вирусы вместо zip (клиент скачивает её,
-SHA-1 не совпадает, в игре — «не удалось загрузить 1 из 1»). Обе проверки
-формы ссылки делает `check_plugins.py`.
+Обновление пака: выпустить тег (воркфлоу сам приложит zip) и поправить в
+`server.properties` обе строки — ссылку и `resource-pack-sha1`. Эту пару
+сверяет `tools/check_plugins.py` в CI.
 
-Отдельного ассета `servermmo-hud.zip` в релизах GitHub больше нет и
-установщика (`setup-resourcepack.bat`/`SetupPack.java`) тоже: один способ,
-чтобы ничего не конфликтовало.
+Сборка детерминирована (фиксированные таймстампы в zip), поэтому файл,
+собранный в CI, байт в байт совпадает с локальным — именно поэтому ассет
+релиза и `resource-pack-sha1` не расходятся.
+
+Установщика (`setup-resourcepack.bat`/`SetupPack.java`) больше нет: один
+способ раздачи, чтобы ничего не конфликтовало.
 
 ### `check_plugins.py` — проверка артефактов
 

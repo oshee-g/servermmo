@@ -189,9 +189,18 @@ def check_server_properties() -> None:
         key, value = line.split("=", 1)
         values[key.strip()] = value.strip()
 
-    for key in ("resource-pack", "resource-pack-sha1", "require-resource-pack", "resource-pack-prompt"):
+    for key in ("resource-pack", "resource-pack-sha1", "resource-pack-id",
+                "require-resource-pack", "resource-pack-prompt"):
         if key not in values:
             fail(f"server.properties: нет ключа {key}")
+
+    # resource-pack-id — UUID. Без него сервер считает его как
+    # nameUUIDFromBytes(url) и каждый раз предупреждает в лог.
+    pack_id = values.get("resource-pack-id", "")
+    if pack_id and not re.fullmatch(
+            r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}",
+            pack_id):
+        fail(f"server.properties: resource-pack-id={pack_id!r} не похож на UUID")
 
     url = values.get("resource-pack", "")
     sha1 = values.get("resource-pack-sha1", "").lower()
@@ -216,6 +225,21 @@ def check_server_properties() -> None:
         fail("server.properties: ссылка на пак с Диска должна быть прямой: "
              "drive.usercontent.google.com/download?id=<ID>&export=download"
              "&confirm=t (без confirm=t Диск отдаёт HTML)")
+        return
+
+    # SHA-1 — это ровно 40 шестнадцатеричных символов. Частая ошибка: сюда
+    # копируют UUID из соседнего resource-pack-id (36 символов с дефисами).
+    # Клиент тогда качает пак, не сходится по хэшу и не применяет его, а с
+    # require-resource-pack=true игрока просто кикает с сервера.
+    if sha1 and (len(sha1) != 40 or any(c not in "0123456789abcdef" for c in sha1)):
+        hint = (" Похоже, сюда попал UUID от resource-pack-id — это разные поля."
+                if len(sha1) == 36 and "-" in sha1 else "")
+        fail(f"server.properties: resource-pack-sha1 не похож на SHA-1 "
+             f"(длина {len(sha1)}, нужно 40 шестнадцатеричных символов).{hint}")
+        return
+    if not sha1:
+        fail("server.properties: resource-pack-sha1 пуст — клиент не сможет "
+             "проверить пак. Нужен SHA-1 файла servermmo-hud.zip")
         return
 
     real = hashlib.sha1(pack.read_bytes()).hexdigest()

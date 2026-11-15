@@ -52,6 +52,7 @@ public final class ServerMMOHud extends JavaPlugin {
                 + "без загруженного ресурспака HUD полностью скрыт; "
                 + "подстройка: /hud offsetx <px>, /hud anchorx <px>, /hud scale <3|4|5>, /hud reset");
         getLogger().info("Ссылка на ресурспак в server.properties: " + resourcePackSummary());
+        checkResourcePackHash();
     }
 
     @Override
@@ -69,6 +70,32 @@ public final class ServerMMOHud extends JavaPlugin {
 
     public HudManager manager() {
         return manager;
+    }
+
+    /**
+     * Предупредить, если SHA-1 в настройках не похож на SHA-1.
+     *
+     * <p>Типичная ошибка: в {@code resource-pack-sha1} попадает UUID из
+     * соседней строки {@code resource-pack-id}. Клиент тогда скачивает пак,
+     * не сходится по хэшу и отказывается его применять — а при
+     * {@code require-resource-pack=true} ещё и кикает игрока.SHA-1 — это
+     * ровно 40 шестнадцатеричных символов.</p>
+     */
+    private void checkResourcePackHash() {
+        String hash = getServer().getResourcePackHash();
+        if (hash == null || hash.isEmpty()) {
+            getLogger().warning("resource-pack-sha1 не задан: клиент примет любой файл "
+                    + "по ссылке, но не заметит подмену");
+            return;
+        }
+        boolean looksLikeUuid = hash.length() == 36 && hash.indexOf('-') > 0;
+        if (hash.length() != 40 || !hash.chars().allMatch(c -> Character.digit(c, 16) >= 0)) {
+            getLogger().severe("resource-pack-sha1=\"" + hash + "\" не похож на SHA-1: "
+                    + "нужно 40 шестнадцатеричных символов, а сейчас " + hash.length()
+                    + (looksLikeUuid ? ". Похоже, сюда попал UUID от resource-pack-id — "
+                    + "это разные строки, UUID идёт в resource-pack-id." : "")
+                    + " С таким хэшем клиент откажется применять пак");
+        }
     }
 
     /**

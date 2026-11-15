@@ -16,6 +16,7 @@ import hashlib
 import json
 import re
 import sys
+import uuid
 import zipfile
 from pathlib import Path
 
@@ -197,10 +198,16 @@ def check_server_properties() -> None:
     # resource-pack-id — UUID. Без него сервер считает его как
     # nameUUIDFromBytes(url) и каждый раз предупреждает в лог.
     pack_id = values.get("resource-pack-id", "")
-    if pack_id and not re.fullmatch(
-            r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}",
-            pack_id):
-        fail(f"server.properties: resource-pack-id={pack_id!r} не похож на UUID")
+    if pack_id:
+        try:
+            uuid.UUID(pack_id)
+        except ValueError:
+            # Сервер кладёт пак в Optional.empty(), если UUID не парсится:
+            # клиенту тогда вообще ничего не предлагают и статуса не будет.
+            fail(f"server.properties: resource-pack-id={pack_id!r} не парсится как "
+                 f"UUID - сервер не отправит пак вовсе (в логе будет "
+                 f"'Failed to parse ... into UUID'). Нужны группы 8-4-4-4-12, "
+                 f"сейчас {[len(g) for g in pack_id.split('-')]}")
 
     url = values.get("resource-pack", "")
     sha1 = values.get("resource-pack-sha1", "").lower()

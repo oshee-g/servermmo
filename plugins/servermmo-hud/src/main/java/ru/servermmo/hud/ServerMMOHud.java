@@ -110,6 +110,8 @@ public final class ServerMMOHud extends JavaPlugin {
                     + "загрузит пак, HUD останется скрыт";
         }
         return url + (hash == null || hash.isEmpty()
-                ? " (SHA-1 не задан)" : " (SHA-1 " + hash + ")");
+                ? " (SHA-1 не задан)" : " (SHA-1 " + hash + ")")
+                + (getServer().isResourcePackRequired()
+                ? ", обязателен" : ", НЕ обязателен (клиент может молча отказаться)");
     }
 }

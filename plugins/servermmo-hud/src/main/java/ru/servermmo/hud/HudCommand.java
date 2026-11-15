@@ -15,7 +15,11 @@ import org.jetbrains.annotations.NotNull;
  *
  * <p>Положение панели зависит от масштаба интерфейса в настройках клиента,
  * который сервер узнать не может, поэтому сдвиг подбирается вручную и
- * запоминается в {@code config.yml}.</p>
+ * запоминается в {@code config.yml}. Если панель не видна вообще — почти
+ * всегда дело в этом: при чужом масштабе она уезжает за левый край экрана.
+ * Быстрый порядок: {@code /hud offsetx 0} (панель встанет по центру верха,
+ * так сразу видно, работает ли она), затем {@code /hud scale <3|4|5>} и
+ * точная доводка {@code /hud offsetx} / {@code /hud anchorx}.</p>
  */
 public final class HudCommand implements CommandExecutor {
 
@@ -32,40 +36,51 @@ public final class HudCommand implements CommandExecutor {
                              @NotNull String label, @NotNull String[] args) {
         if (args.length == 1 && args[0].equalsIgnoreCase("reset")) {
             settings.reset();
-            apply(sender, "HUD вернул заводской сдвиг");
+            apply(sender, "HUD вернул заводские отступы: offset-x="
+                    + settings.offsetX() + ", anchor-x=" + settings.hotbarAnchorX());
             return true;
         }
-        if (args.length < 2) {
-            sender.sendMessage(Component.text(
-                    "/hud offsetx <пиксели>  — сдвиг панели влево (минус) или вправо (плюс)",
-                    NamedTextColor.YELLOW));
-            sender.sendMessage(Component.text(
-                    "сейчас offset-x=" + settings.offsetX()
-                            + "   (заводское " + HudSettings.DEFAULT_OFFSET_X + ")",
-                    NamedTextColor.GRAY));
-            sender.sendMessage(Component.text(
-                    "Если панель уехала за левый край — увеличьте минус, "
-                            + "если стоит слишком близко к центру — уменьшите.",
-                    NamedTextColor.GRAY));
+        if (args.length == 1 && (args[0].equalsIgnoreCase("scale")
+                || args[0].equalsIgnoreCase("масштаб"))) {
+            sender.sendMessage(Component.text("Укажите масштаб интерфейса: "
+                    + "/hud scale 3 | 4 | 5", NamedTextColor.YELLOW));
             return true;
         }
-        String key = args[0].toLowerCase(Locale.ROOT);
-        if (!key.equals("offsetx") && !key.equals("offset")) {
-            sender.sendMessage(Component.text("/hud offsetx <пиксели> | /hud reset",
-                    NamedTextColor.YELLOW));
+        if (args.length == 2 && args[0].equalsIgnoreCase("scale")) {
+            int scale;
+            try {
+                scale = Integer.parseInt(args[1]);
+            } catch (NumberFormatException ex) {
+                sender.sendMessage(Component.text("Масштаб интерфейса — целое число: "
+                        + "/hud scale 3 | 4 | 5", NamedTextColor.RED));
+                return true;
+            }
+            if (!settings.applyScalePreset(scale)) {
+                sender.sendMessage(Component.text("Готовых отступов для масштаба "
+                        + scale + " нет, подберите вручную: /hud offsetx <px> и "
+                        + "/hud anchorx <px>", NamedTextColor.RED));
+                return true;
+            }
+            apply(sender, "Готово: отступы под масштаб интерфейса " + scale
+                    + " (offset-x=" + settings.offsetX()
+                    + ", anchor-x=" + settings.hotbarAnchorX() + ")");
             return true;
         }
-        int value;
-        try {
-            value = Integer.parseInt(args[1]);
-        } catch (NumberFormatException ex) {
-            sender.sendMessage(Component.text("Нужно целое число пикселей", NamedTextColor.RED));
-            return true;
+        if (args.length == 2 && (args[0].equalsIgnoreCase("offsetx")
+                || args[0].equalsIgnoreCase("offset"))) {
+            return setOffset(sender, args[1]);
         }
-        if (value > 0 || value < -1023) {
-            sender.sendMessage(Component.text(
-                    "offsetx должен быть от -1023 до 0: панель ставится от центра влево",
-                    NamedTextColor.RED));
+        if (args.length == 2 && (args[0].equalsIgnoreCase("anchorx")
+                || args[0].equalsIgnoreCase("anchor"))) {
+            return setAnchor(sender, args[1]);
+        }
+        help(sender);
+        return true;
+    }
+
+    private boolean setOffset(CommandSender sender, String raw) {
+        Integer value = parseNegative(sender, raw, -1023);
+        if (value == null) {
             return true;
         }
         settings.offsetX(value);
@@ -73,8 +88,61 @@ public final class HudCommand implements CommandExecutor {
         return true;
     }
 
+    private boolean setAnchor(CommandSender sender, String raw) {
+        Integer value = parseNegative(sender, raw, -1023);
+        if (value == null) {
+            return true;
+        }
+        settings.anchorX(value);
+        apply(sender, "Готово: anchor-x = " + value
+                + " (левый край строки хотбара относительно центра)");
+        return true;
+    }
+
+    /** Разобрать сдвиг влево: от -limit до 0, но 0 тоже допустим для проверки. */
+    private static Integer parseNegative(CommandSender sender, String raw, int limit) {
+        int value;
+        try {
+            value = Integer.parseInt(raw);
+        } catch (NumberFormatException ex) {
+            sender.sendMessage(Component.text("Нужно целое число пикселей", NamedTextColor.RED));
+            return null;
+        }
+        if (value > 0 || value < limit) {
+            sender.sendMessage(Component.text(
+                    "Значение должно быть от " + limit + " до 0: панель ставится "
+                            + "от центра экрана влево", NamedTextColor.RED));
+            return null;
+        }
+        return value;
+    }
+
+    private void help(CommandSender sender) {
+        sender.sendMessage(Component.text(
+                "/hud offsetx <пиксели>  — сдвиг панели влево от центра экрана",
+                NamedTextColor.YELLOW));
+        sender.sendMessage(Component.text(
+                "/hud anchorx <пиксели>  — левый край строки хотбара",
+                NamedTextColor.YELLOW));
+        sender.sendMessage(Component.text(
+                "/hud scale <3|4|5>      — готовые отступы под масштаб интерфейса",
+                NamedTextColor.YELLOW));
+        sender.sendMessage(Component.text(
+                "сейчас offset-x=" + settings.offsetX()
+                        + " (заводское " + HudSettings.DEFAULT_OFFSET_X + "), anchor-x="
+                        + settings.hotbarAnchorX()
+                        + " (заводское " + HudSettings.DEFAULT_HOTBAR_ANCHOR_X + ")",
+                NamedTextColor.GRAY));
+        sender.sendMessage(Component.text(
+                "Если HUD не виден вообще: /hud offsetx 0 — панель встанет по центру "
+                        + "верха экрана. Значит панель работает, а отступ подобран не под "
+                        + "ваш масштаб интерфейса (Настройки → Видео → Масштаб интерфейса).",
+                NamedTextColor.GRAY));
+    }
+
     private void apply(CommandSender sender, String message) {
         plugin.getConfig().set("hud.offset-x", settings.offsetX());
+        plugin.getConfig().set("hud.hotbar-anchor-x", settings.hotbarAnchorX());
         plugin.saveConfig();
         if (sender instanceof Player player) {
             plugin.manager().reset(player);
@@ -84,6 +152,6 @@ public final class HudCommand implements CommandExecutor {
 
     /** Подсказка аргументов для tab-complete. */
     public static List<String> keys() {
-        return List.of("offsetx", "reset");
+        return List.of("offsetx", "anchorx", "scale", "reset");
     }
 }

@@ -9,7 +9,7 @@ depend: [ServerMMOCore]
 commands:
   hud:
     description: Сдвиг панели HUD
-    usage: /hud offsetx <пиксели> | /hud reset
+    usage: /hud offsetx <пиксели> | /hud anchorx <пиксели> | /hud scale <3|4|5> | /hud reset
     permission: servermmo.hud
 permissions:
   servermmo.hud:

@@ -78,8 +78,13 @@ final class HudManager extends BukkitRunnable {
             Player player = plugin.getServer().getPlayer(entry.getKey());
             plugin.getLogger().warning("HUD скрыт у "
                     + (player == null ? entry.getKey() : player.getName())
-                    + ": клиент не прислал статус ресурспака. Проверьте, что пак "
-                    + "скачивается по ссылке из server.properties (resource-pack).");
+                    + ": клиент не прислал статус ресурспака. Почти всегда это значит, "
+                    + "что в списке серверов у игрока отключены серверные пакеты "
+                    + "ресурсов: Изменить сервер -> «Пакеты ресурсов сервера» -> "
+                    + "«Включены», либо удалить сервер из списка и добавить заново. "
+                    + "Если пак включён, проверьте, что клиент вообще качает его по "
+                    + "ссылке из server.properties (resource-pack); принудительно "
+                    + "спросить игрока помогает require-resource-pack=true.");
         }
     }
 

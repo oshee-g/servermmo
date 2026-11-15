@@ -97,6 +97,11 @@ public final class HudCommand implements CommandExecutor {
                 "Если «пак загружен» — панель работает, а отступ не под ваш "
                         + "масштаб интерфейса: /hud offsetx 0 покажет её по центру верха.",
                 NamedTextColor.GRAY));
+        sender.sendMessage(Component.text(
+                "Если «статус не получен» — клиент молча не берёт серверный пак: "
+                        + "в списке серверов «Изменить» -> «Пакеты ресурсов сервера» "
+                        + "-> «Включены» (или удалите сервер из списка и добавьте заново).",
+                NamedTextColor.GRAY));
     }
 
     private boolean setOffset(CommandSender sender, String raw) {

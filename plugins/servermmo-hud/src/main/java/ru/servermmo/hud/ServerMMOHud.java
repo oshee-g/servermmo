@@ -47,9 +47,11 @@ public final class ServerMMOHud extends JavaPlugin {
         hud.setExecutor(new HudCommand(this, settings));
 
         getLogger().info("ServerMMOHud включён: панель строками босс-бара, offset-x="
-                + settings.offsetX() + " px, здоровье и индикатор урона — строкой хотбара; "
+                + settings.offsetX() + " px, anchor-x=" + settings.hotbarAnchorX()
+                + " px, здоровье и индикатор урона — строкой хотбара; "
                 + "без загруженного ресурспака HUD полностью скрыт; "
-                + "подстройка: /hud offsetx <px>, /hud reset");
+                + "подстройка: /hud offsetx <px>, /hud anchorx <px>, /hud scale <3|4|5>, /hud reset");
+        getLogger().info("Ссылка на ресурспак в server.properties: " + resourcePackSummary());
     }
 
     @Override
@@ -67,5 +69,20 @@ public final class ServerMMOHud extends JavaPlugin {
 
     public HudManager manager() {
         return manager;
+    }
+
+    /**
+     * Ссылка на ресурспак, которую сервер отдаёт клиенту — чтобы в
+     * {@code /hud debug} было видно, ту ли ссылку и тот ли SHA-1 ждёт HUD.
+     */
+    String resourcePackSummary() {
+        String url = getServer().getResourcePack();
+        String hash = getServer().getResourcePackHash();
+        if (url == null || url.isEmpty()) {
+            return "НЕ ЗАДАНА (server.properties: resource-pack пуст) — клиент не "
+                    + "загрузит пак, HUD останется скрыт";
+        }
+        return url + (hash == null || hash.isEmpty()
+                ? " (SHA-1 не задан)" : " (SHA-1 " + hash + ")");
     }
 }

@@ -66,6 +66,10 @@ public final class HudCommand implements CommandExecutor {
                     + ", anchor-x=" + settings.hotbarAnchorX() + ")");
             return true;
         }
+        if (args.length == 1 && args[0].equalsIgnoreCase("debug")) {
+            debug(sender);
+            return true;
+        }
         if (args.length == 2 && (args[0].equalsIgnoreCase("offsetx")
                 || args[0].equalsIgnoreCase("offset"))) {
             return setOffset(sender, args[1]);
@@ -76,6 +80,23 @@ public final class HudCommand implements CommandExecutor {
         }
         help(sender);
         return true;
+    }
+
+    /**
+     * Показать, почему HUD может быть не виден: скрыт гейтом (пак не загружен)
+     * или просто уехал за край экрана из-за масштаба интерфейса.
+     */
+    private void debug(CommandSender sender) {
+        if (sender instanceof Player player) {
+            sender.sendMessage(Component.text(
+                    "HUD: " + plugin.manager().debugLine(player), NamedTextColor.YELLOW));
+        }
+        sender.sendMessage(Component.text(
+                "Пак на сервере: " + plugin.resourcePackSummary(), NamedTextColor.GRAY));
+        sender.sendMessage(Component.text(
+                "Если «пак загружен» — панель работает, а отступ не под ваш "
+                        + "масштаб интерфейса: /hud offsetx 0 покажет её по центру верха.",
+                NamedTextColor.GRAY));
     }
 
     private boolean setOffset(CommandSender sender, String raw) {
@@ -128,6 +149,9 @@ public final class HudCommand implements CommandExecutor {
                 "/hud scale <3|4|5>      — готовые отступы под масштаб интерфейса",
                 NamedTextColor.YELLOW));
         sender.sendMessage(Component.text(
+                "/hud debug              — почему HUD не виден",
+                NamedTextColor.YELLOW));
+        sender.sendMessage(Component.text(
                 "сейчас offset-x=" + settings.offsetX()
                         + " (заводское " + HudSettings.DEFAULT_OFFSET_X + "), anchor-x="
                         + settings.hotbarAnchorX()
@@ -152,6 +176,6 @@ public final class HudCommand implements CommandExecutor {
 
     /** Подсказка аргументов для tab-complete. */
     public static List<String> keys() {
-        return List.of("offsetx", "anchorx", "scale", "reset");
+        return List.of("offsetx", "anchorx", "scale", "debug", "reset");
     }
 }

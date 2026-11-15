@@ -31,6 +31,11 @@ public final class HudListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR)
     public void onResourcePackStatus(PlayerResourcePackStatusEvent event) {
         boolean loaded = event.getStatus() == PlayerResourcePackStatusEvent.Status.SUCCESSFULLY_LOADED;
+        // Статус пишем в лог всегда: это единственный способ понять, почему
+        // HUD не виден — скрыт гейтом (пак не загружен) или уехал за край
+        // экрана из-за чужого масштаба интерфейса.
+        manager.plugin().getLogger().info("Ресурспак " + event.getPlayer().getName()
+                + ": " + event.getStatus() + (loaded ? " — HUD показан" : " — HUD скрыт"));
         manager.packLoaded(event.getPlayer(), loaded);
     }
 

@@ -52,6 +52,8 @@ final class PlayerHud {
      * показываются только после SUCCESSFULLY_LOADED.
      */
     private boolean packLoaded;
+    /** Приходил ли от клиента хоть какой-то статус пака. */
+    private boolean statusSeen;
     private boolean actionBarCleared;
 
     /** Последний полученный урон и когда он случился (мс). */
@@ -83,6 +85,7 @@ final class PlayerHud {
             return;
         }
         this.packLoaded = loaded;
+        this.statusSeen = true;
         if (!loaded) {
             hide();
             clearActionBar();
@@ -94,6 +97,20 @@ final class PlayerHud {
 
     boolean packLoaded() {
         return packLoaded;
+    }
+
+    /** Приходил ли от клиента статус ресурспака (для диагностики). */
+    boolean statusSeen() {
+        return statusSeen;
+    }
+
+    /** Краткая сводка состояния HUD для /hud debug. */
+    String debugLine() {
+        return (packLoaded ? "пак загружен" : (statusSeen
+                ? "пак НЕ загружен (клиент прислал отказ/сбой)" : "статус пака не получен"))
+                + ", панель " + (visible ? "показана" : "скрыта")
+                + ", offset-x=" + settings.offsetX()
+                + ", anchor-x=" + settings.hotbarAnchorX();
     }
 
     /** Игрок получил урон: индикатор «−N♥» вспыхивает заново. */

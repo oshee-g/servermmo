@@ -19,6 +19,7 @@ public final class ServerMMOHud extends JavaPlugin {
     private HudSettings settings;
     private HudManager manager;
     private HudText text;
+    private HudStore store;
 
     @Override
     public void onEnable() {
@@ -38,13 +39,25 @@ public final class ServerMMOHud extends JavaPlugin {
             text = new HudText(null);
         }
 
-        manager = new HudManager(this, settings, text);
+        store = new HudStore(this);
+        store.load();
+
+        manager = new HudManager(this, settings, text, store);
         manager.runTaskTimer(this, 20L, settings.updateIntervalTicks());
 
         Bukkit.getPluginManager().registerEvents(new HudListener(manager), this);
 
         PluginCommand hud = Objects.requireNonNull(getCommand("hud"), "команда hud не описана");
         hud.setExecutor(new HudCommand(this, settings));
+
+        // Команды на числовые данные панели: /class, /clan, /coins, /star,
+        // /bp, /gems, /armor. Механики за ними пока нет, это заглушки.
+        HudDataCommand data = new HudDataCommand(this);
+        for (String name : new String[]{"class", "clan", "coins", "star", "bp", "gems", "armor"}) {
+            PluginCommand dataCommand = Objects.requireNonNull(getCommand(name),
+                    "команда " + name + " не описана");
+            dataCommand.setExecutor(data);
+        }
 
         getLogger().info("ServerMMOHud включён: панель строками босс-бара, offset-x="
                 + settings.offsetX() + " px, anchor-x=" + settings.hotbarAnchorX()
@@ -62,10 +75,18 @@ public final class ServerMMOHud extends JavaPlugin {
             manager.cancel();
             manager = null;
         }
+        if (store != null) {
+            store.save();
+        }
     }
 
     public HudSettings settings() {
         return settings;
+    }
+
+    /** Числовые данные панели (класс, клан, валюты) — для команд. */
+    HudStore store() {
+        return store;
     }
 
     public HudManager manager() {

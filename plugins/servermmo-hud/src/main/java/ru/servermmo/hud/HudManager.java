@@ -12,14 +12,16 @@ final class HudManager extends BukkitRunnable {
     private final ServerMMOHud plugin;
     private final HudSettings settings;
     private final HudText text;
+    private final HudStore store;
     private final Map<UUID, PlayerHud> huds = new HashMap<>();
     /** Когда игрока впервые увидели без статуса пака, мс. */
     private final Map<UUID, Long> awaitingStatus = new HashMap<>();
 
-    HudManager(ServerMMOHud plugin, HudSettings settings, HudText text) {
+    HudManager(ServerMMOHud plugin, HudSettings settings, HudText text, HudStore store) {
         this.plugin = plugin;
         this.settings = settings;
         this.text = text;
+        this.store = store;
     }
 
     ServerMMOHud plugin() {
@@ -30,7 +32,7 @@ final class HudManager extends BukkitRunnable {
     public void run() {
         for (Player player : plugin.getServer().getOnlinePlayers()) {
             PlayerHud hud = huds.computeIfAbsent(player.getUniqueId(),
-                    uuid -> new PlayerHud(settings, text, player));
+                    uuid -> new PlayerHud(settings, text, store, player));
             try {
                 hud.tick();
             } catch (RuntimeException ex) {
@@ -91,7 +93,7 @@ final class HudManager extends BukkitRunnable {
     /** Показывает панель игроку (вход в игру). */
     void show(Player player) {
         PlayerHud hud = huds.computeIfAbsent(player.getUniqueId(),
-                uuid -> new PlayerHud(settings, text, player));
+                uuid -> new PlayerHud(settings, text, store, player));
         hud.invalidate();
         hud.tick();
     }
@@ -99,7 +101,7 @@ final class HudManager extends BukkitRunnable {
     /** Статус серверного ресурспака: загружен — HUD виден, нет — скрыт весь. */
     void packLoaded(Player player, boolean loaded) {
         PlayerHud hud = huds.computeIfAbsent(player.getUniqueId(),
-                uuid -> new PlayerHud(settings, text, player));
+                uuid -> new PlayerHud(settings, text, store, player));
         awaitingStatus.remove(player.getUniqueId());
         hud.packLoaded(loaded);
         if (loaded) {
@@ -110,7 +112,7 @@ final class HudManager extends BukkitRunnable {
     /** Игрок получил кастомный урон: вспыхнуть индикатору «−N♥» в хотбаре. */
     void recordDamage(Player player, long amount) {
         PlayerHud hud = huds.computeIfAbsent(player.getUniqueId(),
-                uuid -> new PlayerHud(settings, text, player));
+                uuid -> new PlayerHud(settings, text, store, player));
         hud.recordDamage(amount);
     }
 

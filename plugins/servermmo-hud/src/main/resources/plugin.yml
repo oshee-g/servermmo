@@ -11,7 +11,35 @@ commands:
     description: Сдвиг панели HUD
     usage: /hud offsetx <пиксели> | /hud anchorx <пиксели> | /hud scale <3|4|5> | /hud reset
     permission: servermmo.hud
+  class:
+    description: Класс игрока (панель HUD)
+    usage: /class <воин|маг|лучник|паладин|фермер|викинг|некромант|копейщик> [игрок]
+    permission: servermmo.hud
+  clan:
+    description: Клан игрока (панель HUD)
+    usage: /clan <название> | /clan level <число> | /clan xp <число>
+    permission: servermmo.hud
+  coins:
+    description: Монеты игрока (панель HUD)
+    usage: /coins <число> [игрок]
+    permission: servermmo.hud
+  star:
+    description: Коины игрока (панель HUD)
+    usage: /star <число> [игрок]
+    permission: servermmo.hud
+  bp:
+    description: Боевые очки игрока (панель HUD)
+    usage: /bp <число> [игрок]
+    permission: servermmo.hud
+  gems:
+    description: Нанагемы игрока (панель HUD)
+    usage: /gems <число> [игрок]
+    permission: servermmo.hud
+  armor:
+    description: Защита игрока (панель HUD)
+    usage: /armor <число> [игрок]
+    permission: servermmo.hud
 permissions:
   servermmo.hud:
-    description: Настройка HUD
+    description: Настройка HUD и его числовых данных
     default: op

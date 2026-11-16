@@ -43,6 +43,7 @@ public final class HudSettings {
     private int hotbarAnchorX;
     private long damageHoldMillis;
     private long damageFadeMillis;
+    private int abilitySlots;
 
     private HudSettings() {
     }
@@ -56,6 +57,7 @@ public final class HudSettings {
         settings.hotbarAnchorX = config.getInt("hud.hotbar-anchor-x", DEFAULT_HOTBAR_ANCHOR_X);
         settings.damageHoldMillis = Math.max(0L, config.getLong("hud.damage-hold-seconds", 5L)) * 1000L;
         settings.damageFadeMillis = Math.max(200L, config.getLong("hud.damage-fade-seconds", 2L)) * 1000L;
+        settings.abilitySlots = Math.max(0, Math.min(8, config.getInt("hud.ability-slots", 4)));
         if (settings.offsetX > 0) {
             plugin.getLogger().warning("hud.offset-x > 0 уводит панель вправо от центра");
         }
@@ -107,6 +109,11 @@ public final class HudSettings {
             scales[i] = SCALE_PRESETS[i][0];
         }
         return scales;
+    }
+
+    /** Сколько квадратов способностей рисовать справа от хотбара. */
+    public int abilitySlots() {
+        return abilitySlots;
     }
 
     /** Сколько индикатор урона висит в полной яркости, мс. */

@@ -7,41 +7,77 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
+import net.kyori.adventure.key.Key;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.Style;
 
 /**
  * Раскладка панели HUD из глифов ресурспака.
  *
  * <p>Клиент рисует панель строками босс-бара и сам центрует каждую строку.
- * Чтобы строки не «плясали» друг относительно друга, обе строки добиваются
- * пустыми глифами до одинаковой ширины: тогда клиент считает их ширина
- * равными и ставит на одну вертикаль.</p>
+ * Центр любой строки - это offset/2 относительно центра экрана, и от ширины
+ * самой строки он не зависит: поэтому текст встаёт по центру панели сам, а
+ * подгонять строки под одну ширину не нужно.</p>
  *
- * <p>Ширина глифа в bitmap-провайдере — последний непрозрачный пиксель + 1,
- * поэтому таблицу ширин считает {@code tools/gen_font_metrics.py} по самим PNG
- * и кладёт в {@code font-metrics.properties}. Значения ниже — только запасной
- * вариант, если файла нет.</p>
+ * <p>Панель класса - подложка под все четыре строки: она живёт в первой
+ * строке, а текст следующих трёх ложится поверх неё (шаг между строками
+ * босс-бара у клиента 10 + lineHeight = 19 px).</p>
+ *
+ * <p>Глифы пака и обычный текст смешиваются: цифры, значки и буквы LVXP
+ * рисуются шрифтом servermmo:hud, а ник и название клана - ванильным шрифтом,
+ * потому что в паке нет ни кириллицы, ни латиницы. Ширину ванильного текста
+ * сервер знает лишь приблизительно (см. {@link #vanillaWidth}), поэтому
+ * длинные ники могут стоять на пару пикселей не по центру.</p>
  */
 final class HudText {
 
-    /** Ширина колонки значка или подписи, px. */
-    static final int COLUMN_WIDTH = 18;
-    /** Зазор между значком и числом, px. */
-    static final int COLUMN_GAP = 2;
-    /** Щель между левым и правым блоками панели, px. */
-    static final int BLOCK_GAP = 8;
+    /** Глифы шрифта ресурспака. */
+    private static final Style GLYPHS = Style.style()
+            .font(Key.key("servermmo", "hud"))
+            .color(NamedTextColor.WHITE)
+            .build();
+    /** Обычный текст: ванильный шрифт клиента, того же размера и цвета. */
+    private static final Style VANILLA = Style.style()
+            .color(NamedTextColor.WHITE)
+            .build();
 
-    /** Сердце (здоровье). */
+    /** Панели классов: 8 шт. */
+    private static final int PANEL_BASE = 0xE500;
+    /** Ромбы уровней 1..100. */
+    private static final int LEVEL_BASE = 0xE400;
+    /** Снаряжение: heart, sword, axe, staff, hammer, scythe, trident, bow, spear, shield. */
+    private static final char GEAR_HEART = '\uE300';
+    private static final char GEAR_SWORD = '\uE301';
+    private static final char GEAR_SHIELD = '\uE309';
+    /** Валюты: монеты, коины, боевые очки, нанагемы, клан. */
+    private static final char MONEY_COINS = '\uE310';
+    private static final char MONEY_STAR = '\uE311';
+    private static final char MONEY_BATTLE = '\uE312';
+    private static final char MONEY_GEM = '\uE313';
+    private static final char MONEY_CLAN = '\uE314';
+    /** Слоты способностей: 8 шт. */
+    private static final int ABILITY_BASE = 0xE320;
+
+    /** Отступ текста от левого края панели, px. */
+    private static final int PANEL_PAD_LEFT = 12;
+    /** Зазор между значком и числом, px. */
+    private static final int ICON_GAP = 4;
+    /** Зазор между колонками строки, px. */
+    private static final int COLUMN_GAP = 8;
+
+    /** Сердце (здоровье) и меч (урон) - старые 8-пиксельные глифы. */
     static final char HEART = '\uE010';
-    /** Меч (урон). */
     static final char SWORD = '\uE011';
 
     private static final char BLANK_6 = '\uE10A';
     private static final char BLANK_4 = '\uE101';
     private static final char BLANK_2 = '\uE100';
     private static final char BLANK_1 = '\uE110';
-    /** Ступеней затухания индикатора урона (0 — полная яркость). */
+
+    /** Ступеней затухания индикатора урона (0 - полная яркость). */
     static final int FADE_STEPS = 5;
-    /** База кодовых точек ступеней: ступень L — FADE_BASE + L*16 + позиция. */
+    /** База кодовых точек ступеней: ступень L - FADE_BASE + L*16 + позиция. */
     private static final int FADE_BASE = 0xE200;
 
     private static final char SHIFT_RIGHT = '\uE110';
@@ -56,27 +92,37 @@ final class HudText {
 
     private static Map<Character, Integer> load(InputStream stream) {
         Map<Character, Integer> map = new HashMap<>();
-        // запасные значения: цифры 6 px, «1» 5 px, иконки 7 px
+        // запасные значения: цифры 7 px, «1» 6 px, значки 32 px, панель 240 px
         for (char digit = '0'; digit <= '9'; digit++) {
-            map.put(digit, 6);
+            map.put(digit, 7);
         }
-        map.put('1', 5);
-        map.put('/', 6);
-        map.put(' ', 1);
+        map.put('1', 6);
+        map.put('/', 7);
+        map.put(' ', 4);
         for (char letter : "LVXP".toCharArray()) {
-            map.put(letter, 6);
+            map.put(letter, 7);
         }
-        for (char icon : new char[]{HEART, SWORD, '\uE013'}) {
-            map.put(icon, 7);
+        map.put(HEART, 8);
+        map.put(SWORD, 8);
+        for (int i = 0; i < 10; i++) {
+            map.put((char) (0xE300 + i), 32);
         }
-        // ступени затухания индикатора урона: цифры 6 («1» — 5), минус 6, сердце 7
+        for (int i = 0; i < 8; i++) {
+            map.put((char) (ABILITY_BASE + i), 33);
+        }
+        for (int i = 0; i < 100; i++) {
+            map.put((char) (LEVEL_BASE + i), 33);
+        }
+        for (int i = 0; i < 8; i++) {
+            map.put((char) (PANEL_BASE + i), 240);
+        }
         for (int step = 0; step < FADE_STEPS; step++) {
             int base = FADE_BASE + step * 16;
             for (int digit = 0; digit <= 9; digit++) {
-                map.put((char) (base + digit), digit == 1 ? 5 : 6);
+                map.put((char) (base + digit), digit == 1 ? 6 : 7);
             }
-            map.put((char) (base + 10), 6);
-            map.put((char) (base + 11), 7);
+            map.put((char) (base + 10), 7);
+            map.put((char) (base + 11), 8);
         }
         if (stream == null) {
             return map;
@@ -97,18 +143,18 @@ final class HudText {
                         char ch = (char) Integer.parseInt(pair.substring(0, colon).trim(), 16);
                         map.put(ch, Integer.parseInt(pair.substring(colon + 1).trim()));
                     } catch (NumberFormatException ignored) {
-                        // битая строка — останется запасное значение
+                        // битая строка - останется запасное значение
                     }
                 }
             }
         } catch (IOException ignored) {
-            // не смогли прочитать — работаем по запасной таблице
+            // не смогли прочитать - работаем по запасной таблице
         }
         return map;
     }
 
     int width(char ch) {
-        return advances.getOrDefault(ch, 6);
+        return advances.getOrDefault(ch, 7);
     }
 
     int width(String text) {
@@ -120,52 +166,115 @@ final class HudText {
     }
 
     /**
-     * Обе строки панели, выровненные до одной ширины.
+     * Приблизительная ширина строки ванильным шрифтом (8 px).
      *
-     * <p>{@code offset} — сдвиг всей панели в пикселях интерфейса: отрицательный
-     * уводит её влево. Клиент центрует строку, поэтому сдвиг и есть положение
-     * панели на экране.</p>
-     *
-     * @return строка «здоровье/урон» и строка «уровень/опыт»
+     * <p>Точных метрик у сервера нет, поэтому узкие символы считаем по 2 px,
+     * пробел 4, остальные 6. Ошибка в несколько пикселей лишь сдвигает ник
+     * внутри панели, но не ломает раскладку.</p>
      */
-    String[] panel(long damage, long level, long xp, long xpToNext, int offset) {
-        // Здоровье переехало в хотбар (строка экшн-бара), наверху остались
-        // урон, уровень и опыт.
-        String first = block(String.valueOf(SWORD), Long.toString(damage));
-        String second = block("LVL", Long.toString(level))
-                + pad(BLOCK_GAP)
-                + block("XP", xp + "/" + xpToNext);
+    int vanillaWidth(String text) {
+        int total = 0;
+        for (int i = 0; i < text.length(); i++) {
+            total += vanillaCharWidth(text.charAt(i));
+        }
+        return total;
+    }
 
-        int width = Math.max(width(first), width(second));
-        String shift = shift(offset);
-        return new String[]{
-                shift + first + pad(width - width(first)),
-                shift + second + pad(width - width(second)),
-        };
+    private static int vanillaCharWidth(char ch) {
+        if (ch == ' ') {
+            return 4;
+        }
+        if ("il.,!:;'|".indexOf(ch) >= 0) {
+            return 2;
+        }
+        if ("tfr()[]{}".indexOf(ch) >= 0) {
+            return 5;
+        }
+        return 6;
     }
 
     /**
-     * Строка хотбара (экшн-бар): сердце и текущее здоровье, а справа —
-     * индикатор полученного урона «−25♥» нужной ступени затухания.
+     * Четыре строки панели.
      *
-     * <p>Экшн-бар клиент тоже центрирует. Сердце должно стоять у левого края
-     * хотбара (там, где были ванильные сердца), поэтому сдвиг считается от
-     * полной ширины строки: с появлением индикатора сердце не «прыгает».</p>
+     * <p>Первая - подложка-панель и поверх неё ник с классом, вторая - ромб
+     * уровня и опыт, третья - клан, четвёртая - четыре валюты.</p>
      *
-     * @param anchorX левый край строки относительно центра экрана, px
-     *                (-91 — левый край хотбара)
-     * @param fadeStep ступень затухания индикатора, -1 — индикатора нет
+     * @param offset сдвиг всей панели в пикселях интерфейса, отрицательный - влево
      */
-    String hotbar(long health, long lastDamage, int fadeStep, int anchorX) {
-        String body = block(String.valueOf(HEART), Long.toString(health));
-        if (fadeStep >= 0) {
-            body += pad(BLOCK_GAP) + indicator(lastDamage, fadeStep);
-        }
-        int shift = anchorX + width(body) / 2;
-        return shift(shift) + body;
+    Component[] panel(HudProfile profile, String playerName, long level, long xp, long xpToNext,
+                      int offset) {
+        char panelGlyph = (char) (PANEL_BASE + profile.classIndex());
+        int panelWidth = width(panelGlyph);
+
+        // Строка 1: подложка, затем возврат курсора в её начало и текст поверх.
+        // В конце - хвост до ширины панели: иначе клиент центрует строку по
+        // длине ника и ставит подложку не там, где остальные три строки.
+        String title = playerName + " · " + profile.className();
+        int tail = panelWidth - PANEL_PAD_LEFT - vanillaWidth(title);
+
+        Component first = Component.text(shift(offset), GLYPHS)
+                .append(Component.text(String.valueOf(panelGlyph), GLYPHS))
+                .append(Component.text(shift(-(panelWidth - PANEL_PAD_LEFT)), GLYPHS))
+                .append(Component.text(title, VANILLA))
+                .append(Component.text(pad(tail), GLYPHS));
+
+        // Строка 2: ромб уровня (номер уже нарисован на нём) и опыт.
+        String xpLine = String.valueOf((char) (LEVEL_BASE + levelIndex(level)))
+                + pad(COLUMN_GAP) + "XP" + xp + "/" + xpToNext;
+        Component second = Component.text(shift(offset) + xpLine, GLYPHS);
+
+        // Строка 3: клан - значок, название, ромб уровня клана и опыт клана.
+        String clanPrefix = shift(offset) + MONEY_CLAN + pad(COLUMN_GAP);
+        String clanSuffix = pad(COLUMN_GAP)
+                + (char) (LEVEL_BASE + levelIndex(profile.clanLevel()))
+                + pad(COLUMN_GAP) + profile.clanXp();
+        Component third = Component.text(clanPrefix, GLYPHS)
+                .append(Component.text(
+                        profile.clanName().isEmpty() ? "Без клана" : profile.clanName(), VANILLA))
+                .append(Component.text(clanSuffix, GLYPHS));
+
+        // Строка 4: четыре валюты - значок и число.
+        String money = "" + MONEY_COINS + pad(ICON_GAP) + profile.coins() + pad(COLUMN_GAP)
+                + MONEY_STAR + pad(ICON_GAP) + profile.starCoins() + pad(COLUMN_GAP)
+                + MONEY_BATTLE + pad(ICON_GAP) + profile.battlePoints() + pad(COLUMN_GAP)
+                + MONEY_GEM + pad(ICON_GAP) + profile.nanogems();
+        Component fourth = Component.text(shift(offset) + money, GLYPHS);
+
+        return new Component[]{first, second, third, fourth};
     }
 
-    /** «−25♥» глифами ступени затухания (0 — полная яркость). */
+    /**
+     * Строка хотбара (экшн-бар): здоровье, урон и защита у левого края
+     * хотбара, а справа от самого хотбара - квадраты способностей.
+     *
+     * @param anchorX левый край строки относительно центра экрана, px
+     *                (-91 - левый край хотбара)
+     * @param fadeStep ступень затухания индикатора, -1 - индикатора нет
+     * @param abilitySlots сколько квадратов способностей рисовать
+     */
+    Component hotbar(long health, long damage, long armor, long lastDamage, int fadeStep,
+                     int anchorX, int abilitySlots) {
+        String body = "" + GEAR_HEART + pad(ICON_GAP) + health + pad(COLUMN_GAP)
+                + GEAR_SWORD + pad(ICON_GAP) + damage + pad(COLUMN_GAP)
+                + GEAR_SHIELD + pad(ICON_GAP) + armor;
+        if (fadeStep >= 0) {
+            body += pad(COLUMN_GAP) + indicator(lastDamage, fadeStep);
+        }
+        StringBuilder line = new StringBuilder(shift(anchorX + width(body) / 2));
+        line.append(body);
+        // Правый край хотбара - это +91 от центра; способности встают за ним.
+        int slots = Math.max(0, Math.min(8, abilitySlots));
+        if (slots > 0) {
+            int bodyEnd = anchorX + width(body);
+            line.append(pad(Math.max(0, 91 + 6 - bodyEnd)));
+            for (int i = 0; i < slots; i++) {
+                line.append((char) (ABILITY_BASE + i));
+            }
+        }
+        return Component.text(line.toString(), GLYPHS);
+    }
+
+    /** «-25♥» глифами ступени затухания (0 - полная яркость). */
     String indicator(long amount, int fadeStep) {
         int step = Math.max(0, Math.min(FADE_STEPS - 1, fadeStep));
         int base = FADE_BASE + step * 16;
@@ -179,9 +288,10 @@ final class HudText {
         return builder.toString();
     }
 
-    /** Колонка значка или подписи слева плюс число справа от неё. */
-    private String block(String label, String value) {
-        return pad(COLUMN_WIDTH - width(label)) + label + pad(COLUMN_GAP) + value;
+    /** Номер глифа-ромба для уровня: уровень 1 - первый ромб, 100 - последний. */
+    private static int levelIndex(long level) {
+        long index = Math.max(1L, level) - 1L;
+        return (int) Math.min(99L, index);
     }
 
     /** Пустые глифы ровно на {@code pixels} пикселей. */
@@ -206,9 +316,8 @@ final class HudText {
         };
     }
 
-    /** Сдвиг курсора на {@code pixels}: положительный — вправо, отрицательный — влево. */
+    /** Сдвиг курсора на {@code pixels}: положительный - вправо, отрицательный - влево. */
     String shift(int pixels) {
-        // В паке есть сдвиги до 1023 px — для панели этого хватает с запасом.
         int value = Math.max(-1023, Math.min(1023, pixels));
         if (value == 0) {
             return "";

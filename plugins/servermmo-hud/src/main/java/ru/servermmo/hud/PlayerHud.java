@@ -1,5 +1,6 @@
 package ru.servermmo.hud;
 
+import java.util.Arrays;
 import java.util.Set;
 import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.key.Key;
@@ -37,13 +38,13 @@ final class PlayerHud {
 
     private final HudSettings settings;
     private final HudText text;
+    private final HudStore store;
     private final Player player;
-    private final BossBar first;
-    private final BossBar second;
+    /** Четыре строки панели: подложка+ник, уровень, клан, валюты. */
+    private final BossBar[] bars = new BossBar[4];
 
     private boolean visible;
-    private String lastFirst;
-    private String lastSecond;
+    private final Component[] lastLines = new Component[4];
 
     /**
      * Поставил ли клиент серверный ресурспак. Пока пак не загружен, игрок не
@@ -59,15 +60,17 @@ final class PlayerHud {
     /** Последний полученный урон и когда он случился (мс). */
     private long lastDamage;
     private long lastDamageAt;
-    private String lastActionBar;
+    private Component lastActionBar2;
     private long ticksSinceActionBar;
 
-    PlayerHud(HudSettings settings, HudText text, Player player) {
+    PlayerHud(HudSettings settings, HudText text, HudStore store, Player player) {
         this.settings = settings;
         this.text = text;
+        this.store = store;
         this.player = player;
-        this.first = newBar();
-        this.second = newBar();
+        for (int i = 0; i < bars.length; i++) {
+            this.bars[i] = newBar();
+        }
     }
 
     private static BossBar newBar() {
@@ -91,7 +94,7 @@ final class PlayerHud {
             clearActionBar();
         } else {
             invalidate();
-            lastActionBar = null; // строку хотбара перешлём в ближайшем тике
+            lastActionBar2 = null; // строку хотбара перешлём в ближайшем тике
         }
     }
 
@@ -125,8 +128,9 @@ final class PlayerHud {
     /** Показать панель (только если ресурспак загружен). */
     void show() {
         if (!visible && packLoaded) {
-            player.showBossBar(first);
-            player.showBossBar(second);
+            for (BossBar bar : bars) {
+                player.showBossBar(bar);
+            }
             visible = true;
         }
     }
@@ -134,8 +138,9 @@ final class PlayerHud {
     /** Убрать панель (выход, выключение плагина, нет ресурспака). */
     void hide() {
         if (visible) {
-            player.hideBossBar(first);
-            player.hideBossBar(second);
+            for (BossBar bar : bars) {
+                player.hideBossBar(bar);
+            }
             visible = false;
         }
     }
@@ -149,8 +154,7 @@ final class PlayerHud {
 
     /** Сбросить кэш текста: после смены настроек строки пересоберутся. */
     void invalidate() {
-        lastFirst = null;
-        lastSecond = null;
+        java.util.Arrays.fill(lastLines, null);
     }
 
     void tick() {
@@ -184,19 +188,17 @@ final class PlayerHud {
             }
         }
 
-        String[] lines = text.panel(damage, level, xp, xpToNext, settings.offsetX());
-        String firstLine = lines[0];
-        String secondLine = lines[1];
-        if (!firstLine.equals(lastFirst)) {
-            first.name(Component.text(firstLine, HUD_STYLE));
-            lastFirst = firstLine;
-        }
-        if (!secondLine.equals(lastSecond)) {
-            second.name(Component.text(secondLine, HUD_STYLE));
-            lastSecond = secondLine;
+        HudProfile profile = store.get(player.getUniqueId());
+        Component[] lines = text.panel(profile, player.getName(), level, xp, xpToNext,
+                settings.offsetX());
+        for (int i = 0; i < lines.length; i++) {
+            if (!lines[i].equals(lastLines[i])) {
+                bars[i].name(lines[i]);
+                lastLines[i] = lines[i];
+            }
         }
 
-        tickActionBar(health);
+        tickActionBar(health, damage, profile.armor());
     }
 
     /**
@@ -205,7 +207,7 @@ final class PlayerHud {
      * яркости {@code damage-hold-seconds}, затем ступенями затухает и
      * пропадает; новый урон вспыхивает его заново.
      */
-    private void tickActionBar(long health) {
+    private void tickActionBar(long health, long damage, long armor) {
         int fadeStep = -1;
         if (lastDamageAt > 0L) {
             long elapsed = System.currentTimeMillis() - lastDamageAt;
@@ -221,12 +223,13 @@ final class PlayerHud {
                 }
             }
         }
-        String line = text.hotbar(health, lastDamage, fadeStep, settings.hotbarAnchorX());
+        Component line = text.hotbar(health, damage, armor, lastDamage, fadeStep,
+                settings.hotbarAnchorX(), settings.abilitySlots());
         ticksSinceActionBar++;
         // Экшн-бар сам гаснет примерно за 3 секунды: пересылаем раз в секунду,
         // даже если строка не менялась.
-        if (!line.equals(lastActionBar) || ticksSinceActionBar >= 10L) {
-            player.sendActionBar(Component.text(line, HUD_STYLE));
+        if (!line.equals(lastActionBar2) || ticksSinceActionBar >= 10L) {
+            player.sendActionBar(line);
             lastActionBar = line;
             ticksSinceActionBar = 0L;
             actionBarCleared = false;

@@ -62,10 +62,9 @@ public final class ServerMMOHud extends JavaPlugin {
         getLogger().info("ServerMMOHud включён: панель строками босс-бара, offset-x="
                 + settings.offsetX() + " px, anchor-x=" + settings.hotbarAnchorX()
                 + " px, здоровье и индикатор урона — строкой хотбара; "
-                + "без загруженного ресурспака HUD полностью скрыт; "
+                + "ресурспак раздаёт сервер (server.properties); "
                 + "подстройка: /hud offsetx <px>, /hud anchorx <px>, /hud scale <3|4|5>, /hud reset");
-        getLogger().info("Ссылка на ресурспак в server.properties: " + resourcePackSummary());
-        checkResourcePackHash();
+
     }
 
     @Override
@@ -78,6 +77,19 @@ public final class ServerMMOHud extends JavaPlugin {
         if (store != null) {
             store.save();
         }
+    }
+
+    public HudSettings settings() {
+        return settings;
+    }
+
+    /** Числовые данные панели (класс, клан, валюты) — для команд. */
+    HudStore store() {
+        return store;
+    }
+
+    public HudManager manager() {
+        return manager;
     }
 
     public HudSettings settings() {

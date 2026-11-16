@@ -19,7 +19,9 @@ import ru.servermmo.core.player.PlayerProfile;
  * клиент.</p>
  *
  * <p>Полоса босс-бара гасится прозрачными спрайтами {@code white_*} в пакете:
- * видны только строки. Белый цвет в ванили не используется, поэтому полосы
+ * видны только строки. Ресурспак раздаёт сам сервер строкой
+ * {@code resource-pack} в {@code server.properties}; плагин про пак ничего не
+ * знает и за его загрузкой не следит.</p> Белый цвет в ванили не используется, поэтому полосы
  * Хранителя, Дракона и рейда остаются как есть.</p>
  *
  * <p>Строки центрируются клиентом, поэтому положение панели задаётся сдвигом
@@ -38,15 +40,6 @@ final class PlayerHud {
     private boolean visible;
     private final Component[] lastLines = new Component[4];
 
-    /**
-     * Поставил ли клиент серверный ресурспак. Пока пак не загружен, игрок не
-     * должен видеть ничего нашего: без пака полосы босс-баров белые, а вместо
-     * глифов — пустые квадратики. Поэтому и босс-бары, и строка хотбара
-     * показываются только после SUCCESSFULLY_LOADED.
-     */
-    private boolean packLoaded;
-    /** Приходил ли от клиента хоть какой-то статус пака. */
-    private boolean statusSeen;
     private boolean actionBarCleared;
 
     /** Последний полученный урон и когда он случился (мс). */
@@ -74,36 +67,9 @@ final class PlayerHud {
         return player;
     }
 
-    /** Статус ресурспака у этого игрока: загружен — можно показывать HUD. */
-    void packLoaded(boolean loaded) {
-        if (this.packLoaded == loaded) {
-            return;
-        }
-        this.packLoaded = loaded;
-        this.statusSeen = true;
-        if (!loaded) {
-            hide();
-            clearActionBar();
-        } else {
-            invalidate();
-            lastActionBar2 = null; // строку хотбара перешлём в ближайшем тике
-        }
-    }
-
-    boolean packLoaded() {
-        return packLoaded;
-    }
-
-    /** Приходил ли от клиента статус ресурспака (для диагностики). */
-    boolean statusSeen() {
-        return statusSeen;
-    }
-
     /** Краткая сводка состояния HUD для /hud debug. */
     String debugLine() {
-        return (packLoaded ? "пак загружен" : (statusSeen
-                ? "пак НЕ загружен (клиент прислал отказ/сбой)" : "статус пака не получен"))
-                + ", панель " + (visible ? "показана" : "скрыта")
+        return "панель " + (visible ? "показана" : "скрыта")
                 + ", offset-x=" + settings.offsetX()
                 + ", anchor-x=" + settings.hotbarAnchorX();
     }
@@ -119,7 +85,7 @@ final class PlayerHud {
 
     /** Показать панель (только если ресурспак загружен). */
     void show() {
-        if (!visible && packLoaded) {
+        if (!visible) {
             for (BossBar bar : bars) {
                 player.showBossBar(bar);
             }
@@ -127,7 +93,7 @@ final class PlayerHud {
         }
     }
 
-    /** Убрать панель (выход, выключение плагина, нет ресурспака). */
+    /** Убрать панель (выход игрока, выключение плагина). */
     void hide() {
         if (visible) {
             for (BossBar bar : bars) {
@@ -152,13 +118,6 @@ final class PlayerHud {
     void tick() {
         if (!player.isOnline()) {
             hide();
-            return;
-        }
-        if (!packLoaded) {
-            // Без ресурспака не показываем ничего: ни полосы босс-баров, ни
-            // строку хотбара — иначе игрок увидит белые полосы и квадратики.
-            hide();
-            clearActionBar();
             return;
         }
         show();

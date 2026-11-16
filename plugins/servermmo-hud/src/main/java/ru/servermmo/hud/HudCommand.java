@@ -92,15 +92,8 @@ public final class HudCommand implements CommandExecutor {
                     "HUD: " + plugin.manager().debugLine(player), NamedTextColor.YELLOW));
         }
         sender.sendMessage(Component.text(
-                "Пак на сервере: " + plugin.resourcePackSummary(), NamedTextColor.GRAY));
-        sender.sendMessage(Component.text(
-                "Если «пак загружен» — панель работает, а отступ не под ваш "
-                        + "масштаб интерфейса: /hud offsetx 0 покажет её по центру верха.",
-                NamedTextColor.GRAY));
-        sender.sendMessage(Component.text(
-                "Если «статус не получен» — клиент молча не берёт серверный пак: "
-                        + "в списке серверов «Изменить» -> «Пакеты ресурсов сервера» "
-                        + "-> «Включены» (или удалите сервер из списка и добавьте заново).",
+                "Если панель не видна — она работает, а отступ не под ваш масштаб "
+                        + "интерфейса: /hud offsetx 0 покажет её по центру верха.",
                 NamedTextColor.GRAY));
     }
 

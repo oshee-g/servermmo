@@ -2,7 +2,7 @@ name: ServerMMOHud
 version: '1.0.0'
 main: ru.servermmo.hud.ServerMMOHud
 api-version: '26.3'
-description: Панель HUD в левом верхнем углу - здоровье, урон, уровень, опыт
+description: Панель HUD в левом верхнем углу - класс, уровень, клан, валюты
 author: ServerMMO
 website: https://github.com/oshee-g/servermmo
 depend: [ServerMMOCore]

@@ -288,7 +288,7 @@ final class HudCommand implements CommandExecutor {
     // --- диагностика -------------------------------------------------------
 
     /** Показать, почему HUD может стоять не там: масштаб, интерфейс, сдвиг. */
-    private void debug(CommandSender sender) {
+    private boolean debug(CommandSender sender) {
         HudProfile profile = null;
         if (sender instanceof Player player) {
             profile = plugin.store().get(player.getUniqueId());
@@ -327,6 +327,7 @@ final class HudCommand implements CommandExecutor {
                 "Сменили масштаб интерфейса в настройках игры — скажите /hud scale "
                         + "<число>: отступ от края сохранится, панель останется в углу.",
                 NamedTextColor.GRAY));
+        return true;
     }
 
     private void help(CommandSender sender) {

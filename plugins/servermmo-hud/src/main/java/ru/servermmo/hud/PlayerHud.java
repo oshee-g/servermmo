@@ -181,7 +181,8 @@ final class PlayerHud {
             }
         }
         Component line = text.hotbar(health, damage, armor, lastDamage, fadeStep,
-                settings.hotbarAnchorX(), settings.abilitySlots(), settings.layout(profile));
+                settings.hotbarAnchorX(), settings.abilitySlots(),
+                settings.layout(store.get(player.getUniqueId())));
         ticksSinceActionBar++;
         // Экшн-бар сам гаснет примерно за 3 секунды: пересылаем раз в секунду,
         // даже если строка не менялась.

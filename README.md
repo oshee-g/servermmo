@@ -258,7 +258,7 @@ WorldEdit/WorldGuard, Simple Voice Chat. Подробнее — в `plugins/READ
 ничего не конфликтовало:
 
 ```properties
-resource-pack=https://drive.usercontent.google.com/download?id=17tX_yNScUcmUIe3KGoRGgOzTKWbbzM4P&export=download&confirm=t
+resource-pack=https://drive.usercontent.google.com/download?id=1HFQn1MA9i_E0Ahf4Sk7oox-V2ExC45dx&export=download&confirm=t
 resource-pack-sha1=СЧИТАЕТСЯ_ИЗ_ФАЙЛА
 resource-pack-prompt={"text":"ServerMMO HUD resource pack","color":"gold"}
 require-resource-pack=false
@@ -295,7 +295,7 @@ require-resource-pack=false
 
 Открой ссылку из `server.properties` в браузере **на другом устройстве**
 (например, телефон в том же Wi-Fi). Должен скачаться `servermmo-hud.zip`
-на 394 073 байт. Если ссылка не открывается — дело в адресе или в том, что
+на 446 819 байт. Если ссылка не открывается — дело в адресе или в том, что
 файл лежит в приватном репозитории, а не в Minecraft. Проверить SHA-1 файла:
 `certutil -hashfile server\resourcepack\servermmo-hud.zip SHA1` в Windows.
 

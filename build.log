@@ -111,29 +111,29 @@
 [INFO] -------------------------------------------------------------
 [ERROR] COMPILATION ERROR : 
 [INFO] -------------------------------------------------------------
-[ERROR] /home/runner/work/servermmo/servermmo/plugins/servermmo-hud/src/main/java/ru/servermmo/hud/PlayerHud.java:[233,13] cannot find symbol
-  symbol:   variable lastActionBar
-  location: class ru.servermmo.hud.PlayerHud
-[INFO] 1 error
+[ERROR] /home/runner/work/servermmo/servermmo/plugins/servermmo-hud/src/main/java/ru/servermmo/hud/ServerMMOHud.java:[95,24] method settings() is already defined in class ru.servermmo.hud.ServerMMOHud
+[ERROR] /home/runner/work/servermmo/servermmo/plugins/servermmo-hud/src/main/java/ru/servermmo/hud/ServerMMOHud.java:[100,14] method store() is already defined in class ru.servermmo.hud.ServerMMOHud
+[ERROR] /home/runner/work/servermmo/servermmo/plugins/servermmo-hud/src/main/java/ru/servermmo/hud/ServerMMOHud.java:[104,23] method manager() is already defined in class ru.servermmo.hud.ServerMMOHud
+[INFO] 3 errors 
 [INFO] -------------------------------------------------------------
 [INFO] ------------------------------------------------------------------------
 [INFO] Reactor Summary for ServerMMO 1.0.0:
 [INFO] 
-[INFO] ServerMMO .......................................... SUCCESS [  0.273 s]
-[INFO] ServerMMOCore ...................................... SUCCESS [  3.342 s]
-[INFO] ServerMMOMobs ...................................... SUCCESS [  0.479 s]
-[INFO] ServerMMOPlayers ................................... SUCCESS [  0.330 s]
-[INFO] ServerMMOHud ....................................... FAILURE [  0.486 s]
+[INFO] ServerMMO .......................................... SUCCESS [  0.465 s]
+[INFO] ServerMMOCore ...................................... SUCCESS [  4.006 s]
+[INFO] ServerMMOMobs ...................................... SUCCESS [  0.536 s]
+[INFO] ServerMMOPlayers ................................... SUCCESS [  0.393 s]
+[INFO] ServerMMOHud ....................................... FAILURE [  0.438 s]
 [INFO] ------------------------------------------------------------------------
 [INFO] BUILD FAILURE
 [INFO] ------------------------------------------------------------------------
-[INFO] Total time:  5.156 s
-[INFO] Finished at: 2026-11-16T17:05:05Z
+[INFO] Total time:  6.044 s
+[INFO] Finished at: 2026-11-16T17:50:05Z
 [INFO] ------------------------------------------------------------------------
-[ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.13.0:compile (default-compile) on project servermmo-hud: Compilation failure
-[ERROR] /home/runner/work/servermmo/servermmo/plugins/servermmo-hud/src/main/java/ru/servermmo/hud/PlayerHud.java:[233,13] cannot find symbol
-[ERROR]   symbol:   variable lastActionBar
-[ERROR]   location: class ru.servermmo.hud.PlayerHud
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.13.0:compile (default-compile) on project servermmo-hud: Compilation failure: Compilation failure: 
+[ERROR] /home/runner/work/servermmo/servermmo/plugins/servermmo-hud/src/main/java/ru/servermmo/hud/ServerMMOHud.java:[95,24] method settings() is already defined in class ru.servermmo.hud.ServerMMOHud
+[ERROR] /home/runner/work/servermmo/servermmo/plugins/servermmo-hud/src/main/java/ru/servermmo/hud/ServerMMOHud.java:[100,14] method store() is already defined in class ru.servermmo.hud.ServerMMOHud
+[ERROR] /home/runner/work/servermmo/servermmo/plugins/servermmo-hud/src/main/java/ru/servermmo/hud/ServerMMOHud.java:[104,23] method manager() is already defined in class ru.servermmo.hud.ServerMMOHud
 [ERROR] -> [Help 1]
 [ERROR] 
 [ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.

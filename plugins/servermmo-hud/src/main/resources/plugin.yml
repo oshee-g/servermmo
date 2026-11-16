@@ -8,9 +8,9 @@ website: https://github.com/oshee-g/servermmo
 depend: [ServerMMOCore]
 commands:
   hud:
-    description: Сдвиг панели HUD
-    usage: /hud offsetx <пиксели> | /hud anchorx <пиксели> | /hud scale <3|4|5> | /hud reset
-    permission: servermmo.hud
+    description: Подгонка панели HUD под экран игрока
+    usage: /hud scale <1..8|auto> | /hud screen <ширина> [высота] | /hud margin <пиксели> | /hud offsetx <пиксели> | /hud anchorx <пиксели> | /hud debug | /hud reset
+    permission: servermmo.hud.self
   class:
     description: Класс игрока (панель HUD)
     usage: /class <воин|маг|лучник|паладин|фермер|викинг|некромант|копейщик> [игрок]
@@ -43,3 +43,6 @@ permissions:
   servermmo.hud:
     description: Настройка HUD и его числовых данных
     default: op
+  servermmo.hud.self:
+    description: Настройка HUD под свой экран: масштаб интерфейса и разрешение окна
+    default: true

@@ -24,9 +24,11 @@ import ru.servermmo.core.player.PlayerProfile;
  * знает и за его загрузкой не следит.</p> Белый цвет в ванили не используется, поэтому полосы
  * Хранителя, Дракона и рейда остаются как есть.</p>
  *
- * <p>Строки центрируются клиентом, поэтому положение панели задаётся сдвигом
- * в пикселях ({@code /hud offsetx}). Сдвиг пересчитывается после смены
- * настроек — см. {@link HudManager#reset(Player)}.</p>
+ * <p>Строки центрируются клиентом, поэтому положение панели зависит от
+ * ширины интерфейса, а та — от разрешения окна и масштаба GUI. Плагин
+ * считает сдвиг сам: игрок один раз называет свой масштаб интерфейса
+ * ({@code /hud scale}), а отступ панели от края экрана остаётся тем же при
+ * любом масштабе — см. {@link HudLayout}.</p>
  */
 final class PlayerHud {
 
@@ -69,8 +71,12 @@ final class PlayerHud {
 
     /** Краткая сводка состояния HUD для /hud debug. */
     String debugLine() {
+        HudLayout layout = settings.layout(store.get(player.getUniqueId()));
         return "панель " + (visible ? "показана" : "скрыта")
-                + ", offset-x=" + settings.offsetX()
+                + ", интерфейс " + layout.interfaceWidth() + " px"
+                + ", отступ от края " + layout.marginLeft() + " px"
+                + ", сдвиг " + layout.panelShift(text.panelWidth(
+                        store.get(player.getUniqueId()).classIndex())) + " px"
                 + ", anchor-x=" + settings.hotbarAnchorX();
     }
 
@@ -141,7 +147,7 @@ final class PlayerHud {
 
         HudProfile profile = store.get(player.getUniqueId());
         Component[] lines = text.panel(profile, player.getName(), level, xp, xpToNext,
-                settings.offsetX());
+                settings.layout(profile));
         for (int i = 0; i < lines.length; i++) {
             if (!lines[i].equals(lastLines[i])) {
                 bars[i].name(lines[i]);
@@ -175,7 +181,7 @@ final class PlayerHud {
             }
         }
         Component line = text.hotbar(health, damage, armor, lastDamage, fadeStep,
-                settings.hotbarAnchorX(), settings.abilitySlots());
+                settings.hotbarAnchorX(), settings.abilitySlots(), settings.layout(profile));
         ticksSinceActionBar++;
         // Экшн-бар сам гаснет примерно за 3 секунды: пересылаем раз в секунду,
         // даже если строка не менялась.

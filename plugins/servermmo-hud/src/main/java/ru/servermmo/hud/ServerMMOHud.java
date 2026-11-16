@@ -63,11 +63,16 @@ public final class ServerMMOHud extends JavaPlugin {
             dataCommand.setExecutor(data);
         }
 
-        getLogger().info("ServerMMOHud включён: панель строками босс-бара, offset-x="
-                + settings.offsetX() + " px, anchor-x=" + settings.hotbarAnchorX()
+        getLogger().info("ServerMMOHud включён: панель строками босс-бара, экран "
+                + settings.screenWidth() + "x" + settings.screenHeight()
+                + ", масштаб " + (settings.guiScale() == 0 ? "Авто" : settings.guiScale())
+                + " (интерфейс " + settings.interfaceWidth()
+                + " px), отступ от края " + settings.marginLeft()
+                + " px, anchor-x=" + settings.hotbarAnchorX()
                 + " px, здоровье, урон и защита — строкой хотбара; "
                 + "ресурспак раздаёт сервер (server.properties); "
-                + "подстройка: /hud offsetx <px>, /hud anchorx <px>, /hud scale <3|4|5>, /hud reset");
+                + "подстройка: /hud scale <1..8|auto>, /hud screen <ширина>, "
+                + "/hud margin <px>, /hud offsetx <px>, /hud anchorx <px>, /hud reset");
     }
 
     @Override
@@ -89,6 +94,11 @@ public final class ServerMMOHud extends JavaPlugin {
     /** Числовые данные панели (класс, клан, валюты) — для команд. */
     HudStore store() {
         return store;
+    }
+
+    /** Раскладка панели: по ней команды считают отступы под экран игрока. */
+    HudText text() {
+        return text;
     }
 
     public HudManager manager() {

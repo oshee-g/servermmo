@@ -20,6 +20,12 @@ import net.kyori.adventure.text.format.Style;
  * самой строки он не зависит: поэтому текст встаёт по центру панели сам, а
  * подгонять строки под одну ширину не нужно.</p>
  *
+ * <p>Отсюда же и вся арифметика отступов (подробно в {@link HudLayout}):
+ * сдвиг двигает строку на <b>половину</b> своей величины, а ширина
+ * интерфейса, от которой считается центр, зависит от разрешения окна и
+ * масштаба GUI. Поэтому готовый сдвиг в конфиг не кладём — его считает
+ * {@link HudLayout} по масштабу интерфейса игрока.</p>
+ *
  * <p>Панель класса - подложка под все четыре строки: она живёт в первой
  * строке, а текст следующих трёх ложится поверх неё (шаг между строками
  * босс-бара у клиента 10 + lineHeight = 19 px).</p>
@@ -94,7 +100,15 @@ final class HudText {
 
     private static final char SHIFT_RIGHT = '\uE110';
     private static final char SHIFT_LEFT = '\uE120';
-    private static final int SHIFT_BITS = 9;
+
+    /**
+     * Старший бит сдвига: глифы \uE110+i и \uE120+i дают +2^i и -2^i.
+     *
+     * <p>Бит 11 — это ±2048, то есть любой сдвиг до ±4095 px. Раньше хватало
+     * 9 бита (±1023), но этого не достаёт до левого края на масштабе 1 и на
+     * широком экране: интерфейс там бывает шире 2048 px.</p>
+     */
+    private static final int SHIFT_BITS = 11;
 
     private final Map<Character, Integer> advances;
 
@@ -205,18 +219,30 @@ final class HudText {
         return 6;
     }
 
+    /** Ширина глифа-панели класса: по ней считается сдвиг всей панели. */
+    int panelWidth(int classIndex) {
+        return width((char) (PANEL_BASE + Math.max(0, classIndex)));
+    }
+
     /**
      * Четыре строки панели.
      *
      * <p>Первая - подложка-панель и поверх неё ник с классом, вторая - ромб
      * уровня и опыт, третья - клан, четвёртая - четыре валюты.</p>
      *
-     * @param offset сдвиг всей панели в пикселях интерфейса, отрицательный - влево
+     * <p>Все четыре строки получают один и тот же сдвиг {@code P}, поэтому их
+     * центры совпадают (центр строки всегда в {@code W/2 + P/2}), а левый
+     * край панели стоит ровно в {@code margin-left} от края экрана — см.
+     * {@link HudLayout}. Ставить сдвиг в конфиг нельзя: он в пикселях
+     * интерфейса и при смене масштаба GUI меняется в разы.</p>
+     *
+     * @param layout геометрия под экран игрока (ширина интерфейса и отступ)
      */
     Component[] panel(HudProfile profile, String playerName, long level, long xp, long xpToNext,
-                      int offset) {
+                      HudLayout layout) {
         char panelGlyph = (char) (PANEL_BASE + profile.classIndex());
         int panelWidth = width(panelGlyph);
+        int offset = layout.panelShift(panelWidth);
 
         // Строка 1: подложка, затем возврат курсора в её начало и текст поверх.
         // В конце - хвост до ширины панели: иначе клиент центрует строку по
@@ -263,16 +289,20 @@ final class HudText {
      *                (-91 - левый край хотбара)
      * @param fadeStep ступень затухания индикатора, -1 - индикатора нет
      * @param abilitySlots сколько квадратов способностей рисовать
+     * @param layout геометрия под экран игрока
      */
     Component hotbar(long health, long damage, long armor, long lastDamage, int fadeStep,
-                     int anchorX, int abilitySlots) {
+                     int anchorX, int abilitySlots, HudLayout layout) {
         String body = "" + GEAR_HEART + pad(ICON_GAP) + health + pad(COLUMN_GAP)
                 + GEAR_SWORD + pad(ICON_GAP) + damage + pad(COLUMN_GAP)
                 + GEAR_SHIELD + pad(ICON_GAP) + armor;
         if (fadeStep >= 0) {
             body += pad(COLUMN_GAP) + indicator(lastDamage, fadeStep);
         }
-        StringBuilder line = new StringBuilder(shift(anchorX + width(body) / 2));
+        // Якорь удваивается: сдвиг двигает строку лишь наполовину своей
+        // величины, потому что клиент центрует строку по её суммарной ширине.
+        StringBuilder line = new StringBuilder(
+                shift(HudLayout.anchoredShift(anchorX, width(body), layout.interfaceWidth())));
         line.append(body);
         // Правый край хотбара - это +91 от центра; способности встают за ним.
         int slots = Math.max(0, Math.min(8, abilitySlots));
@@ -330,7 +360,7 @@ final class HudText {
 
     /** Сдвиг курсора на {@code pixels}: положительный - вправо, отрицательный - влево. */
     String shift(int pixels) {
-        int value = Math.max(-1023, Math.min(1023, pixels));
+        int value = Math.max(-HudLayout.MAX_SHIFT, Math.min(HudLayout.MAX_SHIFT, pixels));
         if (value == 0) {
             return "";
         }

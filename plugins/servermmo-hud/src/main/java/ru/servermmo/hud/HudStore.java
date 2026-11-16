@@ -53,6 +53,10 @@ final class HudStore {
             profile.battlePoints(data.getLong(path + "battle-points", 0L));
             profile.nanogems(data.getLong(path + "nanogems", 0L));
             profile.armor(data.getLong(path + "armor", 0L));
+            // Масштаб интерфейса и разрешение окна: чем считать отступ панели
+            profile.guiScale(data.getInt(path + "gui-scale", 0));
+            profile.screenWidth(data.getInt(path + "screen-width", 0));
+            profile.screenHeight(data.getInt(path + "screen-height", 0));
             profiles.put(uuid, profile);
         }
         plugin.getLogger().info("ServerMMOHud: профилей панели загружено " + profiles.size());
@@ -76,6 +80,9 @@ final class HudStore {
             data.set(path + "battle-points", profile.battlePoints());
             data.set(path + "nanogems", profile.nanogems());
             data.set(path + "armor", profile.armor());
+            data.set(path + "gui-scale", profile.guiScale());
+            data.set(path + "screen-width", profile.screenWidth());
+            data.set(path + "screen-height", profile.screenHeight());
         }
         try {
             data.save(file);

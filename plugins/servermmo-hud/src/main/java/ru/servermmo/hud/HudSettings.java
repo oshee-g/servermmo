@@ -2,43 +2,61 @@ package ru.servermmo.hud;
 
 import org.bukkit.plugin.java.JavaPlugin;
 
-/** Настройки HUD из {@code config.yml}. */
+/**
+ * Настройки HUD из {@code config.yml}.
+ *
+ * <p>Главное здесь — не «сдвиг панели», а три величины, из которых он
+ * считается: <b>разрешение окна</b>, <b>масштаб интерфейса</b> и
+ * <b>отступ панели от левого края экрана</b>. Два последних сервер узнать не
+ * может — клиент их не присылает (проверено по исходникам 26.3: в
+ * {@code ClientInformation} только язык, обзор, чат, руки и частицы) —
+ * поэтому их вводит игрок один раз командой {@code /hud scale}, а плагин
+ * пересчитывает отступы под любой масштаб.</p>
+ *
+ * <p>Отступ от края экрана ({@code margin-left}) от масштаба не зависит:
+ * панель стоит в углу одинаково и при масштабе 2, и при масштабе 5. Сам же
+ * сдвиг строки ({@code offset-x}) в пикселях интерфейса при смене масштаба
+ * меняется в разы — поэтому его и нельзя хранить: на чужом масштабе панель
+ * уезжает за край и кажется, что HUD совсем не работает.</p>
+ */
 public final class HudSettings {
 
+    /** Заводское разрешение окна игры, в реальных пикселях. */
+    public static final int DEFAULT_SCREEN_WIDTH = 1920;
+    public static final int DEFAULT_SCREEN_HEIGHT = 1080;
+
     /**
-     * Заводской сдвиг панели в пикселях интерфейса.
+     * Заводской масштаб интерфейса.
      *
-     * <p>Строка босс-бара центрируется клиентом, поэтому «левый верхний угол» —
-     * это сдвиг влево примерно на половину ширины интерфейса. Ширина интерфейса
-     * зависит от разрешения окна и масштаба GUI ({@code Настройки → Графика →
-     * Масштаб интерфейса}), который сервер узнать не может. -384 подобрано под
-     * GUI scale 4 на 1920×1080 (ширина интерфейса 480 px, панель ≈ 80 px);
-     * если у вас другой масштаб, поправьте командой {@code /hud offsetx}.</p>
+     * <p>0 — «Авто»: тогда масштаб считается по правилу клиента
+     * (см. {@link #effectiveScale}) и для 1920×1080 получается 4.</p>
      */
-    public static final int DEFAULT_OFFSET_X = -384;
+    public static final int DEFAULT_GUI_SCALE = 0;
+
+    /** Заводской отступ панели от левого края экрана, в пикселях интерфейса. */
+    public static final int DEFAULT_MARGIN_LEFT = 8;
 
     /**
      * Заводской якорь строки хотбара: хотбар шириной 182 px, его левый край
-     * на 91 px левее центра экрана.
+     * на 91 px левее центра экрана. Величина от масштаба не зависит — хотбар
+     * всегда по центру и всегда одной ширины.
      */
     public static final int DEFAULT_HOTBAR_ANCHOR_X = -91;
 
     /**
-     * Готовые пары «сдвиг панели + якорь хотбара» под масштаб интерфейса.
+     * Минимальный размер интерфейса, до которого клиент крутит «Авто».
      *
-     * <p>Сервер не знает ни разрешения окна, ни масштаба GUI, поэтому
-     * подобрать сдвиг автоматически нельзя: при чужом масштабе панель
-     * уезжает за левый край и кажется, что HUD вообще не работает. Пресеты
-     * закрывают три самых ходовых масштаба, а точная подгонка — командами
-     * {@code /hud offsetx} и {@code /hud anchorx}.</p>
+     * <p>Ровно константы из {@code Window.calculateScale}: масштаб растёт,
+     * пока интерфейс не станет меньше 320×240. Меньше клиент не даст, даже
+     * если в настройках стоит 8.</p>
      */
-    private static final int[][] SCALE_PRESETS = {
-            {3, -544, -129},   // scale 3: интерфейс шире, сдвиг больше
-            {4, -384, -91},    // scale 4 (заводской)
-            {5, -288, -68},    // scale 5: интерфейс уже, сдвиг меньше
-    };
+    private static final int MIN_SCALED_WIDTH = 320;
+    private static final int MIN_SCALED_HEIGHT = 240;
 
-    private int offsetX;
+    private int screenWidth;
+    private int screenHeight;
+    private int guiScale;
+    private int marginLeft;
     private long updateIntervalTicks;
     private int hotbarAnchorX;
     private long damageHoldMillis;
@@ -51,26 +69,57 @@ public final class HudSettings {
     public static HudSettings load(JavaPlugin plugin) {
         var config = plugin.getConfig();
         HudSettings settings = new HudSettings();
-        settings.offsetX = config.getInt("hud.offset-x", DEFAULT_OFFSET_X);
+        settings.screenWidth = Math.max(MIN_SCALED_WIDTH,
+                config.getInt("hud.screen-width", DEFAULT_SCREEN_WIDTH));
+        settings.screenHeight = Math.max(MIN_SCALED_HEIGHT,
+                config.getInt("hud.screen-height", DEFAULT_SCREEN_HEIGHT));
+        settings.guiScale = Math.max(0, config.getInt("hud.gui-scale", DEFAULT_GUI_SCALE));
+        settings.marginLeft = clampMargin(config.getInt("hud.margin-left", DEFAULT_MARGIN_LEFT));
         settings.updateIntervalTicks = Math.max(1L, config.getLong("hud.update-interval-ticks", 2L));
-        // левый край хотбара: хотбар 182 px wide, его левый край — центр-91
         settings.hotbarAnchorX = config.getInt("hud.hotbar-anchor-x", DEFAULT_HOTBAR_ANCHOR_X);
         settings.damageHoldMillis = Math.max(0L, config.getLong("hud.damage-hold-seconds", 5L)) * 1000L;
         settings.damageFadeMillis = Math.max(200L, config.getLong("hud.damage-fade-seconds", 2L)) * 1000L;
         settings.abilitySlots = Math.max(0, Math.min(8, config.getInt("hud.ability-slots", 4)));
-        if (settings.offsetX > 0) {
-            plugin.getLogger().warning("hud.offset-x > 0 уводит панель вправо от центра");
-        }
         return settings;
     }
 
-    /** Сдвиг панели по горизонтали, в пикселях интерфейса. */
-    public int offsetX() {
-        return offsetX;
+    /** Разрешение окна игры по горизонтали, в реальных пикселях. */
+    public int screenWidth() {
+        return screenWidth;
     }
 
-    public void offsetX(int value) {
-        this.offsetX = value;
+    /** Разрешение окна игры по вертикали, в реальных пикселях. */
+    public int screenHeight() {
+        return screenHeight;
+    }
+
+    /**
+     * Масштаб интерфейса: что стоит в {@code Настройки → Видео → Масштаб
+     * интерфейса}. 0 — «Авто».
+     */
+    public int guiScale() {
+        return guiScale;
+    }
+
+    /** Отступ левого края панели от левого края экрана, в пикселях интерфейса. */
+    public int marginLeft() {
+        return marginLeft;
+    }
+
+    public void screenWidth(int value) {
+        this.screenWidth = Math.max(MIN_SCALED_WIDTH, value);
+    }
+
+    public void screenHeight(int value) {
+        this.screenHeight = Math.max(MIN_SCALED_HEIGHT, value);
+    }
+
+    public void guiScale(int value) {
+        this.guiScale = Math.max(0, value);
+    }
+
+    public void marginLeft(int value) {
+        this.marginLeft = clampMargin(value);
     }
 
     public long updateIntervalTicks() {
@@ -87,28 +136,52 @@ public final class HudSettings {
     }
 
     /**
-     * Подобрать оба отступа под масштаб интерфейса.
+     * Масштаб интерфейса, который реально применит клиент.
      *
-     * @return {@code true}, если для такого масштаба есть готовые значения
+     * <p>Повторяет {@code Window.calculateScale}: масштаб растёт от 1, пока
+     * интерфейс остаётся не меньше 320×240, но не больше запрошенного.
+     * Запрошенный 0 означает «Авто» — тогда предел только по размеру. Если
+     * игрок выставил масштаб 8 на маленьком окне, клиент всё равно нарисует
+     * так, что интерфейс влезет в 320×240, — здесь считается так же, иначе
+     * панель уедет.</p>
      */
-    public boolean applyScalePreset(int scale) {
-        for (int[] preset : SCALE_PRESETS) {
-            if (preset[0] == scale) {
-                this.offsetX = preset[1];
-                this.hotbarAnchorX = preset[2];
-                return true;
-            }
+    public static int effectiveScale(int requested, int width, int height) {
+        int scale = 1;
+        while (scale != requested
+                && scale < width && scale < height
+                && width / (scale + 1) >= MIN_SCALED_WIDTH
+                && height / (scale + 1) >= MIN_SCALED_HEIGHT) {
+            scale++;
         }
-        return false;
+        return Math.max(1, scale);
     }
 
-    /** Масштабы интерфейса, под которые есть готовые отступы. */
-    public static int[] presetScales() {
-        int[] scales = new int[SCALE_PRESETS.length];
-        for (int i = 0; i < SCALE_PRESETS.length; i++) {
-            scales[i] = SCALE_PRESETS[i][0];
-        }
-        return scales;
+    /**
+     * Ширина интерфейса в пикселях GUI — ровно то, что клиент называет
+     * {@code Window.getGuiScaledWidth()} и от чего центрует строки.
+     */
+    public static int interfaceWidth(int requestedScale, int width, int height) {
+        int scale = effectiveScale(requestedScale, width, height);
+        return (int) Math.ceil((double) width / (double) scale);
+    }
+
+    /** Ширина интерфейса для общих настроек сервера. */
+    public int interfaceWidth() {
+        return interfaceWidth(guiScale, screenWidth, screenHeight);
+    }
+
+    /**
+     * Геометрия панели под экран игрока.
+     *
+     * <p>У игрока могут быть свои масштаб и разрешение (в профиле, командами
+     * {@code /hud scale} и {@code /hud screen}); чего в профиле нет — берётся
+     * из общих настроек сервера.</p>
+     */
+    public HudLayout layout(HudProfile profile) {
+        int width = profile != null && profile.screenWidth() > 0 ? profile.screenWidth() : screenWidth;
+        int height = profile != null && profile.screenHeight() > 0 ? profile.screenHeight() : screenHeight;
+        int scale = profile != null && profile.guiScale() > 0 ? profile.guiScale() : guiScale;
+        return new HudLayout(interfaceWidth(scale, width, height), marginLeft);
     }
 
     /** Сколько квадратов способностей рисовать справа от хотбара. */
@@ -128,17 +201,18 @@ public final class HudSettings {
 
     /** Вернуть заводские значения. */
     public void reset() {
-        this.offsetX = DEFAULT_OFFSET_X;
+        this.screenWidth = DEFAULT_SCREEN_WIDTH;
+        this.screenHeight = DEFAULT_SCREEN_HEIGHT;
+        this.guiScale = DEFAULT_GUI_SCALE;
+        this.marginLeft = DEFAULT_MARGIN_LEFT;
         this.hotbarAnchorX = DEFAULT_HOTBAR_ANCHOR_X;
     }
 
-    /** Сдвиг панели из пресета для масштаба интерфейса (для подсказок). */
-    public static int presetOffsetX(int scale) {
-        for (int[] preset : SCALE_PRESETS) {
-            if (preset[0] == scale) {
-                return preset[1];
-            }
-        }
-        return DEFAULT_OFFSET_X;
+    /**
+     * Отступ от края экрана ограничиваем разумно: половины экрана влево
+     * хватит за глаза, а упёршаяся в предел панель всё равно не влезет.
+     */
+    private static int clampMargin(int value) {
+        return Math.max(-HudLayout.MAX_SHIFT, Math.min(HudLayout.MAX_SHIFT, value));
     }
 }

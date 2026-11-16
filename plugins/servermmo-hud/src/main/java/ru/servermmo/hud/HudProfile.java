@@ -24,6 +24,20 @@ final class HudProfile {
     /** Защита — числовая заглушка: механики брони пока нет. */
     private long armor;
 
+    /**
+     * Масштаб интерфейса игрока: что стоит у него в {@code Настройки → Видео
+     * → Масштаб интерфейса}. 0 — ещё не указан, берётся общий из конфига.
+     *
+     * <p>Клиент его серверу не сообщает, поэтому игрок называет его сам
+     * один раз — командой {@code /hud scale}. Дальше плагин считает отступ
+     * панели под этот масштаб, и панель не уезжает за край экрана.</p>
+     */
+    private int guiScale;
+    /** Ширина окна игры в реальных пикселях. 0 — взять общую из конфига. */
+    private int screenWidth;
+    /** Высота окна игры в реальных пикселях. 0 — взять общую из конфига. */
+    private int screenHeight;
+
     HudProfile() {
         this.classIndex = 0;
         this.clanName = "";
@@ -34,6 +48,36 @@ final class HudProfile {
         this.battlePoints = 0L;
         this.nanogems = 0L;
         this.armor = 0L;
+        this.guiScale = 0;
+        this.screenWidth = 0;
+        this.screenHeight = 0;
+    }
+
+    /** Масштаб интерфейса игрока, 0 — не задан (брать общий из конфига). */
+    int guiScale() {
+        return guiScale;
+    }
+
+    void guiScale(int guiScale) {
+        this.guiScale = Math.max(0, guiScale);
+    }
+
+    /** Ширина окна игры в реальных пикселях, 0 — не задана. */
+    int screenWidth() {
+        return screenWidth;
+    }
+
+    void screenWidth(int screenWidth) {
+        this.screenWidth = Math.max(0, screenWidth);
+    }
+
+    /** Высота окна игры в реальных пикселях, 0 — не задана. */
+    int screenHeight() {
+        return screenHeight;
+    }
+
+    void screenHeight(int screenHeight) {
+        this.screenHeight = Math.max(0, screenHeight);
     }
 
     /** Индекс класса 0..7 — он же номер панели в ресурспаке. */

@@ -99,7 +99,10 @@ LAYOUT_ADVANCES = {
     # пустые глифы, которыми плагин добивает строки панели до одной ширины
     "\ue100": 2, "\ue101": 4, "\ue10a": 6, "\ue10b": 10, "\ue10c": 8,
 }
-SHIFT_BITS = range(0, 10)
+SHIFT_BITS = range(0, 12)
+# Самый широкий интерфейс, который надо уметь перекрыть сдвигом: экран 3840 px
+# при масштабе 1. Панель при этом шириной ~256 px, поэтому хватает и 3600.
+MAX_INTERFACE_WIDTH = 3840
 METRICS_FILE = ROOT / "plugins" / "servermmo-hud" / "src" / "main" / "resources" / "font-metrics.properties"
 
 
@@ -142,6 +145,27 @@ def check_space_glyphs(font: dict, problems: list[str]) -> None:
             problems.append(f"сдвиг {hex(ord(plus))}: {advances.get(plus)}, ожидалось {1 << bit}")
         if advances.get(minus) != -(1 << bit):
             problems.append(f"сдвиг {hex(ord(minus))}: {advances.get(minus)}, ожидалось {-(1 << bit)}")
+
+
+def check_shift_range(font: dict, problems: list[str]) -> None:
+    """
+    Диапазон сдвига должен доставать до левого края на любом экране.
+
+    <p>Сдвиг собирается из глифов-битов ±2^i. Если старшего бита не хватает,
+    панель при масштабе интерфейса 1 или на широком экране упирается в предел
+    и остаётся посередине экрана: выглядит как «HUD не работает», хотя пак
+    applied.</p>
+    """
+    advances: dict[str, int] = {}
+    for provider in font.get("providers", []):
+        if provider.get("type") == "space":
+            advances.update(provider.get("advances", {}))
+    total = sum(1 << bit for bit in SHIFT_BITS if advances.get(chr(0xE120 + bit)) == -(1 << bit))
+    needed = MAX_INTERFACE_WIDTH
+    if total < needed:
+        problems.append(f"сдвиг панели ограничен {total} px, а интерфейс бывает "
+                        f"шире {needed} px: добавьте старшие биты в "
+                        f"SHIFT_MAX_BIT (tools/gen_resourcepack.py)")
 
 
 def check_metrics(font: dict, names: set[str], zf: zipfile.ZipFile,
@@ -311,6 +335,7 @@ def main() -> int:
                 problems.append("в шрифте нет букв LVL/XP для строк HUD")
             check_space_glyphs(font, problems)
             check_codepoint_grid(font, problems)
+            check_shift_range(font, problems)
             check_glyph_fits_atlas(font, names, zf, problems)
             check_metrics(font, names, zf, problems)
 

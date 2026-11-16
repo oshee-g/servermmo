@@ -103,6 +103,29 @@ SHIFT_BITS = range(0, 10)
 METRICS_FILE = ROOT / "plugins" / "servermmo-hud" / "src" / "main" / "resources" / "font-metrics.properties"
 
 
+def check_codepoint_grid(font: dict, problems: list[str]) -> None:
+    """
+    chars — это массив строк, по одной на ряд сетки.
+
+    <p>Клиент читает поле кодеком Codec.STRING.listOf(). Если ряд записать
+    массивом отдельных символов, он ответит «Not a string» — и уронит весь
+    файл шрифта, а не один провайдер: FontManager.loadResourceStack зовёт
+    getOrThrow. Тогда шрифт не загружается вовсе и вместо всех глифов
+    рисуются пустые квадратики.</p>
+    """
+    for provider in font.get("providers", []):
+        if provider.get("type") != "bitmap":
+            continue
+        file = provider.get("file", "")
+        rows_chars = provider.get("chars", [])
+        for index, row in enumerate(rows_chars):
+            if not isinstance(row, str):
+                problems.append(f"{file}: ряд chars[{index}] — не строка "
+                                f"({type(row).__name__}). Клиент ждёт массив "
+                                f"строк, на вложенный массив падает весь "
+                                f"файл шрифта целиком")
+
+
 def check_space_glyphs(font: dict, problems: list[str]) -> None:
     """Пустые глифы и сдвиги, из которых плагин собирает строки панели."""
     advances: dict[str, int] = {}
@@ -287,6 +310,7 @@ def main() -> int:
             if any(ch not in seen for ch in "LVXP"):
                 problems.append("в шрифте нет букв LVL/XP для строк HUD")
             check_space_glyphs(font, problems)
+            check_codepoint_grid(font, problems)
             check_glyph_fits_atlas(font, names, zf, problems)
             check_metrics(font, names, zf, problems)
 

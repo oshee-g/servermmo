@@ -258,7 +258,7 @@ WorldEdit/WorldGuard, Simple Voice Chat. Подробнее — в `plugins/READ
 ничего не конфликтовало:
 
 ```properties
-resource-pack=https://drive.usercontent.google.com/download?id=1HFQn1MA9i_E0Ahf4Sk7oox-V2ExC45dx&export=download&confirm=t
+resource-pack=https://drive.usercontent.google.com/download?id=1BNkg25MVjUjGfa_DND3zTnvoIEBpILFI&export=download&confirm=t
 resource-pack-sha1=СЧИТАЕТСЯ_ИЗ_ФАЙЛА
 resource-pack-prompt={"text":"ServerMMO HUD resource pack","color":"gold"}
 require-resource-pack=false
@@ -283,7 +283,7 @@ require-resource-pack=false
   экране будут белые полосы и пустые квадратики, занимается
   `require-resource-pack=true` — без пака на сервер просто не пустит.
 * Проверить ссылку: открой её в браузере — должен скачаться zip размером
-  446 819 байт.
+  446 738 байт.
 
 #### Если хочется заставить, а не предлагать
 
@@ -295,7 +295,7 @@ require-resource-pack=false
 
 Открой ссылку из `server.properties` в браузере **на другом устройстве**
 (например, телефон в том же Wi-Fi). Должен скачаться `servermmo-hud.zip`
-на 446 819 байт. Если ссылка не открывается — дело в адресе или в том, что
+на 446 738 байт. Если ссылка не открывается — дело в адресе или в том, что
 файл лежит в приватном репозитории, а не в Minecraft. Проверить SHA-1 файла:
 `certutil -hashfile server\resourcepack\servermmo-hud.zip SHA1` в Windows.
 
@@ -315,10 +315,19 @@ require-resource-pack=false
 внутри HUD-компонента обязан задавать шрифт явно
 (`.font(Key.key("minecraft", "default"))`), иначе получатся квадратики.
 
+**В логе клиента `Unable to load font 'servermmo:hud'` с `Not a string`** — в
+`hud.json` сломано поле `chars` у одного из провайдеров. Клиент читает его
+кодеком, который ждёт массив **строк** (по одной на ряд сетки); на вложенный
+массив он отвечает `Not a string: [...]`. Важно: падает не один провайдер, а
+весь файл шрифта целиком — `FontManager.loadResourceStack` вызывает
+`getOrThrow`. Итог: шрифт `servermmo:hud` отсутствует, и все его глифы
+рисуются пустыми квадратиками. Проверь типы:
+`python3 tools/check_pack.py` или вручную.
+
 **Вместо значков пустые квадратики, видны белые полосы** — пак не applied:
 клиент его не скачал или отказался. Проверь две строки в `server.properties`:
 `resource-pack-sha1` — ровно 40 шестнадцатеричных символов (сейчас
-`d298f5482f6f27089207f4deb84efb52ea33a9f8`, файл 446 819 байт), а
+`bd19ec9b0faef2edc1dffb3bc5c00bc3eab0bdfd`, файл 446 738 байт), а
 `resource-pack-id` — UUID группами 8-4-4-4-12. Если `resource-pack-id`
 заполнен неверно, сервер не отправит пак вовсе и в логе будет
 `Failed to parse '<значение>' into UUID`; при неверном SHA-1 —

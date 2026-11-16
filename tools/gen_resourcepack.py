@@ -77,9 +77,18 @@ LEVEL_COLS = 10                     # сетка 10x10
 PANEL_COLS = 2                      # сетка 2x4
 
 
-def grid(chars_row: str, cols: int) -> list[list[str]]:
-    """Режет строку символов на сетку cols столбцов (как в атласе)."""
-    return [list(chars_row[i:i + cols]) for i in range(0, len(chars_row), cols)]
+def grid(chars_row: str, cols: int) -> list[str]:
+    """
+    Режет строку символов на ряды по cols столбцов (как в атласе).
+
+    <p>Важно: каждый ряд — одна строка, а не список отдельных символов.
+    Кодек клиента читает поле chars как Codec.STRING.listOf(), то есть
+    ждёт массив строк; на вложенный массив он отвечает
+    "Not a string: [...]", и тогда падает весь файл шрифта целиком
+    (FontManager.loadResourceStack вызывает getOrThrow), а не один
+    провайдер. Так пак и приехал с одними пустыми квадратиками.</p>
+    """
+    return [chars_row[i:i + cols] for i in range(0, len(chars_row), cols)]
 
 # Ванильные спрайты HUD, которые надо спрятать. Список снят с настоящих
 # ресурсов 1.21.9: имена с суффиксом _blinking появились в 1.21.2, а

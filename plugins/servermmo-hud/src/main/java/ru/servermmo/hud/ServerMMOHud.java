@@ -8,11 +8,15 @@ import org.bukkit.plugin.java.JavaPlugin;
 import ru.servermmo.core.ServerMMOCore;
 
 /**
- * Плагин HUD: здоровье, урон, уровень и опыт в левом верхнем углу экрана.
+ * Плагин HUD: класс, уровень, клан и валюты в левом верхнем углу экрана.
  *
  * <p>Рисует панель клиент: строки босс-бара + глифы ресурспака. Плагин только
  * подставляет числа, поэтому HUD не зависит от камеры и не висит сущностью в
  * мире.</p>
+ *
+ * <p>Ресурспак раздаёт сам сервер строкой {@code resource-pack} в
+ * {@code server.properties}: плагин про пак ничего не знает, не хранит его и
+ * не следит за его загрузкой.</p>
  */
 public final class ServerMMOHud extends JavaPlugin {
 
@@ -61,10 +65,9 @@ public final class ServerMMOHud extends JavaPlugin {
 
         getLogger().info("ServerMMOHud включён: панель строками босс-бара, offset-x="
                 + settings.offsetX() + " px, anchor-x=" + settings.hotbarAnchorX()
-                + " px, здоровье и индикатор урона — строкой хотбара; "
+                + " px, здоровье, урон и защита — строкой хотбара; "
                 + "ресурспак раздаёт сервер (server.properties); "
                 + "подстройка: /hud offsetx <px>, /hud anchorx <px>, /hud scale <3|4|5>, /hud reset");
-
     }
 
     @Override
@@ -90,61 +93,5 @@ public final class ServerMMOHud extends JavaPlugin {
 
     public HudManager manager() {
         return manager;
-    }
-
-    public HudSettings settings() {
-        return settings;
-    }
-
-    /** Числовые данные панели (класс, клан, валюты) — для команд. */
-    HudStore store() {
-        return store;
-    }
-
-    public HudManager manager() {
-        return manager;
-    }
-
-    /**
-     * Предупредить, если SHA-1 в настройках не похож на SHA-1.
-     *
-     * <p>Типичная ошибка: в {@code resource-pack-sha1} попадает UUID из
-     * соседней строки {@code resource-pack-id}. Клиент тогда скачивает пак,
-     * не сходится по хэшу и отказывается его применять — а при
-     * {@code require-resource-pack=true} ещё и кикает игрока.SHA-1 — это
-     * ровно 40 шестнадцатеричных символов.</p>
-     */
-    private void checkResourcePackHash() {
-        String hash = getServer().getResourcePackHash();
-        if (hash == null || hash.isEmpty()) {
-            getLogger().warning("resource-pack-sha1 не задан: клиент примет любой файл "
-                    + "по ссылке, но не заметит подмену");
-            return;
-        }
-        boolean looksLikeUuid = hash.length() == 36 && hash.indexOf('-') > 0;
-        if (hash.length() != 40 || !hash.chars().allMatch(c -> Character.digit(c, 16) >= 0)) {
-            getLogger().severe("resource-pack-sha1=\"" + hash + "\" не похож на SHA-1: "
-                    + "нужно 40 шестнадцатеричных символов, а сейчас " + hash.length()
-                    + (looksLikeUuid ? ". Похоже, сюда попал UUID от resource-pack-id — "
-                    + "это разные строки, UUID идёт в resource-pack-id." : "")
-                    + " С таким хэшем клиент откажется применять пак");
-        }
-    }
-
-    /**
-     * Ссылка на ресурспак, которую сервер отдаёт клиенту — чтобы в
-     * {@code /hud debug} было видно, ту ли ссылку и тот ли SHA-1 ждёт HUD.
-     */
-    String resourcePackSummary() {
-        String url = getServer().getResourcePack();
-        String hash = getServer().getResourcePackHash();
-        if (url == null || url.isEmpty()) {
-            return "НЕ ЗАДАНА (server.properties: resource-pack пуст) — клиент не "
-                    + "загрузит пак, HUD останется скрыт";
-        }
-        return url + (hash == null || hash.isEmpty()
-                ? " (SHA-1 не задан)" : " (SHA-1 " + hash + ")")
-                + (getServer().isResourcePackRequired()
-                ? ", обязателен" : ", НЕ обязателен (клиент может молча отказаться)");
     }
 }

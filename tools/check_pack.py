@@ -126,6 +126,11 @@ def check_metrics(font: dict, names: set[str], zf: zipfile.ZipFile,
     """Таблица ширин глифов в плагине должна совпадать с атласами пака."""
     measured: dict[str, int] = {}
     for provider in font.get("providers", []):
+        # Пробелы и сдвиги курсора заданы в space-провайдере, а не в PNG.
+        if provider.get("type") == "space":
+            for char, advance in provider.get("advances", {}).items():
+                measured[char] = int(advance)
+            continue
         if provider.get("type") != "bitmap":
             continue
         file = provider.get("file", "").split(":", 1)[-1]
@@ -155,6 +160,41 @@ def check_metrics(font: dict, names: set[str], zf: zipfile.ZipFile,
     if actual != expected:
         problems.append("font-metrics.properties разошёлся с атласами —"
                         " запусти tools/gen_font_metrics.py")
+
+
+def check_glyph_fits_atlas(font: dict, names: set[str], zf: zipfile.ZipFile,
+                           problems: list[str]) -> None:
+    """
+    Глиф должен влезть в атлас шрифта клиента.
+
+    <p>Клиент запекает bitmap-глифы в FontTexture размером ровно 256x256
+    (FontTexture.SIZE = 256), а DynamicAtlasTree делит атлас пополам: глиф
+    шире или выше 256 не влезет уже никуда. FontSet подменяет незапечённый
+    глиф на SpecialGlyphs.MISSING, то есть на пустой квадратик, — шрифт при
+    этом загружается без ошибок, и в логе ничего не видно.</p>
+    """
+    atlas = 256
+    for provider in font.get("providers", []):
+        if provider.get("type") != "bitmap":
+            continue
+        file = provider.get("file", "").split(":", 1)[-1]
+        texture = f"assets/servermmo/textures/{file}"
+        if texture not in names:
+            continue
+        rows_chars = provider.get("chars", [])
+        if not rows_chars or not rows_chars[0]:
+            continue
+        cols, rows_count = len(rows_chars[0]), len(rows_chars)
+        try:
+            width, height, _ = png_rgba(zf.read(texture))
+        except ValueError:
+            continue
+        cell_w, cell_h = width // cols, height // rows_count
+        if cell_w > atlas or cell_h > atlas:
+            problems.append(
+                f"{file}: глиф {cell_w}x{cell_h} не влезет в атлас шрифта "
+                f"{atlas}x{atlas} — он останется незапечённым, и вместо него "
+                f"будет пустой квадратик. Уменьши ячейку до {atlas} px")
 
 
 def check_invisible_bar(zf: zipfile.ZipFile, problems: list[str]) -> None:
@@ -247,6 +287,7 @@ def main() -> int:
             if any(ch not in seen for ch in "LVXP"):
                 problems.append("в шрифте нет букв LVL/XP для строк HUD")
             check_space_glyphs(font, problems)
+            check_glyph_fits_atlas(font, names, zf, problems)
             check_metrics(font, names, zf, problems)
 
             # чернила на одной базовой линии с ванильным шрифтом

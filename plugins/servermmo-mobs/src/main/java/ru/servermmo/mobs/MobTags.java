@@ -43,6 +43,18 @@ final class MobTags extends BukkitRunnable {
             .color(NamedTextColor.WHITE)
             .build();
 
+    /**
+     * Имя моба — ванильным шрифтом.
+     *
+     * <p>Шрифт задан явно: иначе клиент унаследует servermmo:hud от соседних
+     * компонентов (см. {@code Component.visit} и {@code Style.applyTo}) и
+     * нарисует имя пустыми квадратиками — в паке нет букв.</p>
+     */
+    private static final Style NAME_STYLE = Style.style()
+            .font(Key.key("minecraft", "default"))
+            .color(NamedTextColor.WHITE)
+            .build();
+
     private final ServerMMOMobs plugin;
     private final ServerMMOCore core;
     private final Set<UUID> tracked = ConcurrentHashMap.newKeySet();
@@ -107,7 +119,7 @@ final class MobTags extends BukkitRunnable {
                 .append(Component.text(GLYPH_LEVEL, HUD_STYLE))
                 .append(Component.text(GLYPH_SPACE, HUD_STYLE))
                 .append(Component.text(Integer.toString(level), HUD_STYLE))
-                .append(Component.text(" " + name + " ", NamedTextColor.WHITE))
+                .append(Component.text(" " + name + " ", NAME_STYLE))
                 .append(Component.text(Long.toString(health), HUD_STYLE))
                 .build();
     }

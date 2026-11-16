@@ -37,8 +37,20 @@ final class HudText {
             .font(Key.key("servermmo", "hud"))
             .color(NamedTextColor.WHITE)
             .build();
-    /** Обычный текст: ванильный шрифт клиента, того же размера и цвета. */
+    /**
+     * Обычный текст: ванильный шрифт клиента, того же размера и цвета.
+     *
+     * <p>Шрифт указан явно, и это важно. Клиент раздаёт стиль по дереву
+     * компонентов: {@code Component.visit} считает
+     * {@code selfStyle = getStyle().applyTo(parentStyle)}, а
+     * {@code Style.applyTo} берёт поле потомка, только если оно задано, —
+     * иначе наследует родительское. Значит компонент без шрифта, приклеенный
+     * к компоненту со шрифтом servermmo:hud, рисуется этим самым шрифтом, а в
+     * нём нет ни кириллицы, ни латиницы: вместо ника получается полоса
+     * пустых квадратиков. Явный minecraft:default наследование обрывает.</p>
+     */
     private static final Style VANILLA = Style.style()
+            .font(Key.key("minecraft", "default"))
             .color(NamedTextColor.WHITE)
             .build();
 

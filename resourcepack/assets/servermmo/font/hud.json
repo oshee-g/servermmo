@@ -185,8 +185,8 @@
     {
       "type": "bitmap",
       "file": "servermmo:font/hud_panel.png",
-      "ascent": 10,
-      "height": 64,
+      "ascent": 7,
+      "height": 80,
       "chars": [
         [
           "",

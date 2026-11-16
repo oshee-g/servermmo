@@ -3,10 +3,8 @@ package ru.servermmo.hud;
 import java.util.Arrays;
 import java.util.Set;
 import net.kyori.adventure.bossbar.BossBar;
-import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.format.Style;
 import org.bukkit.entity.Player;
 import ru.servermmo.core.ServerMMOCore;
 import ru.servermmo.core.player.PlayerProfile;
@@ -29,12 +27,6 @@ import ru.servermmo.core.player.PlayerProfile;
  * настроек — см. {@link HudManager#reset(Player)}.</p>
  */
 final class PlayerHud {
-
-    /** Шрифт ресурспака: значки, цифры и буквы панели. */
-    private static final Style HUD_STYLE = Style.style()
-            .font(Key.key("servermmo", "hud"))
-            .color(NamedTextColor.WHITE)
-            .build();
 
     private final HudSettings settings;
     private final HudText text;
@@ -230,7 +222,7 @@ final class PlayerHud {
         // даже если строка не менялась.
         if (!line.equals(lastActionBar2) || ticksSinceActionBar >= 10L) {
             player.sendActionBar(line);
-            lastActionBar = line;
+            lastActionBar2 = line;
             ticksSinceActionBar = 0L;
             actionBarCleared = false;
         }

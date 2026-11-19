@@ -90,6 +90,12 @@ final class HudText {
     private static final int ICON_GAP = 4;
     /** Зазор между колонками строки, px. */
     private static final int COLUMN_GAP = 6;
+    /**
+     * Левая граница ромба уровня от края панели, px. По центру панели стоит
+     * декор (шлем/кристалл), и при коротком нике ромб садился прямо на него.
+     * Поэтому ромб держим правее этой границы, даже если ник короткий.
+     */
+    private static final int DIAMOND_MIN_X = 148;
 
     /** Сердце (здоровье) и меч (урон) - старые 8-пиксельные глифы. */
     static final char HEART = '\uE010';
@@ -307,16 +313,19 @@ final class HudText {
         String xpFraction = xp + "/" + xpToNext;
         char diamond = (char) (LEVEL_BASE + levelIndex(level));
         String title = fitTitle(playerName, profile.className(), panelWidth, diamond, xpFraction);
-        int tail = panelWidth - PANEL_PAD_LEFT - width(MONEY_SCROLL)
-                - ICON_GAP - vanillaWidth(title)
-                - COLUMN_GAP - width(diamond) - COLUMN_GAP - width(xpFraction);
+        // Ромб — правее центрального декора, даже при коротком нике: зазор
+        // перед ним растягиваем до DIAMOND_MIN_X.
+        int titleEnd = PANEL_PAD_LEFT + width(MONEY_SCROLL) + ICON_GAP + vanillaWidth(title);
+        int gapBeforeDiamond = Math.max(COLUMN_GAP, DIAMOND_MIN_X - titleEnd);
+        int tail = panelWidth - titleEnd - gapBeforeDiamond - width(diamond)
+                - COLUMN_GAP - width(xpFraction);
 
         Component first = Component.text(shift(offset), GLYPHS)
                 .append(Component.text(String.valueOf(panelGlyph), GLYPHS))
                 .append(Component.text(shift(-(panelWidth - PANEL_PAD_LEFT)), GLYPHS))
                 .append(Component.text(MONEY_SCROLL + pad(ICON_GAP), GLYPHS))
                 .append(Component.text(title, VANILLA))
-                .append(Component.text(pad(COLUMN_GAP) + diamond + pad(COLUMN_GAP)
+                .append(Component.text(pad(gapBeforeDiamond) + diamond + pad(COLUMN_GAP)
                         + xpFraction, GLYPHS))
                 .append(Component.text(pad(tail), GLYPHS));
 
@@ -335,7 +344,7 @@ final class HudText {
                 + MONEY_STAR + pad(ICON_GAP) + profile.starCoins() + pad(COLUMN_GAP)
                 + MONEY_GEM + pad(ICON_GAP) + profile.nanogems() + pad(COLUMN_GAP)
                 + MONEY_BATTLE + pad(ICON_GAP) + profile.battlePoints();
-        Component third = Component.text(shift(offset) + money, GLYPHS);
+        Component third = Component.text(shift(offset) + pad(PANEL_PAD_LEFT) + money, GLYPHS);
 
         return new Component[]{first, second, third};
     }

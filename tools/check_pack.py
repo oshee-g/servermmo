@@ -192,11 +192,15 @@ def check_metrics(font: dict, names: set[str], zf: zipfile.ZipFile,
         except ValueError:
             continue
         cell_w, cell_h = width // cols, height // rows_count
+        # Масштаб провайдера (height / высота ячейки): значки панели
+        # рисуются 16 px из ячеек 24 px, ширина масштабируется как у игры.
+        prov_height = provider.get("height")
+        scale = (prov_height / cell_h) if isinstance(prov_height, int) and cell_h else 1.0
         for row_index, row in enumerate(rows_chars):
             for col_index, char in enumerate(row):
                 measured[char] = glyph_advance_grid(width, height, pixels,
                                                     cell_w, cell_h,
-                                                    col_index, row_index)
+                                                    col_index, row_index, scale)
     expected = ",".join(f"{ord(ch):x}:{adv}" for ch, adv in sorted(measured.items()))
     if not METRICS_FILE.is_file():
         problems.append("нет font-metrics.properties — запусти tools/gen_font_metrics.py")
@@ -306,7 +310,10 @@ def main() -> int:
                                     f"на сетку {cols}x{rows_count}")
                     continue
                 cell_w, cell_h = width // cols, image_height // rows_count
-                if cell_h != height:
+                # height меньше ячейки — значок просто рисуется мельче
+                # (равномерный масштаб, без искажения); height больше ячейки
+                # растянет глиф по вертикали — такое не годится.
+                if height > cell_h:
                     problems.append(f"{texture}: ячейка {cell_w}x{cell_h}, а height="
                                     f"{height} — значок растянется по вертикали")
                 if height != GLYPH_HEIGHT and cell_h == GLYPH_HEIGHT:

@@ -13,7 +13,7 @@
   без него не включатся.
 
   Ресурспак для HUD лежит одним файлом на Google Диске:
-     https://drive.usercontent.google.com/download?id=1NskJmuUEh0PhlOgPvm-rH_HPXUXkqVb4&export=download&confirm=t
+     https://drive.usercontent.google.com/download?id=1t7PDhbzPbc_xKuu8mjHMOHE2gcAUdjSR&export=download&confirm=t
   Ссылка на него и его SHA-1 уже прописаны в ..\server.properties,
   поэтому ничего ставить не нужно: игра сама предложит игрокам скачать
   пак при входе. Других способов установки нет.

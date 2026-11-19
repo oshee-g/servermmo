@@ -48,8 +48,8 @@
     {
       "type": "bitmap",
       "file": "servermmo:font/hud_money.png",
-      "ascent": 19,
-      "height": 32,
+      "ascent": 15,
+      "height": 24,
       "chars": [
         ""
       ]
@@ -66,8 +66,8 @@
     {
       "type": "bitmap",
       "file": "servermmo:font/hud_level.png",
-      "ascent": 19,
-      "height": 32,
+      "ascent": 15,
+      "height": 24,
       "chars": [
         "",
         "",

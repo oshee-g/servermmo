@@ -159,13 +159,13 @@ final class HudText {
             map.put((char) (0xE300 + i), 20);
         }
         for (int i = 0; i < 6; i++) {
-            map.put((char) (0xE310 + i), 32);
+            map.put((char) (0xE310 + i), 24);
         }
         for (int i = 0; i < 8; i++) {
             map.put((char) (ABILITY_BASE + i), 20);
         }
         for (int i = 0; i < 100; i++) {
-            map.put((char) (LEVEL_BASE + i), 30);
+            map.put((char) (LEVEL_BASE + i), 24);
         }
         for (int i = 0; i < 8; i++) {
             map.put((char) (PANEL_BASE + i), 256);

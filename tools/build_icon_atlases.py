@@ -37,7 +37,7 @@ ICONS = ROOT / "tools" / "pack_assets" / "icons64"
 LEVEL = ROOT / "tools" / "pack_assets" / "level"
 OUT = ROOT / "tools" / "pack_assets"
 
-ICON = 32          # ячейка значка панели: height=32 в шрифте
+ICON = 24          # ячейка значка панели: height=24 в шрифте
 HOTBAR = 20        # ячейка значка хотбара: height=20, как ячейка хотбара
 # Ячейка панели класса. Высота не исходные 64, а 96: четыре строки HUD
 # занимают 77 px, и панель с запасом накрывает их, а заодно выше и

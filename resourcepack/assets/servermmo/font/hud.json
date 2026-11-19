@@ -30,7 +30,7 @@
     {
       "type": "bitmap",
       "file": "servermmo:font/hud_gear.png",
-      "ascent": 13,
+      "ascent": 7,
       "height": 20,
       "chars": [
         ""
@@ -48,7 +48,7 @@
     {
       "type": "bitmap",
       "file": "servermmo:font/hud_ability.png",
-      "ascent": 13,
+      "ascent": 7,
       "height": 20,
       "chars": [
         ""
@@ -76,16 +76,12 @@
       "type": "bitmap",
       "file": "servermmo:font/hud_panel.png",
       "ascent": 7,
-      "height": 80,
+      "height": 96,
       "chars": [
         "",
         "",
         "",
-        "",
-        "",
-        "",
-        "",
-        ""
+        ""
       ]
     },
     {

@@ -28,9 +28,9 @@ import net.kyori.adventure.text.format.Style;
  *
  * <p>Панель класса - подложка под все четыре строки: она живёт в первой
  * строке, а текст следующих трёх ложится поверх неё (шаг между строками
- * босс-бара у клиента 10 + lineHeight = 19 px). Панель шире 256 px, поэтому
- * состоит из двух глифов по 160 px: одним глифом шире нельзя (предел атласа
- * шрифта клиента 256x256).</p>
+ * босс-бара у клиента 10 + lineHeight = 19 px). Панель 256x96: ширину больше
+ * нельзя (предел атласа шрифта клиента 256x256), поэтому она выше, а не
+ * шире.</p>
  *
  * <p>Глифы пака и обычный текст смешиваются: цифры, значки и буквы LVXP
  * рисуются шрифтом servermmo:hud, а ник и название клана - ванильным шрифтом,
@@ -62,7 +62,7 @@ final class HudText {
             .color(NamedTextColor.WHITE)
             .build();
 
-    /** Панели классов: 8 шт., по два глифа на панель (левая и правая половины). */
+    /** Панели классов: 8 шт. */
     private static final int PANEL_BASE = 0xE500;
     /** Щиты уровней 1..100 (номер и lvl нарисованы на щите). */
     private static final int LEVEL_BASE = 0xE400;
@@ -145,8 +145,8 @@ final class HudText {
         for (int i = 0; i < 100; i++) {
             map.put((char) (LEVEL_BASE + i), 30);
         }
-        for (int i = 0; i < 16; i++) {
-            map.put((char) (PANEL_BASE + i), 160);
+        for (int i = 0; i < 8; i++) {
+            map.put((char) (PANEL_BASE + i), 256);
         }
         for (int step = 0; step < FADE_STEPS; step++) {
             int base = FADE_BASE + step * 16;
@@ -225,14 +225,9 @@ final class HudText {
         return 6;
     }
 
-    /**
-     * Ширина панели класса целиком: она из двух глифов по 160 px (одним
-     * глифом шире 256 нельзя — предел атласа шрифта клиента). По ней
-     * считается сдвиг всей панели.
-     */
+    /** Ширина глифа-панели класса: по ней считается сдвиг всей панели. */
     int panelWidth(int classIndex) {
-        int base = PANEL_BASE + Math.max(0, Math.min(7, classIndex)) * 2;
-        return width((char) base) + width((char) (base + 1));
+        return width((char) (PANEL_BASE + Math.max(0, Math.min(7, classIndex))));
     }
 
     /**
@@ -252,21 +247,19 @@ final class HudText {
      */
     Component[] panel(HudProfile profile, String playerName, long level, long xp, long xpToNext,
                       HudLayout layout) {
-        int panelBase = PANEL_BASE + profile.classIndex() * 2;
-        int panelWidth = panelWidth(profile.classIndex());
+        char panelGlyph = (char) (PANEL_BASE + profile.classIndex());
+        int panelWidth = width(panelGlyph);
         int offset = layout.panelShift(panelWidth);
 
-        // Строка 1: подложка из двух глифов, затем возврат курсора в её начало
-        // и текст поверх. В конце - хвост до ширины панели: иначе клиент
-        // центрует строку по длине ника и ставит подложку не там, где
-        // остальные три строки.
+        // Строка 1: подложка, затем возврат курсора в её начало и текст поверх.
+        // В конце - хвост до ширины панели: иначе клиент центрует строку по
+        // длине ника и ставит подложку не там, где остальные три строки.
         String title = playerName + " · " + profile.className();
         int tail = panelWidth - PANEL_PAD_LEFT - width(MONEY_SCROLL)
                 - ICON_GAP - vanillaWidth(title);
 
         Component first = Component.text(shift(offset), GLYPHS)
-                .append(Component.text(
-                        "" + (char) panelBase + (char) (panelBase + 1), GLYPHS))
+                .append(Component.text(String.valueOf(panelGlyph), GLYPHS))
                 .append(Component.text(shift(-(panelWidth - PANEL_PAD_LEFT)), GLYPHS))
                 .append(Component.text(MONEY_SCROLL + pad(ICON_GAP), GLYPHS))
                 .append(Component.text(title, VANILLA))

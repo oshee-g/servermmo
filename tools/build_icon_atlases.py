@@ -39,19 +39,20 @@ OUT = ROOT / "tools" / "pack_assets"
 
 ICON = 32          # ячейка значка панели: height=32 в шрифте
 HOTBAR = 20        # ячейка значка хотбара: height=20, как ячейка хотбара
-# Ячейка панели класса. Высота не исходные 64, а 80 — ровно столько занимают
-# четыре строки HUD. Шаг между строками босс-бара у клиента 10 + lineHeight
-# (lineHeight = 9, константа) = 19 px. Считаем от baseline первой строки:
+# Ячейка панели класса. Высота не исходные 64, а 96: четыре строки HUD
+# занимают 77 px, и панель с запасом накрывает их, а заодно выше и
+# представительнее (игрок просил панель повыше, а не пошире — ширину 256
+# оставляем как у оригинальных панелей). Шаг между строками босс-бара у
+# клиента 10 + lineHeight (lineHeight = 9, константа) = 19 px. Считаем от
+# baseline первой строки:
 #   строка 1, ник (ванильный текст 8 px, ascent 7):  занимает -7..1
 #   строка 2, уровень (щит 32 px, ascent 19):        19-19..19+13 = 0..32
 #   строка 3, клан:                                  19..51
 #   строка 4, валюты (значки 32 px):                 38..70
-# Итого весь текст: -7..70, то есть 77 px. Панель 80 px при ascent 7 занимает
-# -7..73 и накрывает его целиком — иначе нижняя строка висит на пустом фоне.
-# Панель шире 256 одним глифом не сделать (предел атласа FontTexture 256x256),
-# поэтому панель 320 px режется на два глифа по 160 px.
-PANEL = (320, 80)  # панель класса целиком
-PANEL_HALF = (160, 80)  # половина панели — один глиф
+# Итого весь текст: -7..70, то есть 77 px. Панель 96 px при ascent 7 занимает
+# -7..89 и накрывает его с запасом — иначе нижняя строка висит на пустом фоне.
+# Ширина 256 — предел атласа FontTexture 256x256: глиф шире не влезет.
+PANEL = (256, 96)  # панель класса целиком, один глиф
 
 GEAR = ["heart", "sword", "axe", "staff", "hammer", "scythe", "trident",
         "bow", "spear", "shield"]
@@ -62,7 +63,7 @@ CLASSES = ["warrior", "mage", "archer", "paladin", "farmer", "viking",
            "necromancer", "spearman"]
 
 LEVEL_COLS = 10    # 10x10 = 100 уровней
-PANEL_COLS = 2     # 2 глифа на панель, 8 панелей = 16 глифов
+PANEL_COLS = 2     # сетка 2x4 = 8 панелей
 
 
 def tile(images: list[Image.Image], cols: int, cell: tuple[int, int]) -> Image.Image:
@@ -131,18 +132,16 @@ def main() -> int:
     print(f"hud_level.png {sheet.size[0]}x{sheet.size[1]}: уровни 1..100 "
           f"сеткой {LEVEL_COLS}x{10}")
 
-    halves = []
+    panels = []
     for name in CLASSES:
         path = ICONS / f"panel_{name}.png"
         if not path.is_file():
             sys.exit(f"нет панели {path}")
-        panel = Image.open(path).convert("RGBA").resize(PANEL, Image.LANCZOS)
-        halves.append(panel.crop((0, 0, PANEL_HALF[0], PANEL_HALF[1])))
-        halves.append(panel.crop((PANEL_HALF[0], 0, PANEL[0], PANEL_HALF[1])))
-    sheet = tile(halves, PANEL_COLS, PANEL_HALF)
+        panels.append(Image.open(path).convert("RGBA").resize(PANEL, Image.LANCZOS))
+    sheet = tile(panels, PANEL_COLS, PANEL)
     sheet.save(OUT / "hud_panel.png", optimize=True)
     print(f"hud_panel.png {sheet.size[0]}x{sheet.size[1]}: панели классов "
-          f"сеткой {PANEL_COLS}x{len(halves) // PANEL_COLS}")
+          f"сеткой {PANEL_COLS}x{len(panels) // PANEL_COLS}")
     return 0
 
 

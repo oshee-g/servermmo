@@ -169,7 +169,7 @@ Paper сам выстроит порядок загрузки по `depend:` в 
 ссылка и SHA-1, клиент качает zip сам при входе. Пак лежит одним файлом на
 Google Диске:
 
-    https://drive.usercontent.google.com/download?id=1y64xr7V6fKAV-VAXaNWrT7GtY7hnEE0p&export=download&confirm=t
+    https://drive.usercontent.google.com/download?id=1QLpQzrF_CJrjPblmQavzF99fUhEQM0jD&export=download&confirm=t
 
 Эти строки уже стоят в `server/server.properties` — обычно ничего делать не
 нужно:

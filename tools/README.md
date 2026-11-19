@@ -75,7 +75,7 @@ bash   tools/test-linux.sh          # поведение .sh (Linux/macOS)
 хостит. Единственный канал — один файл на Google Диске с доступом
 «все, у кого есть ссылка»:
 
-    https://drive.usercontent.google.com/download?id=1y64xr7V6fKAV-VAXaNWrT7GtY7hnEE0p&export=download&confirm=t
+    https://drive.usercontent.google.com/download?id=1QLpQzrF_CJrjPblmQavzF99fUhEQM0jD&export=download&confirm=t
 
 В `server.properties` лежат только `resource-pack` (эта ссылка) и
 `resource-pack-sha1` (SHA-1 файла `server/resourcepack/servermmo-hud.zip`),

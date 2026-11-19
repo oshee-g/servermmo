@@ -36,24 +36,25 @@ def _fade_chars(step: int) -> str:
     return "".join(chr(base + i) for i in range(12))
 
 
-# (файл, символы, столбцов в сетке). Значки панели идут ячейкой 32x32, значки
-# хотбара — 20x20 (height равен ячейке, масштаб 1:1), панели — глифами 160x80,
-# поэтому считать ширину надо по своей сетке, а не «ширина / число символов».
+# (файл, символы, столбцов в сетке, высота отрисовки провайдера). Значки
+# панели идут ячейкой 24x24, но рисуются 16 px (масштаб 16/24), значки
+# хотбара — 20x20 (height равен ячейке, масштаб 1:1), панели — 96 px из
+# ячеек 96 px (масштаб 1:1). Ширина глифа масштабируется как у игры.
 ATLASES = (
-    ("hud_digits.png", DIGIT_CHARS, len(DIGIT_CHARS)),
-    ("hud_digits.png", HOTBAR_DIGIT_CHARS, len(HOTBAR_DIGIT_CHARS)),
-    ("hud_icons.png", ICON_CHARS, len(ICON_CHARS)),
-    ("hud_letters.png", LETTER_CHARS, len(LETTER_CHARS)),
-    *(("hud_fade%d.png" % step, _fade_chars(step), len(_fade_chars(step)))
+    ("hud_digits.png", DIGIT_CHARS, len(DIGIT_CHARS), 8),
+    ("hud_digits.png", HOTBAR_DIGIT_CHARS, len(HOTBAR_DIGIT_CHARS), 8),
+    ("hud_icons.png", ICON_CHARS, len(ICON_CHARS), 8),
+    ("hud_letters.png", LETTER_CHARS, len(LETTER_CHARS), 8),
+    *(("hud_fade%d.png" % step, _fade_chars(step), len(_fade_chars(step)), 8)
       for step in range(FADE_STEPS)),
     *(("hud_fade%d.png" % step, hotbar_fade_chars(step),
-       len(hotbar_fade_chars(step))) for step in range(FADE_STEPS)),
-    ("hud_gear.png", GEAR_CHARS, len(GEAR_CHARS)),
-    ("hud_money.png", MONEY_CHARS, len(MONEY_CHARS)),
-    ("hud_ability.png", ABILITY_CHARS, len(ABILITY_CHARS)),
-    ("hud_level.png", LEVEL_CHARS, LEVEL_COLS),
-    ("hud_clan.png", CLAN_CHARS, LEVEL_COLS),
-    ("hud_panel.png", PANEL_CHARS, PANEL_COLS),
+       len(hotbar_fade_chars(step)), 8) for step in range(FADE_STEPS)),
+    ("hud_gear.png", GEAR_CHARS, len(GEAR_CHARS), 20),
+    ("hud_money.png", MONEY_CHARS, len(MONEY_CHARS), 16),
+    ("hud_ability.png", ABILITY_CHARS, len(ABILITY_CHARS), 20),
+    ("hud_level.png", LEVEL_CHARS, LEVEL_COLS, 16),
+    ("hud_clan.png", CLAN_CHARS, LEVEL_COLS, 16),
+    ("hud_panel.png", PANEL_CHARS, PANEL_COLS, 96),
 )
 
 
@@ -63,14 +64,15 @@ def collect() -> dict[str, int]:
     # берём из того же описания, что кладётся в hud.json.
     for char, advance in build_space_advances().items():
         metrics[char] = int(advance)
-    for name, chars, cols in ATLASES:
+    for name, chars, cols, draw_h in ATLASES:
         width, height, pixels = png_rgba((ASSETS / name).read_bytes())
         rows = (len(chars) + cols - 1) // cols
         cell_w, cell_h = width // cols, height // rows
+        scale = draw_h / cell_h
         for index, char in enumerate(chars):
             col, row = index % cols, index // cols
             metrics[char] = glyph_advance_grid(width, height, pixels,
-                                               cell_w, cell_h, col, row)
+                                               cell_w, cell_h, col, row, scale)
     return metrics
 
 

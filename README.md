@@ -258,7 +258,7 @@ WorldEdit/WorldGuard, Simple Voice Chat. Подробнее — в `plugins/READ
 ничего не конфликтовало:
 
 ```properties
-resource-pack=https://drive.usercontent.google.com/download?id=1zTysrCFmNcKgokcMk3EFQCqaVDCNnirl&export=download&confirm=t
+resource-pack=https://drive.usercontent.google.com/download?id=1NskJmuUEh0PhlOgPvm-rH_HPXUXkqVb4&export=download&confirm=t
 resource-pack-sha1=СЧИТАЕТСЯ_ИЗ_ФАЙЛА
 resource-pack-prompt={"text":"ServerMMO HUD resource pack","color":"gold"}
 require-resource-pack=false
@@ -335,7 +335,7 @@ require-resource-pack=false
 **Вместо значков пустые квадратики, видны белые полосы** — пак не applied:
 клиент его не скачал или отказался. Проверь две строки в `server.properties`:
 `resource-pack-sha1` — ровно 40 шестнадцатеричных символов (сейчас
-`4dd4aa00d3e405a372c3630d02e4acbc9e259415`, файл 465 861 байт), а
+`0d3c6894a9529a0cbff3ccc16a9036302888e3d8`, файл 465 861 байт), а
 `resource-pack-id` — UUID группами 8-4-4-4-12. Если `resource-pack-id`
 заполнен неверно, сервер не отправит пак вовсе и в логе будет
 `Failed to parse '<значение>' into UUID`; при неверном SHA-1 —

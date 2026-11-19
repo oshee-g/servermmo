@@ -12,7 +12,7 @@
     {
       "type": "bitmap",
       "file": "servermmo:font/hud_digits.png",
-      "ascent": -1,
+      "ascent": -6,
       "height": 8,
       "chars": [
         ""
@@ -39,7 +39,7 @@
     {
       "type": "bitmap",
       "file": "servermmo:font/hud_gear.png",
-      "ascent": 5,
+      "ascent": 0,
       "height": 20,
       "chars": [
         ""
@@ -57,7 +57,7 @@
     {
       "type": "bitmap",
       "file": "servermmo:font/hud_ability.png",
-      "ascent": 5,
+      "ascent": 0,
       "height": 20,
       "chars": [
         ""
@@ -141,7 +141,7 @@
     {
       "type": "bitmap",
       "file": "servermmo:font/hud_fade0.png",
-      "ascent": -1,
+      "ascent": -6,
       "height": 8,
       "chars": [
         ""
@@ -150,7 +150,7 @@
     {
       "type": "bitmap",
       "file": "servermmo:font/hud_fade1.png",
-      "ascent": -1,
+      "ascent": -6,
       "height": 8,
       "chars": [
         ""
@@ -159,7 +159,7 @@
     {
       "type": "bitmap",
       "file": "servermmo:font/hud_fade2.png",
-      "ascent": -1,
+      "ascent": -6,
       "height": 8,
       "chars": [
         ""
@@ -168,7 +168,7 @@
     {
       "type": "bitmap",
       "file": "servermmo:font/hud_fade3.png",
-      "ascent": -1,
+      "ascent": -6,
       "height": 8,
       "chars": [
         ""
@@ -177,7 +177,7 @@
     {
       "type": "bitmap",
       "file": "servermmo:font/hud_fade4.png",
-      "ascent": -1,
+      "ascent": -6,
       "height": 8,
       "chars": [
         ""

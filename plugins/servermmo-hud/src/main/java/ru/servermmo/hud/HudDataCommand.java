@@ -107,7 +107,8 @@ public final class HudDataCommand implements CommandExecutor {
         if (args.length < 1) {
             HudProfile current = plugin.store().get(target.getUniqueId());
             sender.sendMessage(Component.text("Клан: " + current.clanName()
-                    + ", уровень " + current.clanLevel() + ", опыт " + current.clanXp(),
+                    + ", уровень " + current.clanLevel() + ", опыт " + current.clanXp()
+                    + "/" + current.clanXpToNext(),
                     NamedTextColor.YELLOW));
             return true;
         }
@@ -125,6 +126,12 @@ public final class HudDataCommand implements CommandExecutor {
                 return true;
             }
             profile.clanXp(value);
+        } else if (sub.equals("xpnext") || sub.equals("опыт-до")) {
+            Long value = parse(sender, args.length >= 2 ? args[1] : null);
+            if (value == null) {
+                return true;
+            }
+            profile.clanXpToNext(value);
         } else {
             // /clan <название> — всё остальное считаем названием
             StringBuilder name = new StringBuilder(args[0]);
@@ -145,7 +152,8 @@ public final class HudDataCommand implements CommandExecutor {
         plugin.manager().reset(target);
         sender.sendMessage(Component.text("Клан игрока " + target.getName() + ": "
                 + profile.clanName() + ", уровень " + profile.clanLevel()
-                + ", опыт " + profile.clanXp(), NamedTextColor.GREEN));
+                + ", опыт " + profile.clanXp() + "/" + profile.clanXpToNext(),
+                NamedTextColor.GREEN));
         return true;
     }
 

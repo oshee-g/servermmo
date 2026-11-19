@@ -17,6 +17,8 @@ final class HudProfile {
     private String clanName;
     private long clanLevel;
     private long clanXp;
+    /** Опыт клана до следующего уровня — знаменатель дроби «0/100». */
+    private long clanXpToNext;
     private long coins;
     private long starCoins;
     private long battlePoints;
@@ -43,6 +45,7 @@ final class HudProfile {
         this.clanName = "";
         this.clanLevel = 1L;
         this.clanXp = 0L;
+        this.clanXpToNext = 100L;
         this.coins = 0L;
         this.starCoins = 0L;
         this.battlePoints = 0L;
@@ -117,6 +120,14 @@ final class HudProfile {
 
     void clanXp(long clanXp) {
         this.clanXp = Math.max(0L, clanXp);
+    }
+
+    long clanXpToNext() {
+        return Math.max(1L, clanXpToNext);
+    }
+
+    void clanXpToNext(long clanXpToNext) {
+        this.clanXpToNext = Math.max(1L, clanXpToNext);
     }
 
     long coins() {

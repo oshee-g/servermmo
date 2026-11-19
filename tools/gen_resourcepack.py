@@ -48,10 +48,18 @@ ICON_HEIGHT = 32
 # занимает строки -7..0, его середина на -3.5; значит середина значка 32 px
 # должна быть там же: ascent - 16 = -3.5 -> 19 (с округлением).
 ICON_ASCENT = 19
-# Панель класса — подложка под все четыре строки HUD, ячейка 240x80 (высота
+# Значки хотбара — ячейки 20x20, как ячейки самого хотбара при масштабе
+# интерфейса 2 (слот 16 px + рамка 2 px с каждой стороны). Все значки
+# хотбара одного размера: сердце, меч, щит и способности.
+HOTBAR_HEIGHT = 20
+# Середина значка 20 px на той же высоте, что и текст: ascent - 10 = -3.5.
+HOTBAR_ASCENT = 13
+# Панель класса — подложка под все четыре строки HUD, целиком 320x80 (высота
 # 80, а не исходные 64: расчёт блока строк см. в PANEL в
-# tools/build_icon_atlases.py — нужно накрыть 77 px. Ширина 240, а не 256:
-# глиф 256 px не влезает в атлас шрифта клиента 256x256 с отступом 1 px).
+# tools/build_icon_atlases.py — нужно накрыть 77 px). Одним глифом шире 256
+# нельзя: клиент запекает глифы в атлас FontTexture 256x256, и глиф шире 256
+# останется незапечённым (пустой квадратик). Поэтому панель режется на два
+# глифа по 160 px — PANEL_CHARS ниже, 16 штук на 8 панелей.
 # Её горизонталь задаёт PANEL_PAD_LEFT и расчёт сдвига в HudText.java.
 # Её вертикаль задаёт ascent: глиф рисуется от -ascent до -ascent + height.
 # Панель живёт в первом босс-баре вместе с ником: ник (8 px, ascent 7)
@@ -69,12 +77,12 @@ def chars(base: int, count: int) -> str:
 
 GEAR_CHARS = chars(0xE300, 10)      # сердце, меч, топор, посох, молот,
                                     # коса, вилы, лук, копьё, щит
-MONEY_CHARS = chars(0xE310, 5)      # монеты, коины, боевые очки, нанагемы, клан
+MONEY_CHARS = chars(0xE310, 5)      # монеты, коины, нанагемы, клан, свиток
 ABILITY_CHARS = chars(0xE320, 8)    # восемь слотов способностей
-LEVEL_CHARS = chars(0xE400, 100)    # ромбы уровней 1..100
-PANEL_CHARS = chars(0xE500, 8)      # панели классов
+LEVEL_CHARS = chars(0xE400, 100)    # щиты уровней 1..100
+PANEL_CHARS = chars(0xE500, 16)     # панели классов: 2 глифа на панель
 LEVEL_COLS = 10                     # сетка 10x10
-PANEL_COLS = 2                      # сетка 2x4
+PANEL_COLS = 2                      # сетка 2x8 (16 глифов)
 
 
 def grid(chars_row: str, cols: int) -> list[str]:
@@ -229,8 +237,8 @@ def build_font_json() -> dict:
             {
                 "type": "bitmap",
                 "file": "servermmo:font/hud_gear.png",
-                "ascent": ICON_ASCENT,
-                "height": ICON_HEIGHT,
+                "ascent": HOTBAR_ASCENT,
+                "height": HOTBAR_HEIGHT,
                 "chars": [GEAR_CHARS],
             },
             {
@@ -243,8 +251,8 @@ def build_font_json() -> dict:
             {
                 "type": "bitmap",
                 "file": "servermmo:font/hud_ability.png",
-                "ascent": ICON_ASCENT,
-                "height": ICON_HEIGHT,
+                "ascent": HOTBAR_ASCENT,
+                "height": HOTBAR_HEIGHT,
                 "chars": [ABILITY_CHARS],
             },
             {

@@ -28,7 +28,9 @@ import net.kyori.adventure.text.format.Style;
  *
  * <p>Панель класса - подложка под все четыре строки: она живёт в первой
  * строке, а текст следующих трёх ложится поверх неё (шаг между строками
- * босс-бара у клиента 10 + lineHeight = 19 px).</p>
+ * босс-бара у клиента 10 + lineHeight = 19 px). Панель шире 256 px, поэтому
+ * состоит из двух глифов по 160 px: одним глифом шире нельзя (предел атласа
+ * шрифта клиента 256x256).</p>
  *
  * <p>Глифы пака и обычный текст смешиваются: цифры, значки и буквы LVXP
  * рисуются шрифтом servermmo:hud, а ник и название клана - ванильным шрифтом,
@@ -60,20 +62,21 @@ final class HudText {
             .color(NamedTextColor.WHITE)
             .build();
 
-    /** Панели классов: 8 шт. */
+    /** Панели классов: 8 шт., по два глифа на панель (левая и правая половины). */
     private static final int PANEL_BASE = 0xE500;
-    /** Ромбы уровней 1..100. */
+    /** Щиты уровней 1..100 (номер и lvl нарисованы на щите). */
     private static final int LEVEL_BASE = 0xE400;
-    /** Снаряжение: heart, sword, axe, staff, hammer, scythe, trident, bow, spear, shield. */
+    /** Снаряжение: сердце, меч, топор, посох, молот, коса, вилы, лук, копьё, щит. */
     private static final char GEAR_HEART = '\uE300';
     private static final char GEAR_SWORD = '\uE301';
     private static final char GEAR_SHIELD = '\uE309';
-    /** Валюты: монеты, коины, боевые очки, нанагемы, клан. */
+    /** Валюты и значки панели: монеты, коины, нанагемы, клан, свиток. */
     private static final char MONEY_COINS = '\uE310';
     private static final char MONEY_STAR = '\uE311';
-    private static final char MONEY_BATTLE = '\uE312';
-    private static final char MONEY_GEM = '\uE313';
-    private static final char MONEY_CLAN = '\uE314';
+    private static final char MONEY_GEM = '\uE312';
+    private static final char MONEY_CLAN = '\uE313';
+    /** Свиток перед ником в первой строке панели. */
+    private static final char MONEY_SCROLL = '\uE314';
     /** Слоты способностей: 8 шт. */
     private static final int ABILITY_BASE = 0xE320;
 
@@ -131,16 +134,19 @@ final class HudText {
         map.put(HEART, 8);
         map.put(SWORD, 8);
         for (int i = 0; i < 10; i++) {
-            map.put((char) (0xE300 + i), 32);
+            map.put((char) (0xE300 + i), 20);
+        }
+        for (int i = 0; i < 5; i++) {
+            map.put((char) (0xE310 + i), 32);
         }
         for (int i = 0; i < 8; i++) {
-            map.put((char) (ABILITY_BASE + i), 33);
+            map.put((char) (ABILITY_BASE + i), 20);
         }
         for (int i = 0; i < 100; i++) {
-            map.put((char) (LEVEL_BASE + i), 33);
+            map.put((char) (LEVEL_BASE + i), 30);
         }
-        for (int i = 0; i < 8; i++) {
-            map.put((char) (PANEL_BASE + i), 240);
+        for (int i = 0; i < 16; i++) {
+            map.put((char) (PANEL_BASE + i), 160);
         }
         for (int step = 0; step < FADE_STEPS; step++) {
             int base = FADE_BASE + step * 16;
@@ -219,16 +225,22 @@ final class HudText {
         return 6;
     }
 
-    /** Ширина глифа-панели класса: по ней считается сдвиг всей панели. */
+    /**
+     * Ширина панели класса целиком: она из двух глифов по 160 px (одним
+     * глифом шире 256 нельзя — предел атласа шрифта клиента). По ней
+     * считается сдвиг всей панели.
+     */
     int panelWidth(int classIndex) {
-        return width((char) (PANEL_BASE + Math.max(0, classIndex)));
+        int base = PANEL_BASE + Math.max(0, Math.min(7, classIndex)) * 2;
+        return width((char) base) + width((char) (base + 1));
     }
 
     /**
      * Четыре строки панели.
      *
-     * <p>Первая - подложка-панель и поверх неё ник с классом, вторая - ромб
-     * уровня и опыт, третья - клан, четвёртая - четыре валюты.</p>
+     * <p>Первая - подложка-панель и поверх неё свиток, ник с классом, вторая -
+     * щит уровня (номер и lvl нарисованы на нём) и опыт, третья - клан,
+     * четвёртая - три валюты.</p>
      *
      * <p>Все четыре строки получают один и тот же сдвиг {@code P}, поэтому их
      * центры совпадают (центр строки всегда в {@code W/2 + P/2}), а левый
@@ -240,41 +252,43 @@ final class HudText {
      */
     Component[] panel(HudProfile profile, String playerName, long level, long xp, long xpToNext,
                       HudLayout layout) {
-        char panelGlyph = (char) (PANEL_BASE + profile.classIndex());
-        int panelWidth = width(panelGlyph);
+        int panelBase = PANEL_BASE + profile.classIndex() * 2;
+        int panelWidth = panelWidth(profile.classIndex());
         int offset = layout.panelShift(panelWidth);
 
-        // Строка 1: подложка, затем возврат курсора в её начало и текст поверх.
-        // В конце - хвост до ширины панели: иначе клиент центрует строку по
-        // длине ника и ставит подложку не там, где остальные три строки.
+        // Строка 1: подложка из двух глифов, затем возврат курсора в её начало
+        // и текст поверх. В конце - хвост до ширины панели: иначе клиент
+        // центрует строку по длине ника и ставит подложку не там, где
+        // остальные три строки.
         String title = playerName + " · " + profile.className();
-        int tail = panelWidth - PANEL_PAD_LEFT - vanillaWidth(title);
+        int tail = panelWidth - PANEL_PAD_LEFT - width(MONEY_SCROLL)
+                - ICON_GAP - vanillaWidth(title);
 
         Component first = Component.text(shift(offset), GLYPHS)
-                .append(Component.text(String.valueOf(panelGlyph), GLYPHS))
+                .append(Component.text(
+                        "" + (char) panelBase + (char) (panelBase + 1), GLYPHS))
                 .append(Component.text(shift(-(panelWidth - PANEL_PAD_LEFT)), GLYPHS))
+                .append(Component.text(MONEY_SCROLL + pad(ICON_GAP), GLYPHS))
                 .append(Component.text(title, VANILLA))
                 .append(Component.text(pad(tail), GLYPHS));
 
-        // Строка 2: ромб уровня (номер уже нарисован на нём) и опыт.
+        // Строка 2: щит уровня (номер и lvl уже нарисованы на нём) и опыт.
         String xpLine = String.valueOf((char) (LEVEL_BASE + levelIndex(level)))
-                + pad(COLUMN_GAP) + "XP" + xp + "/" + xpToNext;
+                + pad(COLUMN_GAP) + xp + "/" + xpToNext;
         Component second = Component.text(shift(offset) + xpLine, GLYPHS);
 
-        // Строка 3: клан - значок, название, ромб уровня клана и опыт клана.
+        // Строка 3: клан - значок, название и опыт клана дробью.
         String clanPrefix = shift(offset) + MONEY_CLAN + pad(COLUMN_GAP);
         String clanSuffix = pad(COLUMN_GAP)
-                + (char) (LEVEL_BASE + levelIndex(profile.clanLevel()))
-                + pad(COLUMN_GAP) + profile.clanXp();
+                + profile.clanXp() + "/" + profile.clanXpToNext();
         Component third = Component.text(clanPrefix, GLYPHS)
                 .append(Component.text(
                         profile.clanName().isEmpty() ? "Без клана" : profile.clanName(), VANILLA))
                 .append(Component.text(clanSuffix, GLYPHS));
 
-        // Строка 4: четыре валюты - значок и число.
+        // Строка 4: три валюты - значок и число.
         String money = "" + MONEY_COINS + pad(ICON_GAP) + profile.coins() + pad(COLUMN_GAP)
                 + MONEY_STAR + pad(ICON_GAP) + profile.starCoins() + pad(COLUMN_GAP)
-                + MONEY_BATTLE + pad(ICON_GAP) + profile.battlePoints() + pad(COLUMN_GAP)
                 + MONEY_GEM + pad(ICON_GAP) + profile.nanogems();
         Component fourth = Component.text(shift(offset) + money, GLYPHS);
 
@@ -330,7 +344,7 @@ final class HudText {
         return builder.toString();
     }
 
-    /** Номер глифа-ромба для уровня: уровень 1 - первый ромб, 100 - последний. */
+    /** Номер глифа-щита для уровня: уровень 1 - первый щит, 100 - последний. */
     private static int levelIndex(long level) {
         long index = Math.max(1L, level) - 1L;
         return (int) Math.min(99L, index);

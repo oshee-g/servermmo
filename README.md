@@ -229,8 +229,8 @@ WorldEdit/WorldGuard, Simple Voice Chat. Подробнее — в `plugins/READ
 Что изменилось в игре:
 
 * ванильные сердца, броня, голод и полоска опыта скрыты ресурспаком — вместо
-  них вверху слева панель на четыре строки: подложка класса с ником, ромб
-  уровня с опытом, клан, четыре валюты. Над хотбаром у его левого края —
+  них вверху слева панель на четыре строки: подложка класса со свитком и ником, щит
+  уровня с опытом, клан, три валюты. Над хотбаром у его левого края —
   здоровье, урон и защита (`[сердце] 75 [меч] 1 [щит] 0`), а справа от хотбара
   — квадраты способностей. При получении урона вспыхивает `-25[сердце]`:
   5 секунд ярко, потом за 2 секунды затухает. Панель рисует сам клиент
@@ -258,7 +258,7 @@ WorldEdit/WorldGuard, Simple Voice Chat. Подробнее — в `plugins/READ
 ничего не конфликтовало:
 
 ```properties
-resource-pack=https://drive.usercontent.google.com/download?id=1YN1L5mXVm3wIrfCZKsPLnEkM-IJn5NJR&export=download&confirm=t
+resource-pack=https://drive.usercontent.google.com/download?id=1y64xr7V6fKAV-VAXaNWrT7GtY7hnEE0p&export=download&confirm=t
 resource-pack-sha1=СЧИТАЕТСЯ_ИЗ_ФАЙЛА
 resource-pack-prompt={"text":"ServerMMO HUD resource pack","color":"gold"}
 require-resource-pack=false
@@ -283,7 +283,7 @@ require-resource-pack=false
   экране будут белые полосы и пустые квадратики, занимается
   `require-resource-pack=true` — без пака на сервер просто не пустит.
 * Проверить ссылку: открой её в браузере — должен скачаться zip размером
-  446 760 байт.
+  505 302 байт.
 
 #### Если хочется заставить, а не предлагать
 
@@ -295,7 +295,7 @@ require-resource-pack=false
 
 Открой ссылку из `server.properties` в браузере **на другом устройстве**
 (например, телефон в том же Wi-Fi). Должен скачаться `servermmo-hud.zip`
-на 446 760 байт. Если ссылка не открывается — дело в адресе или в том, что
+на 505 302 байт. Если ссылка не открывается — дело в адресе или в том, что
 файл лежит в приватном репозитории, а не в Minecraft. Проверить SHA-1 файла:
 `certutil -hashfile server\resourcepack\servermmo-hud.zip SHA1` в Windows.
 
@@ -335,7 +335,7 @@ require-resource-pack=false
 **Вместо значков пустые квадратики, видны белые полосы** — пак не applied:
 клиент его не скачал или отказался. Проверь две строки в `server.properties`:
 `resource-pack-sha1` — ровно 40 шестнадцатеричных символов (сейчас
-`8b84d023e14b11411246e8a6529bfb0fecbf0756`, файл 446 760 байт), а
+`f12ef5899c42b8489c847f59190a302984baf89d`, файл 505 302 байт), а
 `resource-pack-id` — UUID группами 8-4-4-4-12. Если `resource-pack-id`
 заполнен неверно, сервер не отправит пак вовсе и в логе будет
 `Failed to parse '<значение>' into UUID`; при неверном SHA-1 —
@@ -354,6 +354,7 @@ require-resource-pack=false
 | `/clan <название>` | название клана (`/clan` без аргументов — показать текущее) |
 | `/clan level <число>` | уровень клана |
 | `/clan xp <число>` | опыт клана |
+| `/clan xpnext <число>` | опыт клана до следующего уровня |
 | `/coins <число>` | монеты |
 | `/star <число>` | коины |
 | `/bp <число>` | боевые очки |

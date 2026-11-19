@@ -17,7 +17,7 @@ commands:
     permission: servermmo.hud
   clan:
     description: Клан игрока (панель HUD)
-    usage: /clan <название> | /clan level <число> | /clan xp <число>
+    usage: /clan <название> | /clan level <число> | /clan xp <число> | /clan xpnext <число>
     permission: servermmo.hud
   coins:
     description: Монеты игрока (панель HUD)

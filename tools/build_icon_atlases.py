@@ -1,16 +1,21 @@
 #!/usr/bin/env python3
 """Собирает атласы значков HUD из нарезанных иконок 64x64.
 
-Разделение по высоте согласовано с игроком: цифры и буквы остаются
-8-пиксельными (шрифт не трогаем), а значки идут ячейками 32x32 и
-рисуются в 4 раза крупнее. Панели классов — отдельный провайдер 256x64:
-это подложка панели, она крупнее значков.
+Размеры согласованы с игроком:
+  * цифры и буквы — 8 px (шрифт не трогаем);
+  * значки панели (валюты, клан, свиток) — ячейки 32x32;
+  * значки хотбара (сердце, меч, щит, способности) — ячейки 20x20, как
+    ячейки хотбара при масштабе интерфейса 2, и все одного размера;
+  * щиты уровней — ячейки 32x32 (номер и lvl уже нарисованы на них);
+  * панели классов — 320x80 целиком, но одним глифом шире 256 нельзя
+    (клиент запекает глифы в атлас 256x256), поэтому каждая панель
+    режется на два глифа по 160x80.
 
-Важно проbitmap-провайдер Minecraft (проверено по исходникам 26.3,
+Важно про bitmap-провайдер Minecraft (проверено по исходникам 26.3,
 BitmapProvider.Definition.load): текстура делится на сетку по размеру
 массива chars, ячейка = (ширина / столбцов) x (высота / строк), а
 объявленная height масштабирует ячейку до нужной высоты
-(pixelScale = height / высота_ячейки). Значит ячейку 32x32 с height=32
+(pixelScale = height / высота_ячейки). Значит ячейку 20x20 с height=20
 игра нарисует 1:1 — поэтому исходники 64x64 ужимаются здесь, а не
 масштабируются на видеокарте (иначе теряются тонкие линии).
 
@@ -32,35 +37,32 @@ ICONS = ROOT / "tools" / "pack_assets" / "icons64"
 LEVEL = ROOT / "tools" / "pack_assets" / "level"
 OUT = ROOT / "tools" / "pack_assets"
 
-ICON = 32          # ячейка значка: height=32 в шрифте
+ICON = 32          # ячейка значка панели: height=32 в шрифте
+HOTBAR = 20        # ячейка значка хотбара: height=20, как ячейка хотбара
 # Ячейка панели класса. Высота не исходные 64, а 80 — ровно столько занимают
 # четыре строки HUD. Шаг между строками босс-бара у клиента 10 + lineHeight
 # (lineHeight = 9, константа) = 19 px. Считаем от baseline первой строки:
 #   строка 1, ник (ванильный текст 8 px, ascent 7):  занимает -7..1
-#   строка 2, уровень (ромб 32 px, ascent 19):       19-19..19+13 = 0..32
+#   строка 2, уровень (щит 32 px, ascent 19):        19-19..19+13 = 0..32
 #   строка 3, клан:                                  19..51
 #   строка 4, валюты (значки 32 px):                 38..70
 # Итого весь текст: -7..70, то есть 77 px. Панель 80 px при ascent 7 занимает
 # -7..73 и накрывает его целиком — иначе нижняя строка висит на пустом фоне.
-# Жёсткий предел — 256: глиф шрифта клиент запекает в атлас FontTexture
-# размером ровно 256x256 (FontTexture.SIZE = 256). DynamicAtlasTree.insert
-# делит атлас пополам, и глиф шире 256 не влезет уже никуда: он останется
-# незапечённым, и вместо панели клиент нарисует пустой квадратик (FontSet
-# подменяет неудавшийся глиф на SpecialGlyphs.MISSING). 256 влезает, но
-# только в свободную полосу во всю ширину атласа — это последний безопасный
-# размер, и tools/check_pack.py за ним следит.
-PANEL = (256, 80)  # ячейка панели класса
+# Панель шире 256 одним глифом не сделать (предел атласа FontTexture 256x256),
+# поэтому панель 320 px режется на два глифа по 160 px.
+PANEL = (320, 80)  # панель класса целиком
+PANEL_HALF = (160, 80)  # половина панели — один глиф
 
 GEAR = ["heart", "sword", "axe", "staff", "hammer", "scythe", "trident",
         "bow", "spear", "shield"]
-MONEY = ["coin_pile", "coin_star", "battle_points", "nanogem", "clan"]
+MONEY = ["coin_pile", "coin_star", "nanogem", "clan", "scroll"]
 ABILITIES = ["ability_slash", "ability_flame", "ability_bolt", "ability_shield",
              "ability_skull", "ability_leaf", "ability_wave", "ability_arrow"]
 CLASSES = ["warrior", "mage", "archer", "paladin", "farmer", "viking",
            "necromancer", "spearman"]
 
 LEVEL_COLS = 10    # 10x10 = 100 уровней
-PANEL_COLS = 2     # 2x4 = 8 классов
+PANEL_COLS = 2     # 2 глифа на панель, 8 панелей = 16 глифов
 
 
 def tile(images: list[Image.Image], cols: int, cell: tuple[int, int]) -> Image.Image:
@@ -81,8 +83,30 @@ def load(name: str, size: tuple[int, int]) -> Image.Image:
     return image.resize(size, Image.LANCZOS)
 
 
+def fit(name: str, size: tuple[int, int]) -> Image.Image:
+    """Иконка хотбара: вырезаем по непрозрачному контуру и растягиваем на всю
+    ячейку, чтобы все значки были одного размера (меч в исходнике меньше
+    сердца, и без нормализации он так и выглядит мельче)."""
+    path = ICONS / f"{name}.png"
+    if not path.is_file():
+        sys.exit(f"нет иконки {path} — сначала tools/slice_sheet.py")
+    image = Image.open(path).convert("RGBA")
+    alpha = image.getchannel("A").point(lambda v: 255 if v >= 128 else 0)
+    box = alpha.getbbox()
+    if box is not None:
+        image = image.crop(box)
+    scale = min(size[0] / image.width, size[1] / image.height)
+    w = max(1, round(image.width * scale))
+    h = max(1, round(image.height * scale))
+    image = image.resize((w, h), Image.LANCZOS)
+    canvas = Image.new("RGBA", size, (0, 0, 0, 0))
+    canvas.paste(image, ((size[0] - w) // 2, (size[1] - h) // 2), image)
+    return canvas
+
+
 def main() -> int:
-    gear = tile([load(n, (ICON, ICON)) for n in GEAR], len(GEAR), (ICON, ICON))
+    gear = tile([fit(n, (HOTBAR, HOTBAR)) for n in GEAR], len(GEAR),
+                (HOTBAR, HOTBAR))
     gear.save(OUT / "hud_gear.png", optimize=True)
     print(f"hud_gear.png {gear.size[0]}x{gear.size[1]}: {', '.join(GEAR)}")
 
@@ -90,8 +114,8 @@ def main() -> int:
     money.save(OUT / "hud_money.png", optimize=True)
     print(f"hud_money.png {money.size[0]}x{money.size[1]}: {', '.join(MONEY)}")
 
-    ability = tile([load(n, (ICON, ICON)) for n in ABILITIES], len(ABILITIES),
-                   (ICON, ICON))
+    ability = tile([fit(n, (HOTBAR, HOTBAR)) for n in ABILITIES], len(ABILITIES),
+                   (HOTBAR, HOTBAR))
     ability.save(OUT / "hud_ability.png", optimize=True)
     print(f"hud_ability.png {ability.size[0]}x{ability.size[1]}: 8 способность")
 
@@ -107,16 +131,18 @@ def main() -> int:
     print(f"hud_level.png {sheet.size[0]}x{sheet.size[1]}: уровни 1..100 "
           f"сеткой {LEVEL_COLS}x{10}")
 
-    panels = []
+    halves = []
     for name in CLASSES:
         path = ICONS / f"panel_{name}.png"
         if not path.is_file():
             sys.exit(f"нет панели {path}")
-        panels.append(Image.open(path).convert("RGBA").resize(PANEL, Image.LANCZOS))
-    sheet = tile(panels, PANEL_COLS, PANEL)
+        panel = Image.open(path).convert("RGBA").resize(PANEL, Image.LANCZOS)
+        halves.append(panel.crop((0, 0, PANEL_HALF[0], PANEL_HALF[1])))
+        halves.append(panel.crop((PANEL_HALF[0], 0, PANEL[0], PANEL_HALF[1])))
+    sheet = tile(halves, PANEL_COLS, PANEL_HALF)
     sheet.save(OUT / "hud_panel.png", optimize=True)
     print(f"hud_panel.png {sheet.size[0]}x{sheet.size[1]}: панели классов "
-          f"сеткой {PANEL_COLS}x{len(CLASSES) // PANEL_COLS}")
+          f"сеткой {PANEL_COLS}x{len(halves) // PANEL_COLS}")
     return 0
 
 

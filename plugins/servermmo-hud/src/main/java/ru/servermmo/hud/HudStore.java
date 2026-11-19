@@ -48,6 +48,7 @@ final class HudStore {
             profile.clanName(data.getString(path + "clan", ""));
             profile.clanLevel(data.getLong(path + "clan-level", 1L));
             profile.clanXp(data.getLong(path + "clan-xp", 0L));
+            profile.clanXpToNext(data.getLong(path + "clan-xp-next", 100L));
             profile.coins(data.getLong(path + "coins", 0L));
             profile.starCoins(data.getLong(path + "star-coins", 0L));
             profile.battlePoints(data.getLong(path + "battle-points", 0L));
@@ -75,6 +76,7 @@ final class HudStore {
             data.set(path + "clan", profile.clanName());
             data.set(path + "clan-level", profile.clanLevel());
             data.set(path + "clan-xp", profile.clanXp());
+            data.set(path + "clan-xp-next", profile.clanXpToNext());
             data.set(path + "coins", profile.coins());
             data.set(path + "star-coins", profile.starCoins());
             data.set(path + "battle-points", profile.battlePoints());

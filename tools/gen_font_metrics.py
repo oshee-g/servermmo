@@ -50,10 +50,10 @@ ATLASES = (
     *(("hud_fade%d.png" % step, hotbar_fade_chars(step),
        len(hotbar_fade_chars(step)), 8) for step in range(FADE_STEPS)),
     ("hud_gear.png", GEAR_CHARS, len(GEAR_CHARS), 20),
-    ("hud_money.png", MONEY_CHARS, len(MONEY_CHARS), 16),
+    ("hud_money.png", MONEY_CHARS, len(MONEY_CHARS), 14),
     ("hud_ability.png", ABILITY_CHARS, len(ABILITY_CHARS), 20),
-    ("hud_level.png", LEVEL_CHARS, LEVEL_COLS, 16),
-    ("hud_clan.png", CLAN_CHARS, LEVEL_COLS, 16),
+    ("hud_level.png", LEVEL_CHARS, LEVEL_COLS, 14),
+    ("hud_clan.png", CLAN_CHARS, LEVEL_COLS, 14),
     ("hud_panel.png", PANEL_CHARS, PANEL_COLS, 96),
 )
 

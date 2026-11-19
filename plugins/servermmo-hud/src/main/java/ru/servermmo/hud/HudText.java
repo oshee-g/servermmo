@@ -70,13 +70,15 @@ final class HudText {
     private static final char GEAR_HEART = '\uE300';
     private static final char GEAR_SWORD = '\uE301';
     private static final char GEAR_SHIELD = '\uE309';
-    /** Валюты и значки панели: монеты, коины, нанагемы, клан, свиток. */
+    /** Валюты и значки панели: монеты, коины, нанагемы, клан, свиток, боевые очки. */
     private static final char MONEY_COINS = '\uE310';
     private static final char MONEY_STAR = '\uE311';
     private static final char MONEY_GEM = '\uE312';
     private static final char MONEY_CLAN = '\uE313';
     /** Свиток перед ником в первой строке панели. */
     private static final char MONEY_SCROLL = '\uE314';
+    /** Боевые очки: серебряная монета с двумя мечами. */
+    private static final char MONEY_BATTLE = '\uE315';
     /** Слоты способностей: 8 шт. */
     private static final int ABILITY_BASE = 0xE320;
 
@@ -100,6 +102,15 @@ final class HudText {
     static final int FADE_STEPS = 5;
     /** База кодовых точек ступеней: ступень L - FADE_BASE + L*16 + позиция. */
     private static final int FADE_BASE = 0xE200;
+    /**
+     * Цифры хотбара: те же PNG, что и цифры панели, но отдельные кодовые
+     * точки и ниже (ascent -1 в шрифте) — чтобы цифры строки экшн-бара стояли
+     * по центру опущенных значков, а не выше них. Панель цифры не трогаем.
+     * Порядок тот же, что в DIGIT_CHARS генератора: 0-9, /, пробел.
+     */
+    private static final int HOTBAR_DIGIT_BASE = 0xE600;
+    /** База ступеней затухания для хотбара: ступень L - E610 + L*16 + позиция. */
+    private static final int HOTBAR_FADE_BASE = 0xE610;
 
     private static final char SHIFT_RIGHT = '\uE110';
     private static final char SHIFT_LEFT = '\uE120';
@@ -128,6 +139,17 @@ final class HudText {
         map.put('1', 6);
         map.put('/', 7);
         map.put(' ', 4);
+        for (int i = 0; i < 12; i++) {
+            map.put((char) (HOTBAR_DIGIT_BASE + i), i == 1 ? 6 : 7);
+        }
+        for (int step = 0; step < FADE_STEPS; step++) {
+            int base = HOTBAR_FADE_BASE + step * 16;
+            for (int digit = 0; digit <= 9; digit++) {
+                map.put((char) (base + digit), digit == 1 ? 6 : 7);
+            }
+            map.put((char) (base + 10), 7);
+            map.put((char) (base + 11), 8);
+        }
         for (char letter : "LVXP".toCharArray()) {
             map.put(letter, 7);
         }
@@ -136,7 +158,7 @@ final class HudText {
         for (int i = 0; i < 10; i++) {
             map.put((char) (0xE300 + i), 20);
         }
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < 6; i++) {
             map.put((char) (0xE310 + i), 32);
         }
         for (int i = 0; i < 8; i++) {
@@ -270,8 +292,9 @@ final class HudText {
                 + pad(COLUMN_GAP) + xp + "/" + xpToNext;
         Component second = Component.text(shift(offset) + xpLine, GLYPHS);
 
-        // Строка 3: клан - значок, название и опыт клана дробью.
-        String clanPrefix = shift(offset) + MONEY_CLAN + pad(COLUMN_GAP);
+        // Строка 3: клан - щит уровня, название и опыт клана дробью.
+        String clanPrefix = shift(offset)
+                + (char) (LEVEL_BASE + levelIndex(profile.clanLevel())) + pad(COLUMN_GAP);
         String clanSuffix = pad(COLUMN_GAP)
                 + profile.clanXp() + "/" + profile.clanXpToNext();
         Component third = Component.text(clanPrefix, GLYPHS)
@@ -279,10 +302,11 @@ final class HudText {
                         profile.clanName().isEmpty() ? "Без клана" : profile.clanName(), VANILLA))
                 .append(Component.text(clanSuffix, GLYPHS));
 
-        // Строка 4: три валюты - значок и число.
+        // Строка 4: четыре валюты - значок и число.
         String money = "" + MONEY_COINS + pad(ICON_GAP) + profile.coins() + pad(COLUMN_GAP)
                 + MONEY_STAR + pad(ICON_GAP) + profile.starCoins() + pad(COLUMN_GAP)
-                + MONEY_GEM + pad(ICON_GAP) + profile.nanogems();
+                + MONEY_GEM + pad(ICON_GAP) + profile.nanogems() + pad(COLUMN_GAP)
+                + MONEY_BATTLE + pad(ICON_GAP) + profile.battlePoints();
         Component fourth = Component.text(shift(offset) + money, GLYPHS);
 
         return new Component[]{first, second, third, fourth};
@@ -300,9 +324,9 @@ final class HudText {
      */
     Component hotbar(long health, long damage, long armor, long lastDamage, int fadeStep,
                      int anchorX, int abilitySlots, HudLayout layout) {
-        String body = "" + GEAR_HEART + pad(ICON_GAP) + health + pad(COLUMN_GAP)
-                + GEAR_SWORD + pad(ICON_GAP) + damage + pad(COLUMN_GAP)
-                + GEAR_SHIELD + pad(ICON_GAP) + armor;
+        String body = "" + GEAR_HEART + pad(ICON_GAP) + hotbarDigits(health) + pad(COLUMN_GAP)
+                + GEAR_SWORD + pad(ICON_GAP) + hotbarDigits(damage) + pad(COLUMN_GAP)
+                + GEAR_SHIELD + pad(ICON_GAP) + hotbarDigits(armor);
         if (fadeStep >= 0) {
             body += pad(COLUMN_GAP) + indicator(lastDamage, fadeStep);
         }
@@ -326,7 +350,7 @@ final class HudText {
     /** «-25♥» глифами ступени затухания (0 - полная яркость). */
     String indicator(long amount, int fadeStep) {
         int step = Math.max(0, Math.min(FADE_STEPS - 1, fadeStep));
-        int base = FADE_BASE + step * 16;
+        int base = HOTBAR_FADE_BASE + step * 16;
         StringBuilder builder = new StringBuilder();
         builder.append((char) (base + 10)); // минус
         String digits = Long.toString(Math.max(0L, amount));
@@ -334,6 +358,19 @@ final class HudText {
             builder.append((char) (base + (digits.charAt(i) - '0')));
         }
         builder.append((char) (base + 11)); // сердце
+        return builder.toString();
+    }
+
+    /**
+     * Число глифами цифр хотбара (те же PNG, что и цифры панели, но ниже —
+     * по центру опущенных значков). Панельные цифры не трогаем.
+     */
+    String hotbarDigits(long value) {
+        String digits = Long.toString(value);
+        StringBuilder builder = new StringBuilder(digits.length());
+        for (int i = 0; i < digits.length(); i++) {
+            builder.append((char) (HOTBAR_DIGIT_BASE + (digits.charAt(i) - '0')));
+        }
         return builder.toString();
     }
 

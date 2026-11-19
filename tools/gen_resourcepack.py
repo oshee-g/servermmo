@@ -52,10 +52,15 @@ ICON_ASCENT = 19
 # интерфейса 2 (слот 16 px + рамка 2 px с каждой стороны). Все значки
 # хотбара одного размера: сердце, меч, щит и способности.
 HOTBAR_HEIGHT = 20
-# Ascent 7 вместо 13: значки опущены на 6 px ниже, вплотную к ячейкам
-# хотбара (игрок просил прижать строку к ячейкам). Цифры при этом стоят
-# чуть выше центра значков — это плата за то, что строка сидит ниже.
-HOTBAR_ASCENT = 7
+# Ascent 5: значки опущены на 8 px ниже, вплотную к ячейкам хотбара
+# (игрок просил прижать строку к ячейкам). Цифры хотбара идут отдельными
+# глифами с тем же центром (HOTBAR_DIGIT_ASCENT), чтобы не отрывались от
+# значков: строка экшн-бара у клиента на фиксированной высоте, и опустить
+# можно только содержимое.
+HOTBAR_ASCENT = 5
+# Цифры хотбара: тот же атлас hud_digits.png, но ascent -1 — центр цифры
+# на той же высоте, что и центр значка 20 px (ascent 5): -(-1) + 4 = 5.
+HOTBAR_DIGIT_ASCENT = -1
 # Панель класса — подложка под все четыре строки HUD, ячейка 256x96 (высота
 # 96, а не исходные 64: расчёт блока строк см. в PANEL в
 # tools/build_icon_atlases.py — нужно накрыть 77 px и дать панели запас по
@@ -76,9 +81,20 @@ def chars(base: int, count: int) -> str:
     return "".join(chr(base + i) for i in range(count))
 
 
+# Цифры хотбара: те же PNG, что и цифры панели, но отдельные кодовые точки
+# и ниже (ascent -1) — чтобы цифры строки экшн-бара стояли по центру
+# опущенных значков, а не выше них. Панель цифры не трогаем.
+HOTBAR_DIGIT_CHARS = chars(0xE600, len(DIGIT_CHARS))   # 0-9, /, пробел
+# Ступени затухания урона для хотбара: те же атласы hud_fade*.png, но ниже.
+def hotbar_fade_chars(step: int) -> str:
+    base = 0xE610 + step * 16
+    return "".join(chr(base + i) for i in range(12))
+
+
 GEAR_CHARS = chars(0xE300, 10)      # сердце, меч, топор, посох, молот,
                                     # коса, вилы, лук, копьё, щит
-MONEY_CHARS = chars(0xE310, 5)      # монеты, коины, нанагемы, клан, свиток
+MONEY_CHARS = chars(0xE310, 6)      # монеты, коины, нанагемы, клан, свиток,
+                                    # боевые очки
 ABILITY_CHARS = chars(0xE320, 8)    # восемь слотов способностей
 LEVEL_CHARS = chars(0xE400, 100)    # щиты уровней 1..100
 PANEL_CHARS = chars(0xE500, 8)      # панели классов
@@ -223,6 +239,13 @@ def build_font_json() -> dict:
             },
             {
                 "type": "bitmap",
+                "file": "servermmo:font/hud_digits.png",
+                "ascent": HOTBAR_DIGIT_ASCENT,
+                "height": GLYPH_HEIGHT,
+                "chars": [HOTBAR_DIGIT_CHARS],
+            },
+            {
+                "type": "bitmap",
                 "file": "servermmo:font/hud_icons.png",
                 "ascent": 7,
                 "height": GLYPH_HEIGHT,
@@ -277,6 +300,16 @@ def build_font_json() -> dict:
                     "ascent": 7,
                     "height": GLYPH_HEIGHT,
                     "chars": [fade_chars(step)],
+                }
+                for step in range(FADE_STEPS)
+            ],
+            *[
+                {
+                    "type": "bitmap",
+                    "file": f"servermmo:font/hud_fade{step}.png",
+                    "ascent": HOTBAR_DIGIT_ASCENT,
+                    "height": GLYPH_HEIGHT,
+                    "chars": [hotbar_fade_chars(step)],
                 }
                 for step in range(FADE_STEPS)
             ],

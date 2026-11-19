@@ -56,7 +56,7 @@ PANEL = (256, 96)  # панель класса целиком, один глиф
 
 GEAR = ["heart", "sword", "axe", "staff", "hammer", "scythe", "trident",
         "bow", "spear", "shield"]
-MONEY = ["coin_pile", "coin_star", "nanogem", "clan", "scroll"]
+MONEY = ["coin_pile", "coin_star", "nanogem", "clan", "scroll", "battle_points"]
 ABILITIES = ["ability_slash", "ability_flame", "ability_bolt", "ability_shield",
              "ability_skull", "ability_leaf", "ability_wave", "ability_arrow"]
 CLASSES = ["warrior", "mage", "archer", "paladin", "farmer", "viking",

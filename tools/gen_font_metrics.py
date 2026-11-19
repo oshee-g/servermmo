@@ -20,8 +20,9 @@ from __future__ import annotations
 from pathlib import Path
 
 from gen_resourcepack import (ABILITY_CHARS, DIGIT_CHARS, FADE_STEPS, GEAR_CHARS,
-                              ICON_CHARS, LEVEL_CHARS, LETTER_CHARS, MONEY_CHARS,
-                              PANEL_CHARS, LEVEL_COLS, PANEL_COLS, fade_chars,
+                              HOTBAR_DIGIT_CHARS, ICON_CHARS, LEVEL_CHARS,
+                              LETTER_CHARS, MONEY_CHARS, PANEL_CHARS, LEVEL_COLS,
+                              PANEL_COLS, fade_chars, hotbar_fade_chars,
                               build_space_advances)
 from png_io import glyph_advance, glyph_advance_grid, png_rgba
 
@@ -40,10 +41,13 @@ def _fade_chars(step: int) -> str:
 # поэтому считать ширину надо по своей сетке, а не «ширина / число символов».
 ATLASES = (
     ("hud_digits.png", DIGIT_CHARS, len(DIGIT_CHARS)),
+    ("hud_digits.png", HOTBAR_DIGIT_CHARS, len(HOTBAR_DIGIT_CHARS)),
     ("hud_icons.png", ICON_CHARS, len(ICON_CHARS)),
     ("hud_letters.png", LETTER_CHARS, len(LETTER_CHARS)),
     *(("hud_fade%d.png" % step, _fade_chars(step), len(_fade_chars(step)))
       for step in range(FADE_STEPS)),
+    *(("hud_fade%d.png" % step, hotbar_fade_chars(step),
+       len(hotbar_fade_chars(step))) for step in range(FADE_STEPS)),
     ("hud_gear.png", GEAR_CHARS, len(GEAR_CHARS)),
     ("hud_money.png", MONEY_CHARS, len(MONEY_CHARS)),
     ("hud_ability.png", ABILITY_CHARS, len(ABILITY_CHARS)),

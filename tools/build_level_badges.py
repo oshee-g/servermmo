@@ -1,14 +1,11 @@
 #!/usr/bin/env python3
-"""Собирает 100 значков уровня: ИИ-щит + номер и подпись lvl.
+"""Собирает 100 значков уровня: ИИ-ромб + номер уровня.
 
-Щит один (tools/pack_assets/icons64/level_shield.png) — рисовать цифры
+Ромб один (tools/pack_assets/icons64/level_diamond_new.png) — рисовать цифры
 средствами ИИ на сотню иконок нельзя: они вышли бы разными по стилю и
-кривыми. Поэтому щит генерирует ИИ, а цифры и слово lvl рисует код,
-подбирая размер так, чтобы текст влез в тёмный центр щита.
-
-Раньше здесь был ромб, но на нём цифры не читались (светло-голубой на
-светло-голубом). Щит с тёмным центром даёт контраст: белый номер на
-тёмном фоне.
+кривыми. Поэтому ромб генерирует ИИ, а номер рисует код, подбирая размер
+так, чтобы текст влез в тёмный центр ромба. Слово «lvl» не пишется —
+номер стоит один в центре.
 
 Запуск (нужен Pillow):
     /tmp/venv/bin/python tools/build_level_badges.py
@@ -24,18 +21,20 @@ except ImportError:  # pragma: no cover
     sys.exit("нужен Pillow: /tmp/venv/bin/python tools/build_level_badges.py")
 
 ROOT = Path(__file__).resolve().parent.parent
+DIAMOND = ROOT / "tools" / "pack_assets" / "icons64" / "level_diamond_new.png"
 SHIELD = ROOT / "tools" / "pack_assets" / "icons64" / "level_shield.png"
 OUT = ROOT / "tools" / "pack_assets" / "level"
+CLAN_OUT = ROOT / "tools" / "pack_assets" / "clan"
 
 SIZE = 64          # значок в шрифте
-NUMBER_RATIO = 0.44  # центр номера по высоте (тёмный центр щита)
-LVL_RATIO = 0.70     # центр подписи lvl по высоте
+NUMBER_RATIO = 0.50  # центр номера по высоте (тёмный центр ромба)
+SHIELD_NUMBER_RATIO = 0.44  # центр номера на щите клана (тёмный центр щита)
 FILL = (255, 255, 255, 255)
 STROKE = (12, 28, 38, 255)
 
 
 def row_widths(img: Image.Image) -> list[int]:
-    """Ширина непрозрачной части щита по каждой строке."""
+    """Ширина непрозрачной части ромба по каждой строке."""
     alpha = img.split()[3].load()
     w, h = img.size
     out = []
@@ -50,50 +49,50 @@ def row_widths(img: Image.Image) -> list[int]:
     return out
 
 
-def fit_font(draw: Image.Image, text: str, widths: list[int],
-             top: float, bottom: float, max_size: int) -> ImageFont.FreeTypeFont:
-    """Самый крупный шрифт, при котором текст влезает в щит."""
-    rows = range(max(0, int(top)), min(len(widths), int(bottom) + 1))
-    limit = min(widths[y] for y in rows) * 0.86 if rows else SIZE
-    for size in range(max_size, 7, -1):
-        font = ImageFont.load_default(size=size)
-        box = draw.textbbox((0, 0), text, font=font)
-        if box[2] - box[0] <= limit and box[3] - box[1] <= (bottom - top) * 1.05:
-            return font
-    return ImageFont.load_default(size=8)
-
-
-def main() -> int:
-    if not SHIELD.is_file():
-        sys.exit(f"нет щита: {SHIELD}")
-    base = Image.open(SHIELD).convert("RGBA")
+def build(base_path: Path, out_dir: Path, top: float, bottom: float,
+          ratio: float, factor: float) -> None:
+    """100 значков: основа + номер по центру, без подписи lvl."""
+    if not base_path.is_file():
+        sys.exit(f"нет основы: {base_path}")
+    base = Image.open(base_path).convert("RGBA")
     if base.size != (SIZE, SIZE):
         base = base.resize((SIZE, SIZE), Image.LANCZOS)
     widths = row_widths(base)
-    OUT.mkdir(parents=True, exist_ok=True)
+    out_dir.mkdir(parents=True, exist_ok=True)
 
     for n in range(1, 101):
         text = str(n)
         badge = base.copy()
         draw = ImageDraw.Draw(badge)
-        # Номер: центр чуть выше середины, размер подбираем по ширине щита.
-        font = fit_font(draw, text, widths, SIZE * 0.28, SIZE * 0.60, 30)
+        # Номер: центр основы, размер подбираем по ширине тёмного центра.
+        rows = range(max(0, int(top)), min(len(widths), int(bottom) + 1))
+        limit = min(widths[y] for y in rows) * factor if rows else SIZE
+        font = None
+        for size in range(30, 7, -1):
+            candidate = ImageFont.load_default(size=size)
+            box = draw.textbbox((0, 0), text, font=candidate)
+            if box[2] - box[0] <= limit and box[3] - box[1] <= (bottom - top) * 1.05:
+                font = candidate
+                break
+        if font is None:
+            font = ImageFont.load_default(size=8)
         box = draw.textbbox((0, 0), text, font=font)
         draw.text(((SIZE - (box[2] - box[0])) / 2 - box[0],
-                   SIZE * NUMBER_RATIO - (box[3] - box[1]) / 2 - box[1]),
+                   SIZE * ratio - (box[3] - box[1]) / 2 - box[1]),
                   text, font=font, fill=FILL,
                   stroke_width=max(1, round(font.size / 9)),
                   stroke_fill=STROKE)
-        # Подпись lvl — ниже центра, мелкая.
-        lvl = ImageFont.load_default(size=11)
-        box = draw.textbbox((0, 0), "lvl", font=lvl)
-        draw.text(((SIZE - (box[2] - box[0])) / 2 - box[0],
-                   SIZE * LVL_RATIO - (box[3] - box[1]) / 2 - box[1]),
-                  "lvl", font=lvl, fill=(226, 252, 250, 255), stroke_width=2,
-                  stroke_fill=STROKE)
-        badge.save(OUT / f"level_{n}.png")
+        badge.save(out_dir / f"level_{n}.png")
 
-    print(f"готово: 100 значков уровня {SIZE}x{SIZE} в {OUT}")
+
+def main() -> int:
+    # Ромбы уровня игрока: номер в тёмном центре ромба.
+    build(DIAMOND, OUT, SIZE * 0.36, SIZE * 0.64, NUMBER_RATIO, 0.50)
+    # Щиты уровня клана: номер в тёмном центре щита.
+    build(SHIELD, CLAN_OUT, SIZE * 0.28, SIZE * 0.60, SHIELD_NUMBER_RATIO, 0.86)
+
+    print(f"готово: 100 ромбов уровня {SIZE}x{SIZE} в {OUT}, "
+          f"100 щитов клана в {CLAN_OUT}")
     return 0
 
 

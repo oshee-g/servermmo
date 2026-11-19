@@ -36,11 +36,11 @@ final class PlayerHud {
     private final HudText text;
     private final HudStore store;
     private final Player player;
-    /** Четыре строки панели: подложка+ник, уровень, клан, валюты. */
-    private final BossBar[] bars = new BossBar[4];
+    /** Три строки панели: подложка+ник+уровень, клан, валюты. */
+    private final BossBar[] bars = new BossBar[3];
 
     private boolean visible;
-    private final Component[] lastLines = new Component[4];
+    private final Component[] lastLines = new Component[3];
 
     private boolean actionBarCleared;
 

@@ -83,6 +83,24 @@
     },
     {
       "type": "bitmap",
+      "file": "servermmo:font/hud_clan.png",
+      "ascent": 15,
+      "height": 24,
+      "chars": [
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        ""
+      ]
+    },
+    {
+      "type": "bitmap",
       "file": "servermmo:font/hud_panel.png",
       "ascent": 7,
       "height": 96,

@@ -98,7 +98,8 @@ GEAR_CHARS = chars(0xE300, 10)      # сердце, меч, топор, посо
 MONEY_CHARS = chars(0xE310, 6)      # монеты, коины, нанагемы, клан, свиток,
                                     # боевые очки
 ABILITY_CHARS = chars(0xE320, 8)    # восемь слотов способностей
-LEVEL_CHARS = chars(0xE400, 100)    # щиты уровней 1..100
+LEVEL_CHARS = chars(0xE400, 100)    # ромбы уровней игрока 1..100
+CLAN_CHARS = chars(0xE470, 100)     # щиты уровней клана 1..100
 PANEL_CHARS = chars(0xE500, 8)      # панели классов
 LEVEL_COLS = 10                     # сетка 10x10
 PANEL_COLS = 2                      # сетка 2x4
@@ -290,6 +291,13 @@ def build_font_json() -> dict:
             },
             {
                 "type": "bitmap",
+                "file": "servermmo:font/hud_clan.png",
+                "ascent": ICON_ASCENT,
+                "height": ICON_HEIGHT,
+                "chars": grid(CLAN_CHARS, LEVEL_COLS),
+            },
+            {
+                "type": "bitmap",
                 "file": "servermmo:font/hud_panel.png",
                 "ascent": PANEL_ASCENT,
                 "height": PANEL_HEIGHT,
@@ -365,7 +373,7 @@ def main() -> int:
     for name in ("hud_digits.png", "hud_icons.png", "hud_letters.png",
                  *(f"hud_fade{step}.png" for step in range(FADE_STEPS)),
                  "hud_gear.png", "hud_money.png", "hud_ability.png",
-                 "hud_level.png", "hud_panel.png"):
+                 "hud_level.png", "hud_clan.png", "hud_panel.png"):
         copy_asset(name, textures / name)
     copy_asset("pack_icon.png", PACK / "pack.png")
 

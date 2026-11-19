@@ -19,11 +19,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from gen_resourcepack import (ABILITY_CHARS, DIGIT_CHARS, FADE_STEPS, GEAR_CHARS,
-                              HOTBAR_DIGIT_CHARS, ICON_CHARS, LEVEL_CHARS,
-                              LETTER_CHARS, MONEY_CHARS, PANEL_CHARS, LEVEL_COLS,
-                              PANEL_COLS, fade_chars, hotbar_fade_chars,
-                              build_space_advances)
+from gen_resourcepack import (ABILITY_CHARS, CLAN_CHARS, DIGIT_CHARS, FADE_STEPS,
+                              GEAR_CHARS, HOTBAR_DIGIT_CHARS, ICON_CHARS,
+                              LEVEL_CHARS, LETTER_CHARS, MONEY_CHARS, PANEL_CHARS,
+                              LEVEL_COLS, PANEL_COLS, fade_chars,
+                              hotbar_fade_chars, build_space_advances)
 from png_io import glyph_advance, glyph_advance_grid, png_rgba
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -52,6 +52,7 @@ ATLASES = (
     ("hud_money.png", MONEY_CHARS, len(MONEY_CHARS)),
     ("hud_ability.png", ABILITY_CHARS, len(ABILITY_CHARS)),
     ("hud_level.png", LEVEL_CHARS, LEVEL_COLS),
+    ("hud_clan.png", CLAN_CHARS, LEVEL_COLS),
     ("hud_panel.png", PANEL_CHARS, PANEL_COLS),
 )
 

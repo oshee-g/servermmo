@@ -26,8 +26,8 @@ import net.kyori.adventure.text.format.Style;
  * масштаба GUI. Поэтому готовый сдвиг в конфиг не кладём — его считает
  * {@link HudLayout} по масштабу интерфейса игрока.</p>
  *
- * <p>Панель класса - подложка под все четыре строки: она живёт в первой
- * строке, а текст следующих трёх ложится поверх неё (шаг между строками
+ * <p>Панель класса - подложка под все три строки: она живёт в первой
+ * строке, а текст следующих двух ложится поверх неё (шаг между строками
  * босс-бара у клиента 10 + lineHeight = 19 px). Панель 256x96: ширину больше
  * нельзя (предел атласа шрифта клиента 256x256), поэтому она выше, а не
  * шире.</p>
@@ -64,8 +64,10 @@ final class HudText {
 
     /** Панели классов: 8 шт. */
     private static final int PANEL_BASE = 0xE500;
-    /** Щиты уровней 1..100 (номер и lvl нарисованы на щите). */
+    /** Ромбы уровней игрока 1..100 (номер нарисован на ромбе, без «lvl»). */
     private static final int LEVEL_BASE = 0xE400;
+    /** Щиты уровней клана 1..100 (номер нарисован на щите, без «lvl»). */
+    private static final int CLAN_BASE = 0xE470;
     /** Снаряжение: сердце, меч, топор, посох, молот, коса, вилы, лук, копьё, щит. */
     private static final char GEAR_HEART = '\uE300';
     private static final char GEAR_SWORD = '\uE301';
@@ -167,6 +169,9 @@ final class HudText {
         for (int i = 0; i < 100; i++) {
             map.put((char) (LEVEL_BASE + i), 24);
         }
+        for (int i = 0; i < 100; i++) {
+            map.put((char) (CLAN_BASE + i), 24);
+        }
         for (int i = 0; i < 8; i++) {
             map.put((char) (PANEL_BASE + i), 256);
         }
@@ -253,13 +258,13 @@ final class HudText {
     }
 
     /**
-     * Четыре строки панели.
+     * Три строки панели.
      *
-     * <p>Первая - подложка-панель и поверх неё свиток, ник с классом, вторая -
-     * щит уровня (номер и lvl нарисованы на нём) и опыт, третья - клан,
-     * четвёртая - три валюты.</p>
+     * <p>Первая - подложка-панель и поверх неё свиток, ник с классом, ромб
+     * уровня (номер нарисован на нём) и опыт дробью, вторая - клан: щит
+     * уровня, название и опыт клана дробью, третья - четыре валюты.</p>
      *
-     * <p>Все четыре строки получают один и тот же сдвиг {@code P}, поэтому их
+     * <p>Все три строки получают один и тот же сдвиг {@code P}, поэтому их
      * центры совпадают (центр строки всегда в {@code W/2 + P/2}), а левый
      * край панели стоит ровно в {@code margin-left} от края экрана — см.
      * {@link HudLayout}. Ставить сдвиг в конфиг нельзя: он в пикселях
@@ -275,41 +280,41 @@ final class HudText {
 
         // Строка 1: подложка, затем возврат курсора в её начало и текст поверх.
         // В конце - хвост до ширины панели: иначе клиент центрует строку по
-        // длине ника и ставит подложку не там, где остальные три строки.
+        // длине ника и ставит подложку не там, где остальные две строки.
         String title = playerName + " · " + profile.className();
+        String xpFraction = xp + "/" + xpToNext;
+        char diamond = (char) (LEVEL_BASE + levelIndex(level));
         int tail = panelWidth - PANEL_PAD_LEFT - width(MONEY_SCROLL)
-                - ICON_GAP - vanillaWidth(title);
+                - ICON_GAP - vanillaWidth(title)
+                - COLUMN_GAP - width(diamond) - COLUMN_GAP - width(xpFraction);
 
         Component first = Component.text(shift(offset), GLYPHS)
                 .append(Component.text(String.valueOf(panelGlyph), GLYPHS))
                 .append(Component.text(shift(-(panelWidth - PANEL_PAD_LEFT)), GLYPHS))
                 .append(Component.text(MONEY_SCROLL + pad(ICON_GAP), GLYPHS))
                 .append(Component.text(title, VANILLA))
+                .append(Component.text(pad(COLUMN_GAP) + diamond + pad(COLUMN_GAP)
+                        + xpFraction, GLYPHS))
                 .append(Component.text(pad(tail), GLYPHS));
 
-        // Строка 2: щит уровня (номер и lvl уже нарисованы на нём) и опыт.
-        String xpLine = String.valueOf((char) (LEVEL_BASE + levelIndex(level)))
-                + pad(COLUMN_GAP) + xp + "/" + xpToNext;
-        Component second = Component.text(shift(offset) + xpLine, GLYPHS);
-
-        // Строка 3: клан - щит уровня, название и опыт клана дробью.
+        // Строка 2: клан - щит уровня, название и опыт клана дробью.
         String clanPrefix = shift(offset)
-                + (char) (LEVEL_BASE + levelIndex(profile.clanLevel())) + pad(COLUMN_GAP);
+                + (char) (CLAN_BASE + levelIndex(profile.clanLevel())) + pad(COLUMN_GAP);
         String clanSuffix = pad(COLUMN_GAP)
                 + profile.clanXp() + "/" + profile.clanXpToNext();
-        Component third = Component.text(clanPrefix, GLYPHS)
+        Component second = Component.text(clanPrefix, GLYPHS)
                 .append(Component.text(
                         profile.clanName().isEmpty() ? "Без клана" : profile.clanName(), VANILLA))
                 .append(Component.text(clanSuffix, GLYPHS));
 
-        // Строка 4: четыре валюты - значок и число.
+        // Строка 3: четыре валюты - значок и число.
         String money = "" + MONEY_COINS + pad(ICON_GAP) + profile.coins() + pad(COLUMN_GAP)
                 + MONEY_STAR + pad(ICON_GAP) + profile.starCoins() + pad(COLUMN_GAP)
                 + MONEY_GEM + pad(ICON_GAP) + profile.nanogems() + pad(COLUMN_GAP)
                 + MONEY_BATTLE + pad(ICON_GAP) + profile.battlePoints();
-        Component fourth = Component.text(shift(offset) + money, GLYPHS);
+        Component third = Component.text(shift(offset) + money, GLYPHS);
 
-        return new Component[]{first, second, third, fourth};
+        return new Component[]{first, second, third};
     }
 
     /**
@@ -374,7 +379,7 @@ final class HudText {
         return builder.toString();
     }
 
-    /** Номер глифа-щита для уровня: уровень 1 - первый щит, 100 - последний. */
+    /** Номер глифа-значка для уровня: уровень 1 - первый, 100 - последний. */
     private static int levelIndex(long level) {
         long index = Math.max(1L, level) - 1L;
         return (int) Math.min(99L, index);

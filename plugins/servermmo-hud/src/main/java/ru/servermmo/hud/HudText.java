@@ -85,11 +85,11 @@ final class HudText {
     private static final int ABILITY_BASE = 0xE320;
 
     /** Отступ текста от левого края панели, px. */
-    private static final int PANEL_PAD_LEFT = 12;
+    private static final int PANEL_PAD_LEFT = 8;
     /** Зазор между значком и числом, px. */
     private static final int ICON_GAP = 4;
     /** Зазор между колонками строки, px. */
-    private static final int COLUMN_GAP = 8;
+    private static final int COLUMN_GAP = 6;
 
     /** Сердце (здоровье) и меч (урон) - старые 8-пиксельные глифы. */
     static final char HEART = '\uE010';
@@ -252,6 +252,29 @@ final class HudText {
         return 6;
     }
 
+    /**
+     * Заголовок первой строки: ник и класс, подогнанные под ширину панели.
+     *
+     * <p>Ник в Minecraft — до 16 символов, а панель узкая: длинный ник с
+     * классом не влезает, и строка вылезала за пластину (хвост уходил в
+     * минус, и клиент центровал строку шире панели). Поэтому ник режем
+     * справа, пока заголовок не влезет в отведённую ему ширину; класс не
+     * трогаем — он короткий. Так строка всегда ровно в ширину панели, и
+     * хвост неотрицателен.</p>
+     */
+    private String fitTitle(String playerName, String className, int panelWidth, char diamond,
+                            String xpFraction) {
+        String suffix = " · " + className;
+        int budget = panelWidth - PANEL_PAD_LEFT - width(MONEY_SCROLL) - ICON_GAP
+                - COLUMN_GAP - width(diamond) - COLUMN_GAP - width(xpFraction)
+                - vanillaWidth(suffix);
+        String name = playerName == null ? "" : playerName;
+        while (vanillaWidth(name) > budget && !name.isEmpty()) {
+            name = name.substring(0, name.length() - 1);
+        }
+        return name + suffix;
+    }
+
     /** Ширина глифа-панели класса: по ней считается сдвиг всей панели. */
     int panelWidth(int classIndex) {
         return width((char) (PANEL_BASE + Math.max(0, Math.min(7, classIndex))));
@@ -281,9 +304,9 @@ final class HudText {
         // Строка 1: подложка, затем возврат курсора в её начало и текст поверх.
         // В конце - хвост до ширины панели: иначе клиент центрует строку по
         // длине ника и ставит подложку не там, где остальные две строки.
-        String title = playerName + " · " + profile.className();
         String xpFraction = xp + "/" + xpToNext;
         char diamond = (char) (LEVEL_BASE + levelIndex(level));
+        String title = fitTitle(playerName, profile.className(), panelWidth, diamond, xpFraction);
         int tail = panelWidth - PANEL_PAD_LEFT - width(MONEY_SCROLL)
                 - ICON_GAP - vanillaWidth(title)
                 - COLUMN_GAP - width(diamond) - COLUMN_GAP - width(xpFraction);

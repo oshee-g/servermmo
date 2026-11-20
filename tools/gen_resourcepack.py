@@ -114,26 +114,36 @@ PANEL_CHARS = chars(0xE500 + PANEL_OFFSET_RANGE * 8, 8)  # панели клас
 PANEL_VARIANTS = [chars(0xE500 + i * 8, 8)
                   for i in range(2 * PANEL_OFFSET_RANGE + 1)]
 ICON_OFFSET_RANGE = 5               # команда /hud texty: текст ниже/выше значков, -5..+5
-# Варианты значков панели с разной высотой: двигаются значки, текст стоит
-# (базовая линия шрифта клиента фиксирована). texty=0 — базовые глифы,
-# остальные — варианты с ascent ICON_ASCENT + texty (текст ниже = значки выше).
-MONEY_VARIANT_BASE = 0xE700
-LEVEL_VARIANT_BASE = 0xE800
-CLAN_VARIANT_BASE = 0xEC00
+# Текст панели своими глифами (команда /hud texty): кириллица, латиница,
+# цифры и знаки. Атлас — tools/build_text_font.py (hud_text.png).
+TEXT_CHARS = (
+    "АБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ"
+    "абвгдежзийклмнопрстуфхцчшщъыьэюя"
+    "Ёё"
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    "abcdefghijklmnopqrstuvwxyz"
+    "0123456789"
+    "_/-·.,!?:;()[]{}+=*#@%&|<>"
+    "—–«»№°±×÷§`'\"\\~^$"
+)
+TEXT_BASE = 0xF000
+TEXT_VARIANT_BASE = 0xF100
+TEXT_COLS = 19
+TEXT_HEIGHT = 16
+TEXT_ASCENT = 9  # базовая линия глифа внутри ячейки атласа
 
 
-def _icon_variants(base: int, count: int) -> list:
+def _text_variants() -> list:
     """(строка глифов, ascent) для каждого сдвига texty != 0."""
     out = []
     for v in range(2 * ICON_OFFSET_RANGE):
         texty = v - ICON_OFFSET_RANGE if v < ICON_OFFSET_RANGE else v - ICON_OFFSET_RANGE + 1
-        out.append((chars(base + v * count, count), ICON_ASCENT + texty))
+        out.append((chars(TEXT_VARIANT_BASE + v * len(TEXT_CHARS), len(TEXT_CHARS)),
+                    TEXT_ASCENT - texty))
     return out
 
 
-MONEY_VARIANTS = _icon_variants(MONEY_VARIANT_BASE, len(MONEY_CHARS))
-LEVEL_VARIANTS = _icon_variants(LEVEL_VARIANT_BASE, 100)
-CLAN_VARIANTS = _icon_variants(CLAN_VARIANT_BASE, 100)
+TEXT_VARIANTS = _text_variants()
 LEVEL_COLS = 10                     # сетка 10x10
 PANEL_COLS = 2                      # сетка 2x4
 
@@ -218,6 +228,7 @@ def write_blank_png(path: Path, width: int, height: int) -> None:
 
 # Пустые глифы для раскладки панели (ширина в пикселях шрифта).
 BLANK_ADVANCES = {
+    " ": 4,          # обычный пробел в тексте панели (глифы hud_text)
     "\ue100": 2,    # щель между иконкой и числом
     "\ue101": 4,
     "\ue10a": 6,    # ровно ширина цифры
@@ -332,36 +343,6 @@ def build_font_json() -> dict:
             *[
                 {
                     "type": "bitmap",
-                    "file": "servermmo:font/hud_money.png",
-                    "ascent": ascent,
-                    "height": ICON_HEIGHT,
-                    "chars": [variant],
-                }
-                for variant, ascent in MONEY_VARIANTS
-            ],
-            *[
-                {
-                    "type": "bitmap",
-                    "file": "servermmo:font/hud_level.png",
-                    "ascent": ascent,
-                    "height": ICON_HEIGHT,
-                    "chars": grid(variant, LEVEL_COLS),
-                }
-                for variant, ascent in LEVEL_VARIANTS
-            ],
-            *[
-                {
-                    "type": "bitmap",
-                    "file": "servermmo:font/hud_clan.png",
-                    "ascent": ascent,
-                    "height": ICON_HEIGHT,
-                    "chars": grid(variant, LEVEL_COLS),
-                }
-                for variant, ascent in CLAN_VARIANTS
-            ],
-            *[
-                {
-                    "type": "bitmap",
                     "file": "servermmo:font/hud_panel.png",
                     "ascent": PANEL_ASCENT + (i - PANEL_OFFSET_RANGE),
                     "height": PANEL_HEIGHT,
@@ -388,6 +369,23 @@ def build_font_json() -> dict:
                     "chars": [hotbar_fade_chars(step)],
                 }
                 for step in range(FADE_STEPS)
+            ],
+            {
+                "type": "bitmap",
+                "file": "servermmo:font/hud_text.png",
+                "ascent": TEXT_ASCENT,
+                "height": TEXT_HEIGHT,
+                "chars": grid(chars(TEXT_BASE, len(TEXT_CHARS)), TEXT_COLS),
+            },
+            *[
+                {
+                    "type": "bitmap",
+                    "file": "servermmo:font/hud_text.png",
+                    "ascent": ascent,
+                    "height": TEXT_HEIGHT,
+                    "chars": grid(variant, TEXT_COLS),
+                }
+                for variant, ascent in TEXT_VARIANTS
             ],
             {
                 "type": "space",
@@ -439,7 +437,8 @@ def main() -> int:
     for name in ("hud_digits.png", "hud_icons.png", "hud_letters.png",
                  *(f"hud_fade{step}.png" for step in range(FADE_STEPS)),
                  "hud_gear.png", "hud_money.png", "hud_ability.png",
-                 "hud_level.png", "hud_clan.png", "hud_panel.png"):
+                 "hud_level.png", "hud_clan.png", "hud_panel.png",
+                 "hud_text.png"):
         copy_asset(name, textures / name)
     copy_asset("pack_icon.png", PACK / "pack.png")
 

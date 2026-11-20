@@ -32,11 +32,10 @@ import net.kyori.adventure.text.format.Style;
  * нельзя (предел атласа шрифта клиента 256x256), поэтому она выше, а не
  * шире.</p>
  *
- * <p>Глифы пака и обычный текст смешиваются: цифры, значки и буквы LVXP
- * рисуются шрифтом servermmo:hud, а ник и название клана - ванильным шрифтом,
- * потому что в паке нет ни кириллицы, ни латиницы. Ширину ванильного текста
- * сервер знает лишь приблизительно (см. {@link #vanillaWidth}), поэтому
- * длинные ники могут стоять на пару пикселей не по центру.</p>
+ * <p>Весь текст панели — свои глифы шрифта servermmo:hud (атлас hud_text.png:
+ * кириллица, латиница, цифры, знаки), поэтому текст можно двигать отдельно
+ * от значков (команда /hud texty). Ширины глифов берутся из
+ * font-metrics.properties, как у значков.</p>
  */
 final class HudText {
 
@@ -45,23 +44,6 @@ final class HudText {
             .font(Key.key("servermmo", "hud"))
             .color(NamedTextColor.WHITE)
             .build();
-    /**
-     * Обычный текст: ванильный шрифт клиента, того же размера и цвета.
-     *
-     * <p>Шрифт указан явно, и это важно. Клиент раздаёт стиль по дереву
-     * компонентов: {@code Component.visit} считает
-     * {@code selfStyle = getStyle().applyTo(parentStyle)}, а
-     * {@code Style.applyTo} берёт поле потомка, только если оно задано, —
-     * иначе наследует родительское. Значит компонент без шрифта, приклеенный
-     * к компоненту со шрифтом servermmo:hud, рисуется этим самым шрифтом, а в
-     * нём нет ни кириллицы, ни латиницы: вместо ника получается полоса
-     * пустых квадратиков. Явный minecraft:default наследование обрывает.</p>
-     */
-    private static final Style VANILLA = Style.style()
-            .font(Key.key("minecraft", "default"))
-            .color(NamedTextColor.WHITE)
-            .build();
-
     /** Панели классов: 8 шт. */
     private static final int PANEL_BASE = 0xE500;
     /**
@@ -72,15 +54,26 @@ final class HudText {
     static final int PANEL_OFFSET_RANGE = 15;
     /**
      * Диапазон команды {@code /hud texty}: текст панели можно сдвинуть
-     * вниз относительно значков на -5..+5 px. Текст — шрифт клиента, его
-     * линия фиксирована, поэтому двигаются значки (варианты глифов с
-     * разной высотой в паке). texty=0 — базовые глифы.
+     * вниз относительно значков на -5..+5 px. Текст — свои глифы, поэтому
+     * двигается сам текст (варианты глифов с разной высотой в паке).
+     * texty=0 — базовые глифы.
      */
     static final int ICON_OFFSET_RANGE = 5;
-    /** Базы вариантов значков панели (сдвиг текста, команда /hud texty). */
-    private static final int MONEY_VARIANT_BASE = 0xE700;
-    private static final int LEVEL_VARIANT_BASE = 0xE800;
-    private static final int CLAN_VARIANT_BASE = 0xEC00;
+    /**
+     * Текст панели своими глифами (атлас hud_text.png): кириллица, латиница,
+     * цифры и знаки. База — texty=0, варианты — сдвиг текста (команда texty).
+     */
+    private static final String TEXT_CHARS =
+            "АБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ"
+            + "абвгдежзийклмнопрстуфхцчшщъыьэюя"
+            + "Ёё"
+            + "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+            + "abcdefghijklmnopqrstuvwxyz"
+            + "0123456789"
+            + "_/-·.,!?:;()[]{}+=*#@%&|<>"
+            + "—–«»№°±×÷§`'\"\\~^$";
+    private static final int TEXT_BASE = 0xF000;
+    private static final int TEXT_VARIANT_BASE = 0xF100;
     /** Ромбы уровней игрока 1..100 (номер нарисован на ромбе, без «lvl»). */
     private static final int LEVEL_BASE = 0xE400;
     /** Щиты уровней клана 1..100 (номер нарисован на щите, без «lvl»). */
@@ -198,15 +191,12 @@ final class HudText {
         for (int i = 0; i < (2 * PANEL_OFFSET_RANGE + 1) * 8; i++) {
             map.put((char) (PANEL_BASE + i), 256);
         }
+        for (int i = 0; i < TEXT_CHARS.length(); i++) {
+            map.put((char) (TEXT_BASE + i), 16);
+        }
         for (int v = 0; v < 2 * ICON_OFFSET_RANGE; v++) {
-            for (int i = 0; i < 6; i++) {
-                map.put((char) (MONEY_VARIANT_BASE + v * 6 + i), 14);
-            }
-            for (int i = 0; i < 100; i++) {
-                map.put((char) (LEVEL_VARIANT_BASE + v * 100 + i), 14);
-            }
-            for (int i = 0; i < 100; i++) {
-                map.put((char) (CLAN_VARIANT_BASE + v * 100 + i), 14);
+            for (int i = 0; i < TEXT_CHARS.length(); i++) {
+                map.put((char) (TEXT_VARIANT_BASE + v * TEXT_CHARS.length() + i), 16);
             }
         }
         for (int step = 0; step < FADE_STEPS; step++) {
@@ -258,32 +248,14 @@ final class HudText {
         return total;
     }
 
-    /**
-     * Приблизительная ширина строки ванильным шрифтом (8 px).
-     *
-     * <p>Точных метрик у сервера нет, поэтому узкие символы считаем по 2 px,
-     * пробел 4, остальные 6. Ошибка в несколько пикселей лишь сдвигает ник
-     * внутри панели, но не ломает раскладку.</p>
-     */
-    int vanillaWidth(String text) {
+    /** Ширина строки шрифта панели: пробел 4, остальные — по метрикам атласа. */
+    int textWidth(String text, int texty) {
         int total = 0;
         for (int i = 0; i < text.length(); i++) {
-            total += vanillaCharWidth(text.charAt(i));
+            char ch = text.charAt(i);
+            total += ch == ' ' ? 4 : width(textGlyph(ch, texty));
         }
         return total;
-    }
-
-    private static int vanillaCharWidth(char ch) {
-        if (ch == ' ') {
-            return 4;
-        }
-        if ("il.,!:;'|".indexOf(ch) >= 0) {
-            return 2;
-        }
-        if ("tfr()[]{}".indexOf(ch) >= 0) {
-            return 5;
-        }
-        return 6;
     }
 
     /**
@@ -297,13 +269,13 @@ final class HudText {
      * хвост неотрицателен.</p>
      */
     private String fitTitle(String playerName, String className, int panelWidth, char diamond,
-                            String xpFraction) {
+                            String xpFraction, int texty) {
         String suffix = " · " + className;
         int budget = panelWidth - PANEL_PAD_LEFT - width(MONEY_SCROLL) - ICON_GAP
                 - COLUMN_GAP - width(diamond) - COLUMN_GAP - width(xpFraction)
-                - vanillaWidth(suffix);
+                - textWidth(suffix, texty);
         String name = playerName == null ? "" : playerName;
-        while (vanillaWidth(name) > budget && !name.isEmpty()) {
+        while (textWidth(name, texty) > budget && !name.isEmpty()) {
             name = name.substring(0, name.length() - 1);
         }
         return name + suffix;
@@ -314,33 +286,27 @@ final class HudText {
         return width((char) (PANEL_BASE + Math.max(0, Math.min(7, classIndex))));
     }
 
-    /** Индекс варианта значка по сдвигу текста (texty != 0). */
-    private static int iconVariant(int texty) {
-        return texty < 0 ? texty + ICON_OFFSET_RANGE : texty + ICON_OFFSET_RANGE - 1;
+    /** Глиф символа текста с учётом сдвига (texty): 0 — базовый, иначе вариант. */
+    private char textGlyph(char ch, int texty) {
+        int index = TEXT_CHARS.indexOf(ch);
+        if (index < 0) {
+            index = TEXT_CHARS.indexOf('?');
+        }
+        if (texty == 0) {
+            return (char) (TEXT_BASE + index);
+        }
+        int variant = texty < 0 ? texty + ICON_OFFSET_RANGE : texty + ICON_OFFSET_RANGE - 1;
+        return (char) (TEXT_VARIANT_BASE + variant * TEXT_CHARS.length() + index);
     }
 
-    /** Значок валюты (0..5) с учётом сдвига текста: texty=0 — базовый глиф. */
-    private char moneyGlyph(int index, int texty) {
-        if (texty == 0) {
-            return (char) (0xE310 + index);
+    /** Строка текста в глифы шрифта панели (пробел — advance space-провайдера). */
+    private String toGlyphs(String text, int texty) {
+        StringBuilder sb = new StringBuilder(text.length());
+        for (int i = 0; i < text.length(); i++) {
+            char ch = text.charAt(i);
+            sb.append(ch == ' ' ? ' ' : textGlyph(ch, texty));
         }
-        return (char) (MONEY_VARIANT_BASE + iconVariant(texty) * 6 + index);
-    }
-
-    /** Ромб уровня игрока с учётом сдвига текста. */
-    private char levelGlyph(long level, int texty) {
-        if (texty == 0) {
-            return (char) (LEVEL_BASE + levelIndex(level));
-        }
-        return (char) (LEVEL_VARIANT_BASE + iconVariant(texty) * 100 + levelIndex(level));
-    }
-
-    /** Щит уровня клана с учётом сдвига текста. */
-    private char clanGlyph(long level, int texty) {
-        if (texty == 0) {
-            return (char) (CLAN_BASE + levelIndex(level));
-        }
-        return (char) (CLAN_VARIANT_BASE + iconVariant(texty) * 100 + levelIndex(level));
+        return sb.toString();
     }
 
     /**
@@ -374,11 +340,12 @@ final class HudText {
         // В конце - хвост до ширины панели: иначе клиент центрует строку по
         // длине ника и ставит подложку не там, где остальные две строки.
         String xpFraction = xp + "/" + xpToNext;
-        char diamond = levelGlyph(level, texty);
-        String title = fitTitle(playerName, profile.className(), panelWidth, diamond, xpFraction);
+        char diamond = (char) (LEVEL_BASE + levelIndex(level));
+        String title = fitTitle(playerName, profile.className(), panelWidth, diamond, xpFraction,
+                texty);
         // Ромб — правее центрального декора, даже при коротком нике: зазор
         // перед ним растягиваем до DIAMOND_MIN_X.
-        int titleEnd = PANEL_PAD_LEFT + width(MONEY_SCROLL) + ICON_GAP + vanillaWidth(title);
+        int titleEnd = PANEL_PAD_LEFT + width(MONEY_SCROLL) + ICON_GAP + textWidth(title, texty);
         int gapBeforeDiamond = Math.max(COLUMN_GAP, DIAMOND_MIN_X - titleEnd);
         int tail = panelWidth - titleEnd - gapBeforeDiamond - width(diamond)
                 - COLUMN_GAP - width(xpFraction);
@@ -386,27 +353,28 @@ final class HudText {
         Component first = Component.text(shift(offset), GLYPHS)
                 .append(Component.text(String.valueOf(panelGlyph), GLYPHS))
                 .append(Component.text(shift(-(panelWidth - PANEL_PAD_LEFT)), GLYPHS))
-                .append(Component.text(moneyGlyph(4, texty) + pad(ICON_GAP), GLYPHS))
-                .append(Component.text(title, VANILLA))
+                .append(Component.text(MONEY_SCROLL + pad(ICON_GAP), GLYPHS))
+                .append(Component.text(toGlyphs(title, texty), GLYPHS))
                 .append(Component.text(pad(gapBeforeDiamond) + diamond + pad(COLUMN_GAP)
                         + xpFraction, GLYPHS))
                 .append(Component.text(pad(tail), GLYPHS));
 
         // Строка 2: клан - щит уровня, название и опыт клана дробью.
         String clanPrefix = shift(offset)
-                + clanGlyph(profile.clanLevel(), texty) + pad(COLUMN_GAP);
+                + (char) (CLAN_BASE + levelIndex(profile.clanLevel())) + pad(COLUMN_GAP);
         String clanSuffix = pad(COLUMN_GAP)
                 + profile.clanXp() + "/" + profile.clanXpToNext();
         Component second = Component.text(clanPrefix, GLYPHS)
-                .append(Component.text(
-                        profile.clanName().isEmpty() ? "Без клана" : profile.clanName(), VANILLA))
+                .append(Component.text(toGlyphs(
+                        profile.clanName().isEmpty() ? "Без клана" : profile.clanName(), texty),
+                        GLYPHS))
                 .append(Component.text(clanSuffix, GLYPHS));
 
         // Строка 3: четыре валюты - значок и число.
-        String money = "" + moneyGlyph(0, texty) + pad(ICON_GAP) + profile.coins() + pad(COLUMN_GAP)
-                + moneyGlyph(1, texty) + pad(ICON_GAP) + profile.starCoins() + pad(COLUMN_GAP)
-                + moneyGlyph(2, texty) + pad(ICON_GAP) + profile.nanogems() + pad(COLUMN_GAP)
-                + moneyGlyph(5, texty) + pad(ICON_GAP) + profile.battlePoints();
+        String money = "" + MONEY_COINS + pad(ICON_GAP) + profile.coins() + pad(COLUMN_GAP)
+                + MONEY_STAR + pad(ICON_GAP) + profile.starCoins() + pad(COLUMN_GAP)
+                + MONEY_GEM + pad(ICON_GAP) + profile.nanogems() + pad(COLUMN_GAP)
+                + MONEY_BATTLE + pad(ICON_GAP) + profile.battlePoints();
         Component third = Component.text(shift(offset) + pad(PANEL_PAD_LEFT) + money, GLYPHS);
 
         return new Component[]{first, second, third};

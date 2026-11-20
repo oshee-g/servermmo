@@ -22,8 +22,8 @@ from pathlib import Path
 from gen_resourcepack import (ABILITY_CHARS, CLAN_CHARS, DIGIT_CHARS, FADE_STEPS,
                               GEAR_CHARS, HOTBAR_DIGIT_CHARS, ICON_CHARS,
                               LEVEL_CHARS, LETTER_CHARS, MONEY_CHARS, PANEL_CHARS,
-                              PANEL_VARIANTS, MONEY_VARIANTS, LEVEL_VARIANTS,
-                              CLAN_VARIANTS, LEVEL_COLS, PANEL_COLS, fade_chars,
+                              PANEL_VARIANTS, TEXT_CHARS, TEXT_VARIANTS, TEXT_COLS,
+                              TEXT_BASE, chars, LEVEL_COLS, PANEL_COLS, fade_chars,
                               hotbar_fade_chars, build_space_advances)
 from png_io import glyph_advance, glyph_advance_grid, png_rgba
 
@@ -55,13 +55,10 @@ ATLASES = (
     ("hud_ability.png", ABILITY_CHARS, len(ABILITY_CHARS), 20),
     ("hud_level.png", LEVEL_CHARS, LEVEL_COLS, 14),
     ("hud_clan.png", CLAN_CHARS, LEVEL_COLS, 14),
-    # Варианты значков для /hud texty: ширина та же, но коды другие.
-    *(("hud_money.png", variant, len(MONEY_CHARS), 14)
-      for variant, _ in MONEY_VARIANTS),
-    *(("hud_level.png", variant, LEVEL_COLS, 14)
-      for variant, _ in LEVEL_VARIANTS),
-    *(("hud_clan.png", variant, LEVEL_COLS, 14)
-      for variant, _ in CLAN_VARIANTS),
+    # Текст панели своими глифами (база + варианты для /hud texty).
+    ("hud_text.png", chars(TEXT_BASE, len(TEXT_CHARS)), TEXT_COLS, 16),
+    *(("hud_text.png", variant, TEXT_COLS, 16)
+      for variant, _ in TEXT_VARIANTS),
     # Панель — 21 вариант с разной высотой (команда /hud offsety), ширина у
     # всех одинаковая, но в таблице нужны все коды.
     *(("hud_panel.png", variant, PANEL_COLS, 96) for variant in PANEL_VARIANTS),
@@ -70,10 +67,6 @@ ATLASES = (
 
 def collect() -> dict[str, int]:
     metrics: dict[str, int] = {}
-    # Пробелы и сдвиги живут в space-провайдере, а не в PNG: их ширины
-    # берём из того же описания, что кладётся в hud.json.
-    for char, advance in build_space_advances().items():
-        metrics[char] = int(advance)
     for name, chars, cols, draw_h in ATLASES:
         width, height, pixels = png_rgba((ASSETS / name).read_bytes())
         rows = (len(chars) + cols - 1) // cols
@@ -83,6 +76,11 @@ def collect() -> dict[str, int]:
             col, row = index % cols, index // cols
             metrics[char] = glyph_advance_grid(width, height, pixels,
                                                cell_w, cell_h, col, row, scale)
+    # Пробелы и сдвиги живут в space-провайдере, а не в PNG: их ширины
+    # берём из того же описания, что кладётся в hud.json. Пишем ПОСЛЕ атласов,
+    # чтобы advance пробела (4) не затёр пустым глифом hud_digits (ширина 1).
+    for char, advance in build_space_advances().items():
+        metrics[char] = int(advance)
     return metrics
 
 

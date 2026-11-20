@@ -22,7 +22,7 @@ from pathlib import Path
 from gen_resourcepack import (ABILITY_CHARS, CLAN_CHARS, DIGIT_CHARS, FADE_STEPS,
                               GEAR_CHARS, HOTBAR_DIGIT_CHARS, ICON_CHARS,
                               LEVEL_CHARS, LETTER_CHARS, MONEY_CHARS, PANEL_CHARS,
-                              LEVEL_COLS, PANEL_COLS, fade_chars,
+                              PANEL_VARIANTS, LEVEL_COLS, PANEL_COLS, fade_chars,
                               hotbar_fade_chars, build_space_advances)
 from png_io import glyph_advance, glyph_advance_grid, png_rgba
 
@@ -54,7 +54,9 @@ ATLASES = (
     ("hud_ability.png", ABILITY_CHARS, len(ABILITY_CHARS), 20),
     ("hud_level.png", LEVEL_CHARS, LEVEL_COLS, 14),
     ("hud_clan.png", CLAN_CHARS, LEVEL_COLS, 14),
-    ("hud_panel.png", PANEL_CHARS, PANEL_COLS, 96),
+    # Панель — 21 вариант с разной высотой (команда /hud offsety), ширина у
+    # всех одинаковая, но в таблице нужны все коды.
+    *(("hud_panel.png", variant, PANEL_COLS, 96) for variant in PANEL_VARIANTS),
 )
 
 

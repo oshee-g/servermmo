@@ -64,6 +64,12 @@ final class HudText {
 
     /** Панели классов: 8 шт. */
     private static final int PANEL_BASE = 0xE500;
+    /**
+     * Диапазон команды {@code /hud offsety}: контент панели можно сдвинуть
+     * вниз относительно картинки на -10..+10 px. У каждого сдвига свой
+     * вариант глифа панели (та же картинка, другой ascent в паке).
+     */
+    static final int PANEL_OFFSET_RANGE = 10;
     /** Ромбы уровней игрока 1..100 (номер нарисован на ромбе, без «lvl»). */
     private static final int LEVEL_BASE = 0xE400;
     /** Щиты уровней клана 1..100 (номер нарисован на щите, без «lvl»). */
@@ -178,7 +184,7 @@ final class HudText {
         for (int i = 0; i < 100; i++) {
             map.put((char) (CLAN_BASE + i), 14);
         }
-        for (int i = 0; i < 8; i++) {
+        for (int i = 0; i < (2 * PANEL_OFFSET_RANGE + 1) * 8; i++) {
             map.put((char) (PANEL_BASE + i), 256);
         }
         for (int step = 0; step < FADE_STEPS; step++) {
@@ -300,10 +306,14 @@ final class HudText {
      * интерфейса и при смене масштаба GUI меняется в разы.</p>
      *
      * @param layout геометрия под экран игрока (ширина интерфейса и отступ)
+     * @param offsetY сдвиг текста и значков вниз относительно картинки
+     *                панели, px (-10..10, команда {@code /hud offsety})
      */
     Component[] panel(HudProfile profile, String playerName, long level, long xp, long xpToNext,
-                      HudLayout layout) {
-        char panelGlyph = (char) (PANEL_BASE + profile.classIndex());
+                      HudLayout layout, int offsetY) {
+        int variant = Math.max(0, Math.min(2 * PANEL_OFFSET_RANGE,
+                offsetY + PANEL_OFFSET_RANGE));
+        char panelGlyph = (char) (PANEL_BASE + variant * 8 + profile.classIndex());
         int panelWidth = width(panelGlyph);
         int offset = layout.panelShift(panelWidth);
 

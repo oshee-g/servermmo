@@ -106,7 +106,13 @@ MONEY_CHARS = chars(0xE310, 6)      # монеты, коины, нанагемы
 ABILITY_CHARS = chars(0xE320, 8)    # восемь слотов способностей
 LEVEL_CHARS = chars(0xE400, 100)    # ромбы уровней игрока 1..100
 CLAN_CHARS = chars(0xE470, 100)     # щиты уровней клана 1..100
-PANEL_CHARS = chars(0xE500, 8)      # панели классов
+PANEL_OFFSET_RANGE = 10             # команда /hud offsety: сдвиг контента -10..+10
+PANEL_CHARS = chars(0xE500 + PANEL_OFFSET_RANGE * 8, 8)  # панели классов (сдвиг 0)
+# Варианты глифа панели с разной высотой (ascent): плагин выбирает вариант
+# по команде /hud offsety, чтобы двигать текст и значки относительно
+# картинки панели. Вариант i рисуется с ascent PANEL_ASCENT + (i - диапазон).
+PANEL_VARIANTS = [chars(0xE500 + i * 8, 8)
+                  for i in range(2 * PANEL_OFFSET_RANGE + 1)]
 LEVEL_COLS = 10                     # сетка 10x10
 PANEL_COLS = 2                      # сетка 2x4
 
@@ -302,13 +308,16 @@ def build_font_json() -> dict:
                 "height": ICON_HEIGHT,
                 "chars": grid(CLAN_CHARS, LEVEL_COLS),
             },
-            {
-                "type": "bitmap",
-                "file": "servermmo:font/hud_panel.png",
-                "ascent": PANEL_ASCENT,
-                "height": PANEL_HEIGHT,
-                "chars": grid(PANEL_CHARS, PANEL_COLS),
-            },
+            *[
+                {
+                    "type": "bitmap",
+                    "file": "servermmo:font/hud_panel.png",
+                    "ascent": PANEL_ASCENT + (i - PANEL_OFFSET_RANGE),
+                    "height": PANEL_HEIGHT,
+                    "chars": grid(variant, PANEL_COLS),
+                }
+                for i, variant in enumerate(PANEL_VARIANTS)
+            ],
             *[
                 {
                     "type": "bitmap",

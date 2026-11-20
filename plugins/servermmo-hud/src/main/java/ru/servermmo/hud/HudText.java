@@ -302,6 +302,15 @@ final class HudText {
         };
     }
 
+    /** Опустить подложку, чтобы строки HUD поднялись над полосами в арте. */
+    private static int classPanelOffset(int classIndex) {
+        return switch (classIndex) {
+            case 0, 6 -> -2; // воин и викинг: поднять строки на 2 px
+            case 7 -> -1; // фермер: небольшая корректировка на 1 px
+            default -> 0;
+        };
+    }
+
     /** Ширина глифа-панели класса: по ней считается сдвиг всей панели. */
     int panelWidth(int classIndex) {
         return width((char) (PANEL_BASE + Math.max(0,
@@ -362,8 +371,9 @@ final class HudText {
      */
     Component[] panel(HudProfile profile, String playerName, long level, long xp, long xpToNext,
                       HudLayout layout, int offsetY, int texty) {
-        int variant = Math.max(0, Math.min(2 * PANEL_OFFSET_RANGE,
-                offsetY + PANEL_OFFSET_RANGE));
+        int panelOffset = Math.max(-PANEL_OFFSET_RANGE, Math.min(PANEL_OFFSET_RANGE,
+                offsetY + classPanelOffset(profile.classIndex())));
+        int variant = panelOffset + PANEL_OFFSET_RANGE;
         char panelGlyph = (char) (PANEL_BASE + variant * PANEL_CLASS_COUNT + profile.classIndex());
         int panelWidth = width(panelGlyph);
         int contentLeft = contentLeft(profile.classIndex());

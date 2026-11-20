@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Генерирует битмап-шрифт панели (hud_text.png) из DejaVuSans.
+"""Генерирует обычный и компактный битмап-шрифт панели из DejaVuSans.
 
 Текст панели раньше рисовался ванильным шрифтом клиента — его базовую
 линию сервер сдвинуть не может, поэтому текст нельзя двигать. Свои глифы
@@ -31,7 +31,9 @@ TEXT_CHARS = (
 TEXT_COLS = 19
 CELL = 16          # ячейка атласа, px
 BASELINE = 9       # базовая линия внутри ячейки (от верха)
-SIZE = 11          # кегль DejaVuSans: заглавные около 8 px
+SIZE = 11          # обычный кегль DejaVuSans: заглавные около 8 px
+SMALL_SIZE = 8     # компактный ник: меньше примерно на четверть
+SMALL_OUT = OUT.with_name("hud_text_small.png")
 
 
 def render_char(font: ImageFont.FreeTypeFont, ch: str) -> Image.Image:
@@ -45,8 +47,8 @@ def render_char(font: ImageFont.FreeTypeFont, ch: str) -> Image.Image:
     return img.point(lambda p: 255 if p > 128 else 0)
 
 
-def main() -> int:
-    font = ImageFont.truetype(FONT_PATH, SIZE)
+def build_atlas(size: int) -> Image.Image:
+    font = ImageFont.truetype(FONT_PATH, size)
     rows = (len(TEXT_CHARS) + TEXT_COLS - 1) // TEXT_COLS
     atlas = Image.new("RGBA", (TEXT_COLS * CELL, rows * CELL), (0, 0, 0, 0))
     for index, ch in enumerate(TEXT_CHARS):
@@ -56,9 +58,15 @@ def main() -> int:
         white.putalpha(alpha)
         col, row = index % TEXT_COLS, index // TEXT_COLS
         atlas.alpha_composite(white, (col * CELL, row * CELL))
+    return atlas
+
+
+def main() -> int:
     OUT.parent.mkdir(parents=True, exist_ok=True)
-    atlas.save(OUT, optimize=True)
-    print(f"hud_text.png: {atlas.width}x{atlas.height}, глифов {len(TEXT_CHARS)}")
+    for path, size in ((OUT, SIZE), (SMALL_OUT, SMALL_SIZE)):
+        atlas = build_atlas(size)
+        atlas.save(path, optimize=True)
+        print(f"{path.name}: {atlas.width}x{atlas.height}, глифов {len(TEXT_CHARS)}")
     return 0
 
 

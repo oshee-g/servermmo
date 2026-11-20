@@ -128,6 +128,10 @@ TEXT_CHARS = (
     "_/-·.,!?:;()[]{}+=*#@%&|<>"
     "—–«»№°±×÷§`'\"\\~^$"
 )
+# Компактный текст занимает свободный диапазон E840..EF98: 11 вариантов
+# (обычный + 10 сдвигов /hud texty) по всем символам до основной полосы F000.
+TEXT_SMALL_BASE = 0xE840
+TEXT_SMALL_VARIANT_BASE = TEXT_SMALL_BASE + len(TEXT_CHARS)
 TEXT_BASE = 0xF000
 TEXT_VARIANT_BASE = 0xF100
 TEXT_COLS = 19
@@ -390,6 +394,24 @@ def build_font_json() -> dict:
                 for variant, ascent in TEXT_VARIANTS
             ],
             {
+                "type": "bitmap",
+                "file": "servermmo:font/hud_text_small.png",
+                "ascent": TEXT_ASCENT,
+                "height": TEXT_HEIGHT,
+                "chars": grid(chars(TEXT_SMALL_BASE, len(TEXT_CHARS)), TEXT_COLS),
+            },
+            *[
+                {
+                    "type": "bitmap",
+                    "file": "servermmo:font/hud_text_small.png",
+                    "ascent": ascent,
+                    "height": TEXT_HEIGHT,
+                    "chars": grid(chars(TEXT_SMALL_VARIANT_BASE
+                                        + v * len(TEXT_CHARS), len(TEXT_CHARS)), TEXT_COLS),
+                }
+                for v, (_variant, ascent) in enumerate(TEXT_VARIANTS)
+            ],
+            {
                 "type": "space",
                 # пустые глифы и сдвиги для раскладки панели HUD
                 "advances": build_space_advances(),
@@ -440,7 +462,7 @@ def main() -> int:
                  *(f"hud_fade{step}.png" for step in range(FADE_STEPS)),
                  "hud_gear.png", "hud_money.png", "hud_ability.png",
                  "hud_level.png", "hud_clan.png", "hud_panel.png",
-                 "hud_text.png"):
+                 "hud_text.png", "hud_text_small.png"):
         copy_asset(name, textures / name)
     copy_asset("pack_icon.png", PACK / "pack.png")
 

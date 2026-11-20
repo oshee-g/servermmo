@@ -23,7 +23,8 @@ from gen_resourcepack import (ABILITY_CHARS, CLAN_CHARS, DIGIT_CHARS, FADE_STEPS
                               GEAR_CHARS, HOTBAR_DIGIT_CHARS, ICON_CHARS,
                               LEVEL_CHARS, LETTER_CHARS, MONEY_CHARS, PANEL_CHARS,
                               PANEL_VARIANTS, TEXT_CHARS, TEXT_VARIANTS, TEXT_COLS,
-                              TEXT_BASE, chars, LEVEL_COLS, PANEL_COLS, fade_chars,
+                              TEXT_BASE, TEXT_SMALL_BASE, TEXT_SMALL_VARIANT_BASE,
+                              chars, LEVEL_COLS, PANEL_COLS, fade_chars,
                               hotbar_fade_chars, build_space_advances)
 from png_io import glyph_advance, glyph_advance_grid, png_rgba
 
@@ -59,6 +60,10 @@ ATLASES = (
     ("hud_text.png", chars(TEXT_BASE, len(TEXT_CHARS)), TEXT_COLS, 16),
     *(("hud_text.png", variant, TEXT_COLS, 16)
       for variant, _ in TEXT_VARIANTS),
+    ("hud_text_small.png", chars(TEXT_SMALL_BASE, len(TEXT_CHARS)), TEXT_COLS, 16),
+    *(("hud_text_small.png",
+       chars(TEXT_SMALL_VARIANT_BASE + v * len(TEXT_CHARS), len(TEXT_CHARS)),
+       TEXT_COLS, 16) for v, _ in enumerate(TEXT_VARIANTS)),
     # Панель — 21 вариант с разной высотой (команда /hud offsety), ширина у
     # всех одинаковая, но в таблице нужны все коды.
     *(("hud_panel.png", variant, PANEL_COLS, 96) for variant in PANEL_VARIANTS),

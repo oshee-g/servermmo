@@ -73,6 +73,8 @@ final class HudText {
             + "0123456789"
             + "_/-·.,!?:;()[]{}+=*#@%&|<>"
             + "—–«»№°±×÷§`'\"\\~^$";
+    private static final int TEXT_SMALL_BASE = 0xE840;
+    private static final int TEXT_SMALL_VARIANT_BASE = TEXT_SMALL_BASE + TEXT_CHARS.length();
     private static final int TEXT_BASE = 0xF000;
     private static final int TEXT_VARIANT_BASE = 0xF100;
     /** Ромбы уровней игрока 1..100 (номер нарисован на ромбе, без «lvl»). */
@@ -198,6 +200,14 @@ final class HudText {
                 map.put((char) (TEXT_VARIANT_BASE + v * TEXT_CHARS.length() + i), 16);
             }
         }
+        for (int i = 0; i < TEXT_CHARS.length(); i++) {
+            map.put((char) (TEXT_SMALL_BASE + i), 8);
+        }
+        for (int v = 0; v < 2 * ICON_OFFSET_RANGE; v++) {
+            for (int i = 0; i < TEXT_CHARS.length(); i++) {
+                map.put((char) (TEXT_SMALL_VARIANT_BASE + v * TEXT_CHARS.length() + i), 8);
+            }
+        }
         for (int step = 0; step < FADE_STEPS; step++) {
             int base = FADE_BASE + step * 16;
             for (int digit = 0; digit <= 9; digit++) {
@@ -249,24 +259,34 @@ final class HudText {
 
     /** Ширина строки шрифта панели: пробел 4, остальные — по метрикам атласа. */
     int textWidth(String text, int texty) {
+        return textWidth(text, texty, false);
+    }
+
+    private int textWidth(String text, int texty, boolean small) {
         int total = 0;
         for (int i = 0; i < text.length(); i++) {
             char ch = text.charAt(i);
-            total += ch == ' ' ? 4 : width(textGlyph(ch, texty));
+            total += ch == ' ' ? 4 : width(textGlyph(ch, texty, small));
         }
         return total;
     }
 
     /**
-     * Ник первой строки, обрезанный по доступному месту между свитком и
-     * индикатором уровня. Название класса не выводим: его однозначно задаёт
-     * эмблема слева на панели.
+     * Ник первой строки: при достижении 11 символов переходит на компактный
+     * шрифт; если даже в нём строка не помещается, аккуратно обрезается.
      */
-    private String fitTitle(String playerName, char diamond, String xpFraction, int texty) {
-        int budget = (CONTENT_RIGHT - CONTENT_LEFT) - width(MONEY_SCROLL) - ICON_GAP
-                - width(diamond) - COLUMN_GAP - width(xpFraction) - COLUMN_GAP;
+    private int titleBudget(char diamond, String xpFraction, boolean small) {
+        int iconGap = small ? 3 : ICON_GAP;
+        int columnGap = small ? 4 : COLUMN_GAP;
+        return (CONTENT_RIGHT - CONTENT_LEFT) - width(MONEY_SCROLL) - iconGap
+                - width(diamond) - columnGap - width(xpFraction) - columnGap;
+    }
+
+    private String fitTitle(String playerName, char diamond, String xpFraction,
+                            int texty, boolean small) {
+        int budget = titleBudget(diamond, xpFraction, small);
         String name = playerName == null ? "" : playerName;
-        while (textWidth(name, texty) > budget && !name.isEmpty()) {
+        while (textWidth(name, texty, small) > budget && !name.isEmpty()) {
             name = name.substring(0, name.length() - 1);
         }
         return name;
@@ -278,25 +298,34 @@ final class HudText {
                 Math.min(PANEL_CLASS_COUNT - 1, classIndex))));
     }
 
-    /** Глиф символа текста с учётом сдвига (texty): 0 — базовый, иначе вариант. */
+    /** Глиф текста с учётом сдвига (texty) и размера шрифта. */
     private char textGlyph(char ch, int texty) {
+        return textGlyph(ch, texty, false);
+    }
+
+    private char textGlyph(char ch, int texty, boolean small) {
         int index = TEXT_CHARS.indexOf(ch);
         if (index < 0) {
             index = TEXT_CHARS.indexOf('?');
         }
         if (texty == 0) {
-            return (char) (TEXT_BASE + index);
+            return (char) ((small ? TEXT_SMALL_BASE : TEXT_BASE) + index);
         }
         int variant = texty < 0 ? texty + ICON_OFFSET_RANGE : texty + ICON_OFFSET_RANGE - 1;
-        return (char) (TEXT_VARIANT_BASE + variant * TEXT_CHARS.length() + index);
+        int base = small ? TEXT_SMALL_VARIANT_BASE : TEXT_VARIANT_BASE;
+        return (char) (base + variant * TEXT_CHARS.length() + index);
     }
 
-    /** Строка текста в глифы шрифта панели (пробел — advance space-провайдера). */
+    /** Строка текста в глифы шрифта панели (пробел — space-провайдер). */
     private String toGlyphs(String text, int texty) {
+        return toGlyphs(text, texty, false);
+    }
+
+    private String toGlyphs(String text, int texty, boolean small) {
         StringBuilder sb = new StringBuilder(text.length());
         for (int i = 0; i < text.length(); i++) {
             char ch = text.charAt(i);
-            sb.append(ch == ' ' ? ' ' : textGlyph(ch, texty));
+            sb.append(ch == ' ' ? ' ' : textGlyph(ch, texty, small));
         }
         return sb.toString();
     }
@@ -334,17 +363,22 @@ final class HudText {
         // одинаковую общую ширину всех трёх строк.
         String xpFraction = xp + "/" + xpToNext;
         char diamond = (char) (LEVEL_BASE + levelIndex(level));
-        String title = fitTitle(playerName, diamond, xpFraction, texty);
-        int titleW = width(MONEY_SCROLL) + ICON_GAP + textWidth(title, texty)
-                + COLUMN_GAP + width(diamond) + COLUMN_GAP + width(xpFraction);
+        String playerTitle = playerName == null ? "" : playerName;
+        boolean smallTitle = playerTitle.length() >= 11
+                || textWidth(playerTitle, texty) > titleBudget(diamond, xpFraction, false);
+        int titleIconGap = smallTitle ? 3 : ICON_GAP;
+        int titleColumnGap = smallTitle ? 4 : COLUMN_GAP;
+        String title = fitTitle(playerTitle, diamond, xpFraction, texty, smallTitle);
+        int titleW = width(MONEY_SCROLL) + titleIconGap + textWidth(title, texty, smallTitle)
+                + titleColumnGap + width(diamond) + titleColumnGap + width(xpFraction);
         int titleTail = Math.max(0, panelWidth - CONTENT_LEFT - titleW);
 
         Component first = Component.text(shift(offset), GLYPHS)
                 .append(Component.text(String.valueOf(panelGlyph), GLYPHS))
                 .append(Component.text(shift(-(panelWidth - CONTENT_LEFT)), GLYPHS))
-                .append(Component.text(MONEY_SCROLL + pad(ICON_GAP), GLYPHS))
-                .append(Component.text(toGlyphs(title, texty), GLYPHS))
-                .append(Component.text(pad(COLUMN_GAP) + diamond + pad(COLUMN_GAP)
+                .append(Component.text(MONEY_SCROLL + pad(titleIconGap), GLYPHS))
+                .append(Component.text(toGlyphs(title, texty, smallTitle), GLYPHS))
+                .append(Component.text(pad(titleColumnGap) + diamond + pad(titleColumnGap)
                         + xpFraction, GLYPHS))
                 .append(Component.text(pad(titleTail), GLYPHS));
 

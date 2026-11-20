@@ -32,6 +32,7 @@ GLYPH_HEIGHT = 8
 
 REQUIRED = [
     "assets/servermmo/font/hud.json",
+    "assets/servermmo/textures/font/hud_text_small.png",
     "assets/servermmo/textures/font/hud_digits.png",
     "assets/servermmo/textures/font/hud_icons.png",
     "assets/servermmo/textures/font/hud_letters.png",

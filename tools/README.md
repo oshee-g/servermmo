@@ -35,7 +35,7 @@ bash   tools/test-linux.sh          # поведение .sh (Linux/macOS)
 `assets/servermmo/font/hud.json` (bitmap-провайдеры + пробелы-сдвиги),
 прозрачные заглушки ванильных сердец, полосы опыта и спрайтов босс-бара
 `boss_bar/white_*`, упаковывает всё в `server/resourcepack/servermmo-hud.zip`
-(67 файлов, ~27 КБ).
+(80 файлов, ~537 КБ).
 
 `pack.mcmeta` пишется под Minecraft 26.3: формат ресурспака **97.1**
 (`min_format: [97, 1]`, `max_format: 97`).
@@ -51,6 +51,8 @@ bash   tools/test-linux.sh          # поведение .sh (Linux/macOS)
   заглавных букв и цифр ванильного `ascii.png` (там ровно те же строки,
   строка 7 пустая), иначе рядом с ванильным именем моба значки «прыгают».
   Нужен Pillow, запускается вручную, в CI не нужен.
+* `tools/build_text_font.py` — пересобирает атласы обычного и компактного
+  текста из DejaVu Sans; компактный шрифт выбирается для ников от 11 символов.
 * `tools/gen_font_metrics.py` — считает ширину каждого глифа по атласам
   (последний непрозрачный пиксель + 1) и пишет
   `plugins/servermmo-hud/src/main/resources/font-metrics.properties`. Без этой

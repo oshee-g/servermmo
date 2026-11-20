@@ -219,19 +219,15 @@ def check_server_properties() -> None:
     if not pack.is_file():
         fail("server.properties: resource-pack задан, а zip ресурспака отсутствует")
         return
-    # Клиент качает пак через HttpURLConnection и сверяет SHA-1, поэтому
-    # ссылка обязана отдавать байты zip сразу. Обычная ссылка «поделиться» и
-    # старый drive.google.com/uc отдают HTML-страницу проверки на вирусы,
-    # в игре это «не удалось загрузить ресурспак».
-    if "drive.google.com/uc" in url:
-        fail("server.properties: resource-pack ведёт на drive.google.com/uc - "
-             "клиент получит HTML вместо zip. Нужен "
-             "drive.usercontent.google.com/download?id=<ID>&export=download&confirm=t")
-        return
-    if "drive.usercontent.google.com/download" not in url or "confirm=t" not in url:
-        fail("server.properties: ссылка на пак с Диска должна быть прямой: "
-             "drive.usercontent.google.com/download?id=<ID>&export=download"
-             "&confirm=t (без confirm=t Диск отдаёт HTML)")
+    # Клиент качает архив напрямую из публичного GitHub-репозитория.
+    # URL закрепляем за commit SHA, чтобы pack URL был неизменяемым.
+    github_url = re.fullmatch(
+        r"https://raw\.githubusercontent\.com/oshee-g/servermmo/"
+        r"([0-9a-f]{40})/server/resourcepack/servermmo-hud\.zip", url)
+    if not github_url:
+        fail("server.properties: resource-pack должен быть прямым GitHub raw URL "
+             "вида https://raw.githubusercontent.com/oshee-g/servermmo/<40-hex-commit>"
+             "/server/resourcepack/servermmo-hud.zip")
         return
 
     # SHA-1 — это ровно 40 шестнадцатеричных символов. Частая ошибка: сюда
@@ -255,8 +251,8 @@ def check_server_properties() -> None:
              f"с файлом ({real}). Обнови resource-pack-sha1 под новый zip")
         return
     size = pack.stat().st_size
-    print(f"  ok server.properties: ресурспак с Диска, SHA-1 совпадает ({url})")
-    print(f"     файл на Диске должен быть ровно {size} байт - сверь в свойствах файла")
+    print(f"  ok server.properties: GitHub raw URL закреплён за коммитом, SHA-1 совпадает ({url})")
+    print(f"     архив должен быть ровно {size} байт")
 
 
 

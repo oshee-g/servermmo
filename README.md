@@ -253,38 +253,24 @@ WorldEdit/WorldGuard, Simple Voice Chat. Подробнее — в `plugins/READ
 
 ### Как раздать ресурспак всем игрокам
 
-Игра скачивает пак сама, если в `server.properties` есть **прямая ссылка** на файл
-и его **SHA-1**. Единственный способ установки — один файл на Google Диске,
-других (установщик, свой хостинг, ручная копия в клиент) не существует, чтобы
-ничего не конфликтовало:
+Клиент скачивает пак напрямую из публичного GitHub-репозитория. В
+`server.properties` указана ссылка `raw.githubusercontent.com`, закреплённая
+за 40-значным SHA коммита, в котором лежит этот zip, и SHA-1 самого файла:
 
 ```properties
-resource-pack=https://drive.usercontent.google.com/download?id=1DLjC_tgw57iz7_RpU29677H_C-LCO1P6&export=download&confirm=t
-resource-pack-sha1=СЧИТАЕТСЯ_ИЗ_ФАЙЛА
+resource-pack=https://raw.githubusercontent.com/oshee-g/servermmo/39ac168a4e2b837ec24609477eabc32d14c3c2a2/server/resourcepack/servermmo-hud.zip
+resource-pack-sha1=78f5c6578cd643b43eb6d82a82b505bfe20c2538
 resource-pack-prompt={"text":"ServerMMO HUD resource pack","color":"gold"}
-require-resource-pack=false
+require-resource-pack=true
 ```
 
-Эти строки уже стоят в `server/server.properties`. Сервер пак не хранит и не
-раздаёт: клиент качает zip сам при входе и сам предлагает его скачать.
+Репозиторий должен быть публичным: Minecraft-клиент скачивает zip напрямую,
+без Drive-переадресаций и HTML-страниц. Сервер пак не хранит и не раздаёт.
 
-**Ссылка обязана быть прямой:** `drive.usercontent.google.com/download` с
-`confirm=t`. Обычная ссылка «Поделиться» и старый вариант
-`drive.google.com/uc?export=download&id=…` отдают не zip, а HTML-страницу
-проверки на вирусы — клиент скачает её, не сойдётся SHA-1 и будет ошибка
-«не удалось загрузить ресурспак».
-
-**Что важно знать:**
-
-* Файл на Диске должен быть открыт как «все, у кого есть ссылка».
-* Обновление пака: залить новый zip поверх старого в Диске (так ссылка не
-  меняется) и обновить `resource-pack-sha1` под новый файл — обе строки
-  меняются вместе.
-* Плагин за паком не следит: HUD показывается всем, а тем, что без пака на
-  экране будут белые полосы и пустые квадратики, занимается
-  `require-resource-pack=true` — без пака на сервер просто не пустит.
-* Проверить ссылку: открой её в браузере — должен скачаться zip размером
-  434 914 байт.
+При обновлении ресурспака пересобери `server/resourcepack/servermmo-hud.zip`,
+опубликуй его в коммите, затем укажи в `resource-pack` URL с SHA этого
+коммита и обнови `resource-pack-sha1` по файлу. Оба значения должны относиться
+к одному и тому же архиву; `tools/check_plugins.py` проверяет формат и SHA-1.
 
 #### Если хочется заставить, а не предлагать
 
@@ -296,7 +282,7 @@ require-resource-pack=false
 
 Открой ссылку из `server.properties` в браузере **на другом устройстве**
 (например, телефон в том же Wi-Fi). Должен скачаться `servermmo-hud.zip`
-на 434 914 байт. Если ссылка не открывается — дело в адресе или в том, что
+на 543 093 байта. Если ссылка не открывается — дело в адресе или в том, что
 файл лежит в приватном репозитории, а не в Minecraft. Проверить SHA-1 файла:
 `certutil -hashfile server\resourcepack\servermmo-hud.zip SHA1` в Windows.
 

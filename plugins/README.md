@@ -164,32 +164,14 @@ Paper сам выстроит порядок загрузки по `depend:` в 
 Файл: [`server/resourcepack/servermmo-hud.zip`](../server/resourcepack/servermmo-hud.zip)
 (SHA-1 и размер печатает `python3 tools/check_pack.py`).
 
-**Единственный способ — ссылка на Google Диск:**
+**Ресурспак раздаётся напрямую из публичного GitHub-репозитория.** В
+`server.properties` стоит URL `raw.githubusercontent.com`, закреплённый за
+коммитом с архивом, и SHA-1 этого архива. Клиент скачивает файл сам при
+входе; сервер и плагины его не хостят.
 
-Сервер пак **не хранит и не раздаёт**: в `server.properties` лежат только
-ссылка и SHA-1, клиент качает zip сам при входе. Пак лежит одним файлом на
-Google Диске:
-
-    https://drive.usercontent.google.com/download?id=1DLjC_tgw57iz7_RpU29677H_C-LCO1P6&export=download&confirm=t
-
-Эти строки уже стоят в `server/server.properties` — обычно ничего делать не
-нужно:
-
-1. Запустить `start.bat`.
-2. Игроки получают предложение скачать пак при входе.
-
-Других способов (установщик, свой хостинг, ручная копия файла в клиент)
-нет — один способ, чтобы ничего не конфликтовало.
-
-Ссылка обязана быть прямой: `drive.usercontent.google.com/download` с
-`confirm=t`. Обычная «поделиться»-ссылка и старый `drive.google.com/uc?…`
-отдают HTML-страницу проверки на вирусы: клиент её скачает, SHA-1 не
-совпадёт и будет «не удалось загрузить ресурспак».
-
-Обновление пака: залить новый zip поверх старого в Диске и обновить
-`resource-pack-sha1` в `server.properties` под новый
-`server/resourcepack/servermmo-hud.zip`. Пару «ссылка + SHA-1» сверяет
-`tools/check_plugins.py`.
+При обновлении пака закоммить новый zip, укажи в `resource-pack` URL этого
+коммита и обнови `resource-pack-sha1`. Формат ссылки и совпадение SHA-1
+проверяет `tools/check_plugins.py`.
 
 Посчитать SHA-1 вручную: `Get-FileHash servermmo-hud.zip -Algorithm SHA1` в
 PowerShell или `sha1sum servermmo-hud.zip` в Linux/macOS.

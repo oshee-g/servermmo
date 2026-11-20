@@ -71,27 +71,14 @@ bash   tools/test-linux.sh          # поведение .sh (Linux/macOS)
 
 ### Раздача ресурспака
 
-Пак **не раздаётся сервером**: ни плагин, ни отдельный процесс его не
-хостит. Единственный канал — один файл на Google Диске с доступом
-«все, у кого есть ссылка»:
+Пак **не раздаётся сервером**: клиент скачивает zip напрямую из публичного
+репозитория GitHub. `server.properties` хранит `resource-pack` — прямую
+ссылку `raw.githubusercontent.com`, закреплённую за 40-значным SHA коммита,
+и `resource-pack-sha1` — SHA-1 архива.
 
-    https://drive.usercontent.google.com/download?id=1DLjC_tgw57iz7_RpU29677H_C-LCO1P6&export=download&confirm=t
-
-В `server.properties` лежат только `resource-pack` (эта ссылка) и
-`resource-pack-sha1` (SHA-1 файла `server/resourcepack/servermmo-hud.zip`),
-клиент качает zip сам. Обновление пака = залить новый zip поверх старого в
-Диске (ссылка не меняется) и поправить `resource-pack-sha1` — пару
-«ссылка + SHA-1» сверяет `tools/check_plugins.py` в CI.
-
-Именно `drive.usercontent.google.com/download` с `confirm=t`: обычная
-«поделиться»-ссылка и старый `drive.google.com/uc?export=download&id=…`
-отдают HTML-страницу проверки на вирусы вместо zip (клиент скачивает её,
-SHA-1 не совпадает, в игре — «не удалось загрузить ресурспак»). Форму
-ссылки тоже проверяет `check_plugins.py`.
-
-Отдельного ассета `servermmo-hud.zip` в релизах GitHub нет и установщика
-(`setup-resourcepack.bat`/`SetupPack.java`) тоже: один способ, чтобы ничего
-не конфликтовало.
+При обновлении пака сначала закоммить новый `server/resourcepack/servermmo-hud.zip`,
+затем закрепи URL за коммитом с этим файлом и обнови SHA-1. Пара «ссылка +
+SHA-1» проверяется через `tools/check_plugins.py`.
 
 ### `check_plugins.py` — проверка артефактов
 

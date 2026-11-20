@@ -41,3 +41,6 @@ tools/pack_assets/icons64/panel_*_new.png
 
 # smoke test output
 /smoke-test.log
+
+# Local POV preview generated for visual review
+/preview-hud-player-view.png

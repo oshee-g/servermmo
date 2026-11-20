@@ -101,7 +101,6 @@ final class HudText {
      */
     private static final int CONTENT_LEFT = 66;
     private static final int CONTENT_RIGHT = 244;
-    private static final int CONTENT_CENTER = 155;
     /** Зазор между значком и числом, px. */
     private static final int ICON_GAP = 4;
     /** Зазор между колонками строки, px. */
@@ -330,30 +329,27 @@ final class HudText {
         int panelWidth = width(panelGlyph);
         int offset = layout.panelShift(panelWidth);
 
-        // Строка 1: подложка, затем возврат курсора в её начало и текст поверх.
-        // В конце - хвост до ширины панели: иначе клиент центрует строку по
-        // длине ника и ставит подложку не там, где остальные две строки.
-        // На плитке две группы: слева свиток с ником и классом, справа ромб
-        // уровня с опытом; между ними - растянутый зазор.
+        // Строка 1: после эмблемы курсор возвращается к общей левой границе
+        // текстовой полосы. Свиток, ник и уровень идут подряд; хвост сохраняет
+        // одинаковую общую ширину всех трёх строк.
         String xpFraction = xp + "/" + xpToNext;
         char diamond = (char) (LEVEL_BASE + levelIndex(level));
         String title = fitTitle(playerName, diamond, xpFraction, texty);
-        int leftW = width(MONEY_SCROLL) + ICON_GAP + textWidth(title, texty);
-        int rightW = width(diamond) + COLUMN_GAP + width(xpFraction);
-        int gap = Math.max(COLUMN_GAP, CONTENT_RIGHT - CONTENT_LEFT - leftW - rightW);
-        int tail = panelWidth - CONTENT_RIGHT;
+        int titleW = width(MONEY_SCROLL) + ICON_GAP + textWidth(title, texty)
+                + COLUMN_GAP + width(diamond) + COLUMN_GAP + width(xpFraction);
+        int titleTail = Math.max(0, panelWidth - CONTENT_LEFT - titleW);
 
         Component first = Component.text(shift(offset), GLYPHS)
                 .append(Component.text(String.valueOf(panelGlyph), GLYPHS))
                 .append(Component.text(shift(-(panelWidth - CONTENT_LEFT)), GLYPHS))
                 .append(Component.text(MONEY_SCROLL + pad(ICON_GAP), GLYPHS))
                 .append(Component.text(toGlyphs(title, texty), GLYPHS))
-                .append(Component.text(pad(gap) + diamond + pad(COLUMN_GAP)
+                .append(Component.text(pad(COLUMN_GAP) + diamond + pad(COLUMN_GAP)
                         + xpFraction, GLYPHS))
-                .append(Component.text(pad(tail), GLYPHS));
+                .append(Component.text(pad(titleTail), GLYPHS));
 
         // Строка 2: клан - щит уровня, название и опыт клана дробью.
-        // Контент центрируем в правой полосе, не заходя на эмблему слева.
+        // Строка 2 начинается на той же координате, что и строка 1.
         char clanShield = (char) (CLAN_BASE + levelIndex(profile.clanLevel()));
         String clanXp = profile.clanXp() + "/" + profile.clanXpToNext();
         String clanName = profile.clanName().isEmpty() ? "Без клана" : profile.clanName();
@@ -364,23 +360,21 @@ final class HudText {
         }
         int clanW = width(clanShield) + COLUMN_GAP + textWidth(clanName, texty)
                 + COLUMN_GAP + width(clanXp);
-        int clanStart = Math.max(CONTENT_LEFT, CONTENT_CENTER - clanW / 2);
-        int clanTail = panelWidth - clanStart - clanW;
-        Component second = Component.text(shift(offset) + pad(clanStart), GLYPHS)
+        int clanTail = Math.max(0, panelWidth - CONTENT_LEFT - clanW);
+        Component second = Component.text(shift(offset) + pad(CONTENT_LEFT), GLYPHS)
                 .append(Component.text(String.valueOf(clanShield) + pad(COLUMN_GAP), GLYPHS))
                 .append(Component.text(toGlyphs(clanName, texty), GLYPHS))
                 .append(Component.text(pad(COLUMN_GAP) + clanXp, GLYPHS))
                 .append(Component.text(pad(clanTail), GLYPHS));
 
-        // Строка 3: четыре валюты - значок и число, тоже по центру плитки.
+        // Строка 3: четыре валюты - значок и число; начинается под первой.
         String money = "" + MONEY_COINS + pad(ICON_GAP) + profile.coins() + pad(COLUMN_GAP)
                 + MONEY_STAR + pad(ICON_GAP) + profile.starCoins() + pad(COLUMN_GAP)
                 + MONEY_GEM + pad(ICON_GAP) + profile.nanogems() + pad(COLUMN_GAP)
                 + MONEY_BATTLE + pad(ICON_GAP) + profile.battlePoints();
         int moneyW = width(money);
-        int moneyStart = Math.max(CONTENT_LEFT, CONTENT_CENTER - moneyW / 2);
-        int moneyTail = panelWidth - moneyStart - moneyW;
-        Component third = Component.text(shift(offset) + pad(moneyStart) + money
+        int moneyTail = Math.max(0, panelWidth - CONTENT_LEFT - moneyW);
+        Component third = Component.text(shift(offset) + pad(CONTENT_LEFT) + money
                 + pad(moneyTail), GLYPHS);
 
         return new Component[]{first, second, third};

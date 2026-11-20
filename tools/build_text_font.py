@@ -31,7 +31,7 @@ TEXT_CHARS = (
 TEXT_COLS = 19
 CELL = 16          # ячейка атласа, px
 BASELINE = 9       # базовая линия внутри ячейки (от верха)
-SIZE = 11          # кегль DejaVuSans: заглавные ~8 px
+SIZE = 11          # кегль DejaVuSans: заглавные около 8 px
 
 
 def render_char(font: ImageFont.FreeTypeFont, ch: str) -> Image.Image:

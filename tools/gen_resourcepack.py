@@ -107,11 +107,13 @@ ABILITY_CHARS = chars(0xE320, 8)    # восемь слотов способно
 LEVEL_CHARS = chars(0xE400, 100)    # ромбы уровней игрока 1..100
 CLAN_CHARS = chars(0xE470, 100)     # щиты уровней клана 1..100
 PANEL_OFFSET_RANGE = 15             # команда /hud offsety: сдвиг контента -15..+15
-PANEL_CHARS = chars(0xE500 + PANEL_OFFSET_RANGE * 8, 8)  # панели классов (сдвиг 0)
+PANEL_CLASS_COUNT = 10
+PANEL_BASE = 0xE700  # новый диапазон не пересекается с цифрами хотбара E600..E65B
+PANEL_CHARS = chars(PANEL_BASE + PANEL_OFFSET_RANGE * PANEL_CLASS_COUNT, PANEL_CLASS_COUNT)
 # Варианты глифа панели с разной высотой (ascent): плагин выбирает вариант
 # по команде /hud offsety, чтобы двигать текст и значки относительно
 # картинки панели. Вариант i рисуется с ascent PANEL_ASCENT + (i - диапазон).
-PANEL_VARIANTS = [chars(0xE500 + i * 8, 8)
+PANEL_VARIANTS = [chars(PANEL_BASE + i * PANEL_CLASS_COUNT, PANEL_CLASS_COUNT)
                   for i in range(2 * PANEL_OFFSET_RANGE + 1)]
 ICON_OFFSET_RANGE = 5               # команда /hud texty: текст ниже/выше значков, -5..+5
 # Текст панели своими глифами (команда /hud texty): кириллица, латиница,
@@ -145,7 +147,7 @@ def _text_variants() -> list:
 
 TEXT_VARIANTS = _text_variants()
 LEVEL_COLS = 10                     # сетка 10x10
-PANEL_COLS = 2                      # сетка 2x4
+PANEL_COLS = 2                      # сетка 2x5 (10 классов)
 
 
 def grid(chars_row: str, cols: int) -> list[str]:

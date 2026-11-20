@@ -60,11 +60,11 @@ GEAR = ["heart", "sword", "axe", "staff", "hammer", "scythe", "trident",
 MONEY = ["coin_pile", "coin_star", "nanogem", "clan", "scroll", "battle_points"]
 ABILITIES = ["ability_slash", "ability_flame", "ability_bolt", "ability_shield",
              "ability_skull", "ability_leaf", "ability_wave", "ability_arrow"]
-CLASSES = ["warrior", "mage", "archer", "paladin", "farmer", "viking",
-           "necromancer", "spearman"]
+CLASSES = ["warrior", "archer", "mage", "paladin", "vampire", "necromancer",
+           "viking", "farmer", "blacksmith", "druid"]
 
 LEVEL_COLS = 10    # 10x10 = 100 уровней
-PANEL_COLS = 2     # сетка 2x4 = 8 панелей
+PANEL_COLS = 2     # сетка 2x5 = 10 панелей
 
 
 def tile(images: list[Image.Image], cols: int, cell: tuple[int, int]) -> Image.Image:
@@ -150,7 +150,14 @@ def main() -> int:
         path = ICONS / f"panel_{name}.png"
         if not path.is_file():
             sys.exit(f"нет панели {path}")
-        panels.append(Image.open(path).convert("RGBA").resize(PANEL, Image.LANCZOS))
+        source = Image.open(path).convert("RGBA")
+        # Оставляем один полностью прозрачный столбец справа: BitmapProvider
+        # задаёт advance = последняя видимая колонка + 1, и глиф должен быть
+        # ровно 256 px, а не 257.
+        fitted = source.resize((PANEL[0] - 1, PANEL[1]), Image.LANCZOS)
+        canvas = Image.new("RGBA", PANEL, (0, 0, 0, 0))
+        canvas.paste(fitted, (0, 0), fitted)
+        panels.append(canvas)
     sheet = tile(panels, PANEL_COLS, PANEL)
     sheet.save(OUT / "hud_panel.png", optimize=True)
     print(f"hud_panel.png {sheet.size[0]}x{sheet.size[1]}: панели классов "

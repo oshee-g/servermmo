@@ -13,7 +13,7 @@ commands:
     permission: servermmo.hud.self
   class:
     description: Класс игрока (панель HUD)
-    usage: /class <воин|маг|лучник|паладин|фермер|викинг|некромант|копейщик> [игрок]
+    usage: /class <воин|лучник|маг|паладин|вампир|некромант|викинг|фермер|кузнец|друид> [игрок]
     permission: servermmo.hud
   clan:
     description: Клан игрока (панель HUD)

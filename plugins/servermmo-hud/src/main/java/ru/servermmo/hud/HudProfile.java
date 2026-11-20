@@ -10,7 +10,7 @@ final class HudProfile {
 
     /** Русские названия классов — ими же команда {@code /class}. */
     static final String[] CLASSES = {
-            "воин", "маг", "лучник", "паладин", "фермер", "викинг", "некромант", "копейщик",
+            "воин", "лучник", "маг", "паладин", "вампир", "некромант", "викинг", "фермер", "кузнец", "друид",
     };
 
     private int classIndex;
@@ -83,7 +83,7 @@ final class HudProfile {
         this.screenHeight = Math.max(0, screenHeight);
     }
 
-    /** Индекс класса 0..7 — он же номер панели в ресурспаке. */
+    /** Индекс класса 0..9 — он же номер панели в ресурспаке. */
     int classIndex() {
         return Math.max(0, Math.min(CLASSES.length - 1, classIndex));
     }

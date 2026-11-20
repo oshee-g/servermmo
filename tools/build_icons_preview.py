@@ -47,11 +47,12 @@ GROUPS: list[tuple[str, list[tuple[str, str]] | None]] = [
         ("волна", "ability_wave"), ("стрела", "ability_arrow"),
     ]),
     ("Значки уровня 1..100 (показаны 1, 7, 42, 100)", None),
-    ("Панели классов — силуэт под класс (256x64)", [
-        ("воин", "panel_warrior"), ("маг", "panel_mage"),
-        ("лучник", "panel_archer"), ("паладин", "panel_paladin"),
-        ("фермер", "panel_farmer"), ("викинг", "panel_viking"),
-        ("некромант", "panel_necromancer"), ("копейщик", "panel_spearman"),
+    ("Панели классов с эмблемой слева (256x96)", [
+        ("воин", "panel_warrior"), ("лучник", "panel_archer"),
+        ("маг", "panel_mage"), ("паладин", "panel_paladin"),
+        ("вампир", "panel_vampire"), ("некромант", "panel_necromancer"),
+        ("викинг", "panel_viking"), ("фермер", "panel_farmer"),
+        ("кузнец", "panel_blacksmith"), ("друид", "panel_druid"),
     ]),
 ]
 

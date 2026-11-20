@@ -33,3 +33,11 @@ build.log
 
 # --- исходники арта для HUD (крупные PNG из генератора картинок) ----------
 tools/assets_src/
+
+# --- временные файлы агента и исходные вложения -------------------------
+.arena-tmp/
+tools/pack_assets/icons64/user_panels/
+tools/pack_assets/icons64/panel_*_new.png
+
+# smoke test output
+/smoke-test.log

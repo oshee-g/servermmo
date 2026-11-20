@@ -44,8 +44,9 @@ final class HudText {
             .font(Key.key("servermmo", "hud"))
             .color(NamedTextColor.WHITE)
             .build();
-    /** Панели классов: 8 шт. */
-    private static final int PANEL_BASE = 0xE500;
+    /** Панели классов: 10 шт.; диапазон E700..E835 отдельно от хотбарных глифов. */
+    private static final int PANEL_BASE = 0xE700;
+    private static final int PANEL_CLASS_COUNT = HudProfile.CLASSES.length;
     /**
      * Диапазон команды {@code /hud offsety}: контент панели можно сдвинуть
      * вниз относительно картинки на -15..+15 px. У каждого сдвига свой
@@ -95,14 +96,12 @@ final class HudText {
     private static final int ABILITY_BASE = 0xE320;
 
     /**
-     * Границы серой плитки панели в координатах глифа (256 px): плитка
-     * воина x 32..222. Весь контент строки 1 — на плитке: левая группа
-     * (свиток, ник, класс) у левого края, правая (ромб, опыт) у правого.
-     * Строки 2-3 центрируются на плитке, чтобы не задевать мечи по углам.
+     * Полоса текста новых панелей: эмблема занимает левую часть, строки HUD
+     * идут справа от неё. Координаты проверены на панели 256x96.
      */
-    private static final int TILE_LEFT = 36;
-    private static final int TILE_RIGHT = 218;
-    private static final int TILE_CENTER = 127;
+    private static final int CONTENT_LEFT = 66;
+    private static final int CONTENT_RIGHT = 244;
+    private static final int CONTENT_CENTER = 155;
     /** Зазор между значком и числом, px. */
     private static final int ICON_GAP = 4;
     /** Зазор между колонками строки, px. */
@@ -189,7 +188,7 @@ final class HudText {
         for (int i = 0; i < 100; i++) {
             map.put((char) (CLAN_BASE + i), 14);
         }
-        for (int i = 0; i < (2 * PANEL_OFFSET_RANGE + 1) * 8; i++) {
+        for (int i = 0; i < (2 * PANEL_OFFSET_RANGE + 1) * PANEL_CLASS_COUNT; i++) {
             map.put((char) (PANEL_BASE + i), 256);
         }
         for (int i = 0; i < TEXT_CHARS.length(); i++) {
@@ -260,31 +259,24 @@ final class HudText {
     }
 
     /**
-     * Заголовок первой строки: ник и класс, подогнанные под ширину панели.
-     *
-     * <p>Ник в Minecraft — до 16 символов, а панель узкая: длинный ник с
-     * классом не влезает, и строка вылезала за пластину (хвост уходил в
-     * минус, и клиент центровал строку шире панели). Поэтому ник режем
-     * справа, пока заголовок не влезет в отведённую ему ширину; класс не
-     * трогаем — он короткий. Так строка всегда ровно в ширину панели, и
-     * хвост неотрицателен.</p>
+     * Ник первой строки, обрезанный по доступному месту между свитком и
+     * индикатором уровня. Название класса не выводим: его однозначно задаёт
+     * эмблема слева на панели.
      */
-    private String fitTitle(String playerName, String className, char diamond,
-                            String xpFraction, int texty) {
-        String suffix = " · " + className;
-        int budget = (TILE_RIGHT - TILE_LEFT) - width(MONEY_SCROLL) - ICON_GAP
-                - width(diamond) - COLUMN_GAP - width(xpFraction) - COLUMN_GAP
-                - textWidth(suffix, texty);
+    private String fitTitle(String playerName, char diamond, String xpFraction, int texty) {
+        int budget = (CONTENT_RIGHT - CONTENT_LEFT) - width(MONEY_SCROLL) - ICON_GAP
+                - width(diamond) - COLUMN_GAP - width(xpFraction) - COLUMN_GAP;
         String name = playerName == null ? "" : playerName;
         while (textWidth(name, texty) > budget && !name.isEmpty()) {
             name = name.substring(0, name.length() - 1);
         }
-        return name + suffix;
+        return name;
     }
 
     /** Ширина глифа-панели класса: по ней считается сдвиг всей панели. */
     int panelWidth(int classIndex) {
-        return width((char) (PANEL_BASE + Math.max(0, Math.min(7, classIndex))));
+        return width((char) (PANEL_BASE + Math.max(0,
+                Math.min(PANEL_CLASS_COUNT - 1, classIndex))));
     }
 
     /** Глиф символа текста с учётом сдвига (texty): 0 — базовый, иначе вариант. */
@@ -313,9 +305,10 @@ final class HudText {
     /**
      * Три строки панели.
      *
-     * <p>Первая - подложка-панель и поверх неё свиток, ник с классом, ромб
-     * уровня (номер нарисован на нём) и опыт дробью, вторая - клан: щит
-     * уровня, название и опыт клана дробью, третья - четыре валюты.</p>
+     * <p>Первая - подложка-панель и поверх неё свиток, ник, ромб уровня
+     * (номер нарисован на нём) и опыт дробью; эмблема слева заменяет текст
+     * класса. Вторая - клан: щит уровня, название и опыт клана дробью;
+     * третья - четыре валюты.</p>
      *
      * <p>Все три строки получают один и тот же сдвиг {@code P}, поэтому их
      * центры совпадают (центр строки всегда в {@code W/2 + P/2}), а левый
@@ -333,7 +326,7 @@ final class HudText {
                       HudLayout layout, int offsetY, int texty) {
         int variant = Math.max(0, Math.min(2 * PANEL_OFFSET_RANGE,
                 offsetY + PANEL_OFFSET_RANGE));
-        char panelGlyph = (char) (PANEL_BASE + variant * 8 + profile.classIndex());
+        char panelGlyph = (char) (PANEL_BASE + variant * PANEL_CLASS_COUNT + profile.classIndex());
         int panelWidth = width(panelGlyph);
         int offset = layout.panelShift(panelWidth);
 
@@ -344,15 +337,15 @@ final class HudText {
         // уровня с опытом; между ними - растянутый зазор.
         String xpFraction = xp + "/" + xpToNext;
         char diamond = (char) (LEVEL_BASE + levelIndex(level));
-        String title = fitTitle(playerName, profile.className(), diamond, xpFraction, texty);
+        String title = fitTitle(playerName, diamond, xpFraction, texty);
         int leftW = width(MONEY_SCROLL) + ICON_GAP + textWidth(title, texty);
         int rightW = width(diamond) + COLUMN_GAP + width(xpFraction);
-        int gap = Math.max(COLUMN_GAP, TILE_RIGHT - TILE_LEFT - leftW - rightW);
-        int tail = panelWidth - TILE_RIGHT;
+        int gap = Math.max(COLUMN_GAP, CONTENT_RIGHT - CONTENT_LEFT - leftW - rightW);
+        int tail = panelWidth - CONTENT_RIGHT;
 
         Component first = Component.text(shift(offset), GLYPHS)
                 .append(Component.text(String.valueOf(panelGlyph), GLYPHS))
-                .append(Component.text(shift(-(panelWidth - TILE_LEFT)), GLYPHS))
+                .append(Component.text(shift(-(panelWidth - CONTENT_LEFT)), GLYPHS))
                 .append(Component.text(MONEY_SCROLL + pad(ICON_GAP), GLYPHS))
                 .append(Component.text(toGlyphs(title, texty), GLYPHS))
                 .append(Component.text(pad(gap) + diamond + pad(COLUMN_GAP)
@@ -360,18 +353,18 @@ final class HudText {
                 .append(Component.text(pad(tail), GLYPHS));
 
         // Строка 2: клан - щит уровня, название и опыт клана дробью.
-        // Контент центрируем на плитке, чтобы не задевать мечи по углам.
+        // Контент центрируем в правой полосе, не заходя на эмблему слева.
         char clanShield = (char) (CLAN_BASE + levelIndex(profile.clanLevel()));
         String clanXp = profile.clanXp() + "/" + profile.clanXpToNext();
         String clanName = profile.clanName().isEmpty() ? "Без клана" : profile.clanName();
-        int clanBudget = (TILE_RIGHT - TILE_LEFT) - width(clanShield) - COLUMN_GAP
+        int clanBudget = (CONTENT_RIGHT - CONTENT_LEFT) - width(clanShield) - COLUMN_GAP
                 - COLUMN_GAP - width(clanXp);
         while (textWidth(clanName, texty) > clanBudget && !clanName.isEmpty()) {
             clanName = clanName.substring(0, clanName.length() - 1);
         }
         int clanW = width(clanShield) + COLUMN_GAP + textWidth(clanName, texty)
                 + COLUMN_GAP + width(clanXp);
-        int clanStart = Math.max(TILE_LEFT, TILE_CENTER - clanW / 2);
+        int clanStart = Math.max(CONTENT_LEFT, CONTENT_CENTER - clanW / 2);
         int clanTail = panelWidth - clanStart - clanW;
         Component second = Component.text(shift(offset) + pad(clanStart), GLYPHS)
                 .append(Component.text(String.valueOf(clanShield) + pad(COLUMN_GAP), GLYPHS))
@@ -385,7 +378,7 @@ final class HudText {
                 + MONEY_GEM + pad(ICON_GAP) + profile.nanogems() + pad(COLUMN_GAP)
                 + MONEY_BATTLE + pad(ICON_GAP) + profile.battlePoints();
         int moneyW = width(money);
-        int moneyStart = Math.max(TILE_LEFT, TILE_CENTER - moneyW / 2);
+        int moneyStart = Math.max(CONTENT_LEFT, CONTENT_CENTER - moneyW / 2);
         int moneyTail = panelWidth - moneyStart - moneyW;
         Component third = Component.text(shift(offset) + pad(moneyStart) + money
                 + pad(moneyTail), GLYPHS);

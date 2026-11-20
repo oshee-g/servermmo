@@ -106,7 +106,7 @@ MONEY_CHARS = chars(0xE310, 6)      # монеты, коины, нанагемы
 ABILITY_CHARS = chars(0xE320, 8)    # восемь слотов способностей
 LEVEL_CHARS = chars(0xE400, 100)    # ромбы уровней игрока 1..100
 CLAN_CHARS = chars(0xE470, 100)     # щиты уровней клана 1..100
-PANEL_OFFSET_RANGE = 10             # команда /hud offsety: сдвиг контента -10..+10
+PANEL_OFFSET_RANGE = 15             # команда /hud offsety: сдвиг контента -15..+15
 PANEL_CHARS = chars(0xE500 + PANEL_OFFSET_RANGE * 8, 8)  # панели классов (сдвиг 0)
 # Варианты глифа панели с разной высотой (ascent): плагин выбирает вариант
 # по команде /hud offsety, чтобы двигать текст и значки относительно

@@ -110,7 +110,7 @@ public final class HudSettings {
 
     /**
      * Сдвиг текста и значков панели вниз относительно её картинки,
-     * в пикселях интерфейса (-10..10, команда {@code /hud offsety}).
+     * в пикселях интерфейса (-15..15, команда {@code /hud offsety}).
      */
     public int panelOffsetY() {
         return panelOffsetY;

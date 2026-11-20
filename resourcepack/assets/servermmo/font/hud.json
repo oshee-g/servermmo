@@ -102,7 +102,7 @@
     {
       "type": "bitmap",
       "file": "servermmo:font/hud_panel.png",
-      "ascent": 23,
+      "ascent": 18,
       "height": 96,
       "chars": [
         "",
@@ -114,7 +114,7 @@
     {
       "type": "bitmap",
       "file": "servermmo:font/hud_panel.png",
-      "ascent": 24,
+      "ascent": 19,
       "height": 96,
       "chars": [
         "",
@@ -126,7 +126,7 @@
     {
       "type": "bitmap",
       "file": "servermmo:font/hud_panel.png",
-      "ascent": 25,
+      "ascent": 20,
       "height": 96,
       "chars": [
         "",
@@ -138,7 +138,7 @@
     {
       "type": "bitmap",
       "file": "servermmo:font/hud_panel.png",
-      "ascent": 26,
+      "ascent": 21,
       "height": 96,
       "chars": [
         "",
@@ -150,7 +150,7 @@
     {
       "type": "bitmap",
       "file": "servermmo:font/hud_panel.png",
-      "ascent": 27,
+      "ascent": 22,
       "height": 96,
       "chars": [
         "",
@@ -162,7 +162,7 @@
     {
       "type": "bitmap",
       "file": "servermmo:font/hud_panel.png",
-      "ascent": 28,
+      "ascent": 23,
       "height": 96,
       "chars": [
         "",
@@ -174,7 +174,7 @@
     {
       "type": "bitmap",
       "file": "servermmo:font/hud_panel.png",
-      "ascent": 29,
+      "ascent": 24,
       "height": 96,
       "chars": [
         "",
@@ -186,7 +186,7 @@
     {
       "type": "bitmap",
       "file": "servermmo:font/hud_panel.png",
-      "ascent": 30,
+      "ascent": 25,
       "height": 96,
       "chars": [
         "",
@@ -198,7 +198,7 @@
     {
       "type": "bitmap",
       "file": "servermmo:font/hud_panel.png",
-      "ascent": 31,
+      "ascent": 26,
       "height": 96,
       "chars": [
         "",
@@ -210,7 +210,7 @@
     {
       "type": "bitmap",
       "file": "servermmo:font/hud_panel.png",
-      "ascent": 32,
+      "ascent": 27,
       "height": 96,
       "chars": [
         "",
@@ -222,7 +222,7 @@
     {
       "type": "bitmap",
       "file": "servermmo:font/hud_panel.png",
-      "ascent": 33,
+      "ascent": 28,
       "height": 96,
       "chars": [
         "",
@@ -234,7 +234,7 @@
     {
       "type": "bitmap",
       "file": "servermmo:font/hud_panel.png",
-      "ascent": 34,
+      "ascent": 29,
       "height": 96,
       "chars": [
         "",
@@ -246,7 +246,7 @@
     {
       "type": "bitmap",
       "file": "servermmo:font/hud_panel.png",
-      "ascent": 35,
+      "ascent": 30,
       "height": 96,
       "chars": [
         "",
@@ -258,7 +258,7 @@
     {
       "type": "bitmap",
       "file": "servermmo:font/hud_panel.png",
-      "ascent": 36,
+      "ascent": 31,
       "height": 96,
       "chars": [
         "",
@@ -270,7 +270,7 @@
     {
       "type": "bitmap",
       "file": "servermmo:font/hud_panel.png",
-      "ascent": 37,
+      "ascent": 32,
       "height": 96,
       "chars": [
         "",
@@ -282,7 +282,7 @@
     {
       "type": "bitmap",
       "file": "servermmo:font/hud_panel.png",
-      "ascent": 38,
+      "ascent": 33,
       "height": 96,
       "chars": [
         "",
@@ -294,7 +294,7 @@
     {
       "type": "bitmap",
       "file": "servermmo:font/hud_panel.png",
-      "ascent": 39,
+      "ascent": 34,
       "height": 96,
       "chars": [
         "",
@@ -306,7 +306,7 @@
     {
       "type": "bitmap",
       "file": "servermmo:font/hud_panel.png",
-      "ascent": 40,
+      "ascent": 35,
       "height": 96,
       "chars": [
         "",
@@ -318,7 +318,7 @@
     {
       "type": "bitmap",
       "file": "servermmo:font/hud_panel.png",
-      "ascent": 41,
+      "ascent": 36,
       "height": 96,
       "chars": [
         "",
@@ -330,7 +330,7 @@
     {
       "type": "bitmap",
       "file": "servermmo:font/hud_panel.png",
-      "ascent": 42,
+      "ascent": 37,
       "height": 96,
       "chars": [
         "",
@@ -342,13 +342,133 @@
     {
       "type": "bitmap",
       "file": "servermmo:font/hud_panel.png",
-      "ascent": 43,
+      "ascent": 38,
       "height": 96,
       "chars": [
         "",
         "",
         "",
         ""
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "servermmo:font/hud_panel.png",
+      "ascent": 39,
+      "height": 96,
+      "chars": [
+        "",
+        "",
+        "",
+        ""
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "servermmo:font/hud_panel.png",
+      "ascent": 40,
+      "height": 96,
+      "chars": [
+        "",
+        "",
+        "",
+        ""
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "servermmo:font/hud_panel.png",
+      "ascent": 41,
+      "height": 96,
+      "chars": [
+        "",
+        "",
+        "",
+        ""
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "servermmo:font/hud_panel.png",
+      "ascent": 42,
+      "height": 96,
+      "chars": [
+        "",
+        "",
+        "",
+        ""
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "servermmo:font/hud_panel.png",
+      "ascent": 43,
+      "height": 96,
+      "chars": [
+        "",
+        "",
+        "",
+        ""
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "servermmo:font/hud_panel.png",
+      "ascent": 44,
+      "height": 96,
+      "chars": [
+        "",
+        "",
+        "",
+        ""
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "servermmo:font/hud_panel.png",
+      "ascent": 45,
+      "height": 96,
+      "chars": [
+        "",
+        "",
+        "",
+        ""
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "servermmo:font/hud_panel.png",
+      "ascent": 46,
+      "height": 96,
+      "chars": [
+        "",
+        "",
+        "",
+        ""
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "servermmo:font/hud_panel.png",
+      "ascent": 47,
+      "height": 96,
+      "chars": [
+        "",
+        "",
+        "",
+        ""
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "servermmo:font/hud_panel.png",
+      "ascent": 48,
+      "height": 96,
+      "chars": [
+        "",
+        "",
+        "",
+        ""
       ]
     },
     {

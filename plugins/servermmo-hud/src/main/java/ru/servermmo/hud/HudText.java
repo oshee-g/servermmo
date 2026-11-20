@@ -66,10 +66,10 @@ final class HudText {
     private static final int PANEL_BASE = 0xE500;
     /**
      * Диапазон команды {@code /hud offsety}: контент панели можно сдвинуть
-     * вниз относительно картинки на -10..+10 px. У каждого сдвига свой
+     * вниз относительно картинки на -15..+15 px. У каждого сдвига свой
      * вариант глифа панели (та же картинка, другой ascent в паке).
      */
-    static final int PANEL_OFFSET_RANGE = 10;
+    static final int PANEL_OFFSET_RANGE = 15;
     /** Ромбы уровней игрока 1..100 (номер нарисован на ромбе, без «lvl»). */
     private static final int LEVEL_BASE = 0xE400;
     /** Щиты уровней клана 1..100 (номер нарисован на щите, без «lvl»). */
@@ -307,7 +307,7 @@ final class HudText {
      *
      * @param layout геометрия под экран игрока (ширина интерфейса и отступ)
      * @param offsetY сдвиг текста и значков вниз относительно картинки
-     *                панели, px (-10..10, команда {@code /hud offsety})
+     *                панели, px (-15..15, команда {@code /hud offsety})
      */
     Component[] panel(HudProfile profile, String playerName, long level, long xp, long xpToNext,
                       HudLayout layout, int offsetY) {

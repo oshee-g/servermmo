@@ -250,7 +250,7 @@ final class HudCommand implements CommandExecutor {
 
     /**
      * {@code /hud offsety <px>} — сдвиг текста и значков панели вниз
-     * относительно её картинки, в пикселях интерфейса (-10..10).
+     * относительно её картинки, в пикселях интерфейса (-15..15).
      *
      * <p>Базовая линия босс-бара фиксирована клиентом, поэтому на самом
      * деле двигается картинка панели в противоположную сторону: визуально
@@ -260,7 +260,7 @@ final class HudCommand implements CommandExecutor {
     private boolean setOffsetY(CommandSender sender, String[] args) {
         if (args.length < 2) {
             sender.sendMessage(Component.text(
-                    "Укажите сдвиг: /hud offsety <пиксели> (от -10 до 10, "
+                    "Укажите сдвиг: /hud offsety <пиксели> (от -15 до 15, "
                             + "положительное — контент ниже)",
                     NamedTextColor.YELLOW));
             return true;
@@ -380,7 +380,7 @@ final class HudCommand implements CommandExecutor {
                         + "от края по текущему масштабу", NamedTextColor.YELLOW));
         sender.sendMessage(Component.text(
                 "/hud offsety <пиксели> — сдвиг текста и значков вниз "
-                        + "относительно картинки панели (-10..10)",
+                        + "относительно картинки панели (-15..15)",
                 NamedTextColor.YELLOW));
         sender.sendMessage(Component.text(
                 "/hud anchorx <пиксели> — левый край строки хотбара (-91)",

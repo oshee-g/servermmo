@@ -37,8 +37,10 @@ SIZE = 11          # кегль DejaVuSans: заглавные ~8 px
 def render_char(font: ImageFont.FreeTypeFont, ch: str) -> Image.Image:
     img = Image.new("L", (CELL * 2, CELL * 2), 0)
     draw = ImageDraw.Draw(img)
-    # Ставим базовую линию символа на BASELINE ячейки.
-    draw.text((CELL // 2, BASELINE), ch, font=font, fill=255, anchor="ms")
+    # Буквы ставим у левого края ячейки (anchor "ls"), а не по центру:
+    # ширина глифа считается по последнему непрозрачному столбцу, поэтому
+    # центровка давала 5-7 px просветов между буквами. Слева оставляем 1 px.
+    draw.text((1, BASELINE), ch, font=font, fill=255, anchor="ls")
     img = img.crop((CELL // 2 - CELL // 2, 0, CELL // 2 + CELL // 2, CELL))
     return img.point(lambda p: 255 if p > 128 else 0)
 

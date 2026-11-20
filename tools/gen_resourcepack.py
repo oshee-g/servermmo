@@ -130,7 +130,7 @@ TEXT_BASE = 0xF000
 TEXT_VARIANT_BASE = 0xF100
 TEXT_COLS = 19
 TEXT_HEIGHT = 16
-TEXT_ASCENT = 9  # базовая линия глифа внутри ячейки атласа
+TEXT_ASCENT = 6  # базовая линия глифа внутри ячейки атласа
 
 
 def _text_variants() -> list:

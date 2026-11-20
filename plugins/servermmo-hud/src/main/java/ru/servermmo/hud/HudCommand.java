@@ -59,6 +59,7 @@ final class HudCommand implements CommandExecutor {
             case "margin", "отступ" -> setMargin(sender, args);
             case "offsetx", "offset", "сдвиг" -> setOffset(sender, args);
             case "offsety" -> setOffsetY(sender, args);
+            case "texty" -> setTextY(sender, args);
             case "anchorx", "anchor", "якорь" -> setAnchor(sender, args);
             default -> {
                 help(sender);
@@ -282,6 +283,39 @@ final class HudCommand implements CommandExecutor {
         return true;
     }
 
+    /**
+     * {@code /hud texty <px>} — сдвиг текста панели вниз относительно
+     * значков, в пикселях интерфейса (-5..5).
+     *
+     * <p>Текст — шрифт клиента, его базовая линия фиксирована, поэтому
+     * на самом деле двигаются значки вверх: визуально текст оказывается
+     * ниже. Положительное значение — текст ниже, 0 — как было.</p>
+     */
+    private boolean setTextY(CommandSender sender, String[] args) {
+        if (args.length < 2) {
+            sender.sendMessage(Component.text(
+                    "Укажите сдвиг: /hud texty <пиксели> (от -5 до 5, "
+                            + "положительное — текст ниже)",
+                    NamedTextColor.YELLOW));
+            return true;
+        }
+        Integer value = parseInt(args[1]);
+        if (value == null) {
+            sender.sendMessage(Component.text("Нужно целое число пикселей",
+                    NamedTextColor.RED));
+            return true;
+        }
+        if (!sender.hasPermission("servermmo.hud")) {
+            sender.sendMessage(Component.text("Недостаточно прав", NamedTextColor.RED));
+            return true;
+        }
+        settings.textOffsetY(value);
+        applyAll(sender, "Готово: текст панели сдвинут на "
+                + settings.textOffsetY() + " px вниз относительно значков"
+                + " (0 — как было)");
+        return true;
+    }
+
     /** {@code /hud anchorx <пиксели>} — левый край строки хотбара. */
     private boolean setAnchor(CommandSender sender, String[] args) {
         if (args.length < 2) {
@@ -383,6 +417,9 @@ final class HudCommand implements CommandExecutor {
                         + "относительно картинки панели (-15..15)",
                 NamedTextColor.YELLOW));
         sender.sendMessage(Component.text(
+                "/hud texty <пиксели> — сдвиг текста вниз относительно "
+                        + "значков (-5..5)", NamedTextColor.YELLOW));
+        sender.sendMessage(Component.text(
                 "/hud anchorx <пиксели> — левый край строки хотбара (-91)",
                 NamedTextColor.YELLOW));
         sender.sendMessage(Component.text(
@@ -461,6 +498,7 @@ final class HudCommand implements CommandExecutor {
         plugin.getConfig().set("hud.gui-scale", settings.guiScale());
         plugin.getConfig().set("hud.margin-left", settings.marginLeft());
         plugin.getConfig().set("hud.panel-offset-y", settings.panelOffsetY());
+        plugin.getConfig().set("hud.text-offset-y", settings.textOffsetY());
         plugin.getConfig().set("hud.hotbar-anchor-x", settings.hotbarAnchorX());
         plugin.saveConfig();
         for (Player player : Bukkit.getOnlinePlayers()) {
@@ -479,6 +517,6 @@ final class HudCommand implements CommandExecutor {
 
     /** Подсказка аргументов для tab-complete. */
     public static List<String> keys() {
-        return List.of("scale", "screen", "margin", "offsetx", "offsety", "anchorx", "debug", "reset");
+        return List.of("scale", "screen", "margin", "offsetx", "offsety", "texty", "anchorx", "debug", "reset");
     }
 }

@@ -58,6 +58,7 @@ public final class HudSettings {
     private int guiScale;
     private int marginLeft;
     private int panelOffsetY;
+    private int textOffsetY;
     private long updateIntervalTicks;
     private int hotbarAnchorX;
     private long damageHoldMillis;
@@ -77,6 +78,7 @@ public final class HudSettings {
         settings.guiScale = Math.max(0, config.getInt("hud.gui-scale", DEFAULT_GUI_SCALE));
         settings.marginLeft = clampMargin(config.getInt("hud.margin-left", DEFAULT_MARGIN_LEFT));
         settings.panelOffsetY = clampOffsetY(config.getInt("hud.panel-offset-y", 0));
+        settings.textOffsetY = clampTextY(config.getInt("hud.text-offset-y", 0));
         settings.updateIntervalTicks = Math.max(1L, config.getLong("hud.update-interval-ticks", 2L));
         settings.hotbarAnchorX = config.getInt("hud.hotbar-anchor-x", DEFAULT_HOTBAR_ANCHOR_X);
         settings.damageHoldMillis = Math.max(0L, config.getLong("hud.damage-hold-seconds", 5L)) * 1000L;
@@ -116,6 +118,14 @@ public final class HudSettings {
         return panelOffsetY;
     }
 
+    /**
+     * Сдвиг текста панели вниз относительно значков, в пикселях
+     * интерфейса (-5..5, команда {@code /hud texty}; двигаются значки).
+     */
+    public int textOffsetY() {
+        return textOffsetY;
+    }
+
     public void screenWidth(int value) {
         this.screenWidth = Math.max(MIN_SCALED_WIDTH, value);
     }
@@ -134,6 +144,10 @@ public final class HudSettings {
 
     public void panelOffsetY(int value) {
         this.panelOffsetY = clampOffsetY(value);
+    }
+
+    public void textOffsetY(int value) {
+        this.textOffsetY = clampTextY(value);
     }
 
     public long updateIntervalTicks() {
@@ -220,6 +234,7 @@ public final class HudSettings {
         this.guiScale = DEFAULT_GUI_SCALE;
         this.marginLeft = DEFAULT_MARGIN_LEFT;
         this.panelOffsetY = 0;
+        this.textOffsetY = 0;
         this.hotbarAnchorX = DEFAULT_HOTBAR_ANCHOR_X;
     }
 
@@ -235,5 +250,11 @@ public final class HudSettings {
     private static int clampOffsetY(int value) {
         return Math.max(-HudText.PANEL_OFFSET_RANGE,
                 Math.min(HudText.PANEL_OFFSET_RANGE, value));
+    }
+
+    /** Сдвиг текста ограничиваем диапазоном вариантов значков в паке. */
+    private static int clampTextY(int value) {
+        return Math.max(-HudText.ICON_OFFSET_RANGE,
+                Math.min(HudText.ICON_OFFSET_RANGE, value));
     }
 }

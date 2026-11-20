@@ -31,8 +31,8 @@ TEXT_CHARS = (
 TEXT_COLS = 19
 CELL = 16          # ячейка атласа, px
 BASELINE = 9       # базовая линия внутри ячейки (от верха)
-SIZE = 11          # обычный кегль DejaVuSans: заглавные около 8 px
-SMALL_SIZE = 8     # компактный ник: меньше примерно на четверть
+SIZE = 11              # обычный кегль DejaVuSans: заглавные около 8 px
+SMALL_SCALE_X = 0.64   # сжимаем ник только по ширине, сохраняя высоту и читаемость
 SMALL_OUT = OUT.with_name("hud_text_small.png")
 
 
@@ -47,12 +47,18 @@ def render_char(font: ImageFont.FreeTypeFont, ch: str) -> Image.Image:
     return img.point(lambda p: 255 if p > 128 else 0)
 
 
-def build_atlas(size: int) -> Image.Image:
+def build_atlas(size: int, scale_x: float = 1.0) -> Image.Image:
     font = ImageFont.truetype(FONT_PATH, size)
     rows = (len(TEXT_CHARS) + TEXT_COLS - 1) // TEXT_COLS
     atlas = Image.new("RGBA", (TEXT_COLS * CELL, rows * CELL), (0, 0, 0, 0))
     for index, ch in enumerate(TEXT_CHARS):
         alpha = render_char(font, ch)
+        if scale_x != 1.0:
+            scaled_width = max(1, round(CELL * scale_x))
+            alpha = alpha.resize((scaled_width, CELL), Image.Resampling.NEAREST)
+            cell = Image.new("L", (CELL, CELL), 0)
+            cell.paste(alpha, (0, 0))
+            alpha = cell
         # Белый глиф: цвет задаёт стиль текста, альфа — форма.
         white = Image.new("RGBA", alpha.size, (255, 255, 255, 255))
         white.putalpha(alpha)
@@ -63,8 +69,9 @@ def build_atlas(size: int) -> Image.Image:
 
 def main() -> int:
     OUT.parent.mkdir(parents=True, exist_ok=True)
-    for path, size in ((OUT, SIZE), (SMALL_OUT, SMALL_SIZE)):
-        atlas = build_atlas(size)
+    for path, size, scale_x in ((OUT, SIZE, 1.0),
+                                (SMALL_OUT, SIZE, SMALL_SCALE_X)):
+        atlas = build_atlas(size, scale_x)
         atlas.save(path, optimize=True)
         print(f"{path.name}: {atlas.width}x{atlas.height}, глифов {len(TEXT_CHARS)}")
     return 0

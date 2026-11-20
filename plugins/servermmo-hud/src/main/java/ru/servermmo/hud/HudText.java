@@ -16,9 +16,9 @@ import net.kyori.adventure.text.format.Style;
  * Раскладка панели HUD из глифов ресурспака.
  *
  * <p>Клиент рисует панель строками босс-бара и сам центрует каждую строку.
- * Центр любой строки - это offset/2 относительно центра экрана, и от ширины
- * самой строки он не зависит: поэтому текст встаёт по центру панели сам, а
- * подгонять строки под одну ширину не нужно.</p>
+ * Поэтому строки дополняются пробелами до ширины подложки: центр остаётся
+ * общим, а текст можно начать с отдельной координаты под эмблемой каждого
+ * класса.</p>
  *
  * <p>Отсюда же и вся арифметика отступов (подробно в {@link HudLayout}):
  * сдвиг двигает строку на <b>половину</b> своей величины, а ширина
@@ -275,21 +275,31 @@ final class HudText {
      * Ник первой строки: при достижении 11 символов переходит на компактный
      * шрифт; если даже в нём строка не помещается, аккуратно обрезается.
      */
-    private int titleBudget(char diamond, String xpFraction, boolean small) {
+    private int titleBudget(char diamond, String xpFraction, boolean small, int contentLeft) {
         int iconGap = small ? 3 : ICON_GAP;
         int columnGap = small ? 4 : COLUMN_GAP;
-        return (CONTENT_RIGHT - CONTENT_LEFT) - width(MONEY_SCROLL) - iconGap
+        return (CONTENT_RIGHT - contentLeft) - width(MONEY_SCROLL) - iconGap
                 - width(diamond) - columnGap - width(xpFraction) - columnGap;
     }
 
     private String fitTitle(String playerName, char diamond, String xpFraction,
-                            int texty, boolean small) {
-        int budget = titleBudget(diamond, xpFraction, small);
+                            int texty, boolean small, int contentLeft) {
+        int budget = titleBudget(diamond, xpFraction, small, contentLeft);
         String name = playerName == null ? "" : playerName;
         while (textWidth(name, texty, small) > budget && !name.isEmpty()) {
             name = name.substring(0, name.length() - 1);
         }
         return name;
+    }
+
+    /** Индивидуальная граница текста под эмблемой и рамкой каждой панели. */
+    private static int contentLeft(int classIndex) {
+        return switch (classIndex) {
+            case 0 -> 72; // воин: отступить от выступов щита
+            case 6 -> 80; // викинг: крупный круглый щит занимает больше места
+            case 7 -> 70; // фермер: оставить место корзине у нижней строки
+            default -> CONTENT_LEFT;
+        };
     }
 
     /** Ширина глифа-панели класса: по ней считается сдвиг всей панели. */
@@ -338,10 +348,10 @@ final class HudText {
      * класса. Вторая - клан: щит уровня, название и опыт клана дробью;
      * третья - четыре валюты.</p>
      *
-     * <p>Все три строки получают один и тот же сдвиг {@code P}, поэтому их
-     * центры совпадают (центр строки всегда в {@code W/2 + P/2}), а левый
-     * край панели стоит ровно в {@code margin-left} от края экрана — см.
-     * {@link HudLayout}. Ставить сдвиг в конфиг нельзя: он в пикселях
+     * <p>Все три строки получают один и тот же сдвиг {@code P} и добиваются
+     * до полной ширины панели, поэтому их центры совпадают. Начало текста
+     * выбирается отдельно для класса с учётом ширины его эмблемы и декора.
+     * Ставить сдвиг в конфиг нельзя: он в пикселях
      * интерфейса и при смене масштаба GUI меняется в разы.</p>
      *
      * @param layout геометрия под экран игрока (ширина интерфейса и отступ)
@@ -356,6 +366,7 @@ final class HudText {
                 offsetY + PANEL_OFFSET_RANGE));
         char panelGlyph = (char) (PANEL_BASE + variant * PANEL_CLASS_COUNT + profile.classIndex());
         int panelWidth = width(panelGlyph);
+        int contentLeft = contentLeft(profile.classIndex());
         int offset = layout.panelShift(panelWidth);
 
         // Строка 1: после эмблемы курсор возвращается к общей левой границе
@@ -365,17 +376,19 @@ final class HudText {
         char diamond = (char) (LEVEL_BASE + levelIndex(level));
         String playerTitle = playerName == null ? "" : playerName;
         boolean smallTitle = playerTitle.length() >= 11
-                || textWidth(playerTitle, texty) > titleBudget(diamond, xpFraction, false);
+                || textWidth(playerTitle, texty)
+                > titleBudget(diamond, xpFraction, false, contentLeft);
         int titleIconGap = smallTitle ? 3 : ICON_GAP;
         int titleColumnGap = smallTitle ? 4 : COLUMN_GAP;
-        String title = fitTitle(playerTitle, diamond, xpFraction, texty, smallTitle);
+        String title = fitTitle(playerTitle, diamond, xpFraction, texty,
+                smallTitle, contentLeft);
         int titleW = width(MONEY_SCROLL) + titleIconGap + textWidth(title, texty, smallTitle)
                 + titleColumnGap + width(diamond) + titleColumnGap + width(xpFraction);
-        int titleTail = Math.max(0, panelWidth - CONTENT_LEFT - titleW);
+        int titleTail = Math.max(0, panelWidth - contentLeft - titleW);
 
         Component first = Component.text(shift(offset), GLYPHS)
                 .append(Component.text(String.valueOf(panelGlyph), GLYPHS))
-                .append(Component.text(shift(-(panelWidth - CONTENT_LEFT)), GLYPHS))
+                .append(Component.text(shift(-(panelWidth - contentLeft)), GLYPHS))
                 .append(Component.text(MONEY_SCROLL + pad(titleIconGap), GLYPHS))
                 .append(Component.text(toGlyphs(title, texty, smallTitle), GLYPHS))
                 .append(Component.text(pad(titleColumnGap) + diamond + pad(titleColumnGap)
@@ -387,15 +400,15 @@ final class HudText {
         char clanShield = (char) (CLAN_BASE + levelIndex(profile.clanLevel()));
         String clanXp = profile.clanXp() + "/" + profile.clanXpToNext();
         String clanName = profile.clanName().isEmpty() ? "Без клана" : profile.clanName();
-        int clanBudget = (CONTENT_RIGHT - CONTENT_LEFT) - width(clanShield) - COLUMN_GAP
+        int clanBudget = (CONTENT_RIGHT - contentLeft) - width(clanShield) - COLUMN_GAP
                 - COLUMN_GAP - width(clanXp);
         while (textWidth(clanName, texty) > clanBudget && !clanName.isEmpty()) {
             clanName = clanName.substring(0, clanName.length() - 1);
         }
         int clanW = width(clanShield) + COLUMN_GAP + textWidth(clanName, texty)
                 + COLUMN_GAP + width(clanXp);
-        int clanTail = Math.max(0, panelWidth - CONTENT_LEFT - clanW);
-        Component second = Component.text(shift(offset) + pad(CONTENT_LEFT), GLYPHS)
+        int clanTail = Math.max(0, panelWidth - contentLeft - clanW);
+        Component second = Component.text(shift(offset) + pad(contentLeft), GLYPHS)
                 .append(Component.text(String.valueOf(clanShield) + pad(COLUMN_GAP), GLYPHS))
                 .append(Component.text(toGlyphs(clanName, texty), GLYPHS))
                 .append(Component.text(pad(COLUMN_GAP) + clanXp, GLYPHS))
@@ -407,8 +420,8 @@ final class HudText {
                 + MONEY_GEM + pad(ICON_GAP) + profile.nanogems() + pad(COLUMN_GAP)
                 + MONEY_BATTLE + pad(ICON_GAP) + profile.battlePoints();
         int moneyW = width(money);
-        int moneyTail = Math.max(0, panelWidth - CONTENT_LEFT - moneyW);
-        Component third = Component.text(shift(offset) + pad(CONTENT_LEFT) + money
+        int moneyTail = Math.max(0, panelWidth - contentLeft - moneyW);
+        Component third = Component.text(shift(offset) + pad(contentLeft) + money
                 + pad(moneyTail), GLYPHS);
 
         return new Component[]{first, second, third};

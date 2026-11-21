@@ -7,7 +7,7 @@
     рамку панели;
   * значки хотбара (сердце, меч, щит) — ячейки 20x20, как слот при
     масштабе интерфейса 2;
-  * в центре хотбара — одна пустая стальная ромб-рамка 24x24;
+  * в центре хотбара — одна крупная пустая железная ромб-рамка 32x32;
   * ромбы уровней игрока и щиты уровней клана — ячейки 24x24 (номер уже
     нарисован на них кодом, без «lvl»);
   * панели классов — 256x96 целиком, одним глифом (шире 256 нельзя:
@@ -42,7 +42,7 @@ OUT = ROOT / "tools" / "pack_assets"
 
 ICON = 24          # ячейка значка панели: height=24 в шрифте
 HOTBAR = 20        # ячейка значка хотбара: height=20, как ячейка хотбара
-ABILITY_FRAME = 24 # ромб-рамка способностей немного крупнее слота
+ABILITY_FRAME = 32 # крупная железная рамка центрального ромба
 # Ячейка панели класса. Высота не исходные 64, а 96: три строки HUD
 # занимают 70 px, и панель с запасом накрывает их, а заодно выше и
 # представительнее (игрок просил панель повыше, а не пошире — ширину 256
@@ -123,20 +123,27 @@ def diamond_frame() -> Image.Image:
     image = Image.new("RGBA", (size, size), (0, 0, 0, 0))
     draw = ImageDraw.Draw(image)
     shadow = [(x, min(hi, y + 1)) for x, y in points(0)]
-    draw.polygon(shadow, fill=(3, 5, 8, 220))
-    draw.polygon(points(0), fill=(10, 13, 17, 255))
-    draw.polygon(points(1), fill=(105, 117, 130, 255))
-    draw.polygon(points(2), fill=(43, 53, 64, 255))
-    draw.polygon(points(3), fill=(21, 28, 36, 255))
-    # Transparent center leaves the middle slot visible and ready for art.
-    draw.polygon(points(4), fill=(0, 0, 0, 0))
-    # Beveled silver-blue highlights on the upper-left and a darker lower-right edge.
-    draw.line([(center, 1), (2, center - 1), (2, center), (center, hi - 1)],
-              fill=(166, 177, 188, 255), width=1)
-    draw.line([(center, hi - 1), (hi - 1, center), (hi - 2, center - 1)],
-              fill=(37, 46, 57, 255), width=1)
-    draw.line([(center, 4), (4, center), (center, hi - 4),
-               (hi - 4, center)], fill=(58, 70, 82, 255), width=1)
+    draw.polygon(shadow, fill=(6, 8, 10, 235))
+    draw.polygon(points(0), fill=(24, 29, 32, 255))
+    draw.polygon(points(1), fill=(174, 182, 184, 255))
+    draw.polygon(points(2), fill=(75, 85, 89, 255))
+    draw.polygon(points(3), fill=(132, 142, 145, 255))
+    draw.polygon(points(4), fill=(47, 57, 62, 255))
+    # Leave the middle transparent for the future ability image or item icon.
+    draw.polygon(points(5), fill=(0, 0, 0, 0))
+    # Broad forged-steel bevel: bright upper-left edge and dark lower-right edge.
+    draw.line([(center, 1), (1, center - 1), (1, center),
+               (center, hi - 1)], fill=(222, 226, 225, 255), width=1)
+    draw.line([(center, hi - 1), (hi - 1, center),
+               (hi - 2, center - 1)], fill=(35, 42, 45, 255), width=2)
+    draw.line([(center, 5), (5, center - 1), (5, center),
+               (center, hi - 5)], fill=(181, 190, 192, 255), width=1)
+    draw.line([(center, hi - 5), (hi - 5, center),
+               (hi - 6, center - 1)], fill=(52, 61, 65, 255), width=1)
+    # Four tiny iron rivets make the frame read as forged metal, not a thin outline.
+    for x, y in ((center, 2), (hi - 2, center), (center, hi - 2), (2, center)):
+        draw.rectangle((x - 1, y - 1, x, y), fill=(42, 49, 52, 255))
+        draw.point((x - 1, y - 1), fill=(230, 233, 231, 255))
     return image
 
 

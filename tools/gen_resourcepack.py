@@ -55,8 +55,9 @@ ICON_HEIGHT = 14
 ICON_ASCENT = 9
 # Значки групп по краям — ячейки 20x20; центральная пустая рамка — 24x24.
 HOTBAR_HEIGHT = 20
-HOTBAR_CENTER_HEIGHT = 24
-HOTBAR_CENTER_BASELINE_OFFSET = 34  # опускаем рамку к центру слота хотбара
+HOTBAR_LEFT_ICON_DRAW_SIZE = 14
+HOTBAR_CENTER_HEIGHT = 32
+HOTBAR_CENTER_BASELINE_OFFSET = 30  # центрируем крупный ромб в слоте хотбара
 # Ascent 0: значки опущены на 13 px ниже, вплотную к ячейкам хотбара
 # (игрок просил прижать строку к ячейкам). Цифры хотбара идут отдельными
 # глифами с тем же центром (HOTBAR_DIGIT_ASCENT), чтобы не отрывались от
@@ -305,14 +306,26 @@ def hotbar_icon_atlas_data() -> bytes:
     ability_w, ability_h, abilities = select_atlas_cells(
         (ASSETS / "hud_ability.png").read_bytes(), len(ABILITY_CHARS),
         tuple(range(len(ABILITY_CHARS))))
-    if gear_h != ability_h:
-        raise ValueError("иконки хотбара должны иметь одинаковую высоту ячейки")
+    if gear_h != ability_h or gear_w % len(gear_cols) or ability_w % len(ABILITY_CHARS):
+        raise ValueError("иконки хотбара должны иметь одинаковую сетку ячеек")
+    gear_cell = gear_w // len(gear_cols)
+    ability_cell = ability_w // len(ABILITY_CHARS)
+    if gear_cell != HOTBAR_HEIGHT or ability_cell != HOTBAR_HEIGHT:
+        raise ValueError("ячейки левых и правых значков должны быть 20x20")
     width = gear_w + ability_w
     pixels = bytearray(width * gear_h * 4)
-    for y in range(gear_h):
-        row_bytes = gear_w * 4
-        pixels[y * width * 4:y * width * 4 + row_bytes] = \
-            gear[y * gear_w * 4:(y + 1) * gear_w * 4]
+    # Scale only the left-side pictograms down; leave right square icons intact.
+    draw_size = HOTBAR_LEFT_ICON_DRAW_SIZE
+    margin = (HOTBAR_HEIGHT - draw_size) // 2
+    for index in range(len(gear_cols)):
+        for y in range(draw_size):
+            source_y = y * gear_cell // draw_size
+            for x in range(draw_size):
+                source_x = x * gear_cell // draw_size
+                src = (source_y * gear_w + index * gear_cell + source_x) * 4
+                dst = ((y + margin) * width + index * gear_cell + x + margin) * 4
+                pixels[dst:dst + 4] = gear[src:src + 4]
+    for y in range(ability_h):
         start = (y * width + gear_w) * 4
         pixels[start:start + ability_w * 4] = \
             abilities[y * ability_w * 4:(y + 1) * ability_w * 4]

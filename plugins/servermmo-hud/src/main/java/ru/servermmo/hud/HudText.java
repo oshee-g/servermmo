@@ -231,7 +231,12 @@ final class HudText {
             int hotbarLeftStart = HOTBAR_LEFT_START_INDEX
                     + variant * HOTBAR_LEFT_VARIANT_GLYPH_COUNT;
             for (int i = 0; i < HOTBAR_LEFT_GEAR_COUNT; i++) {
-                map.put(puaCodePoint(hotbarLeftStart + HOTBAR_LEFT_GEAR_OFFSET + i), 20);
+                int advance = switch (i) {
+                    case 0 -> 18;
+                    case 1 -> 16;
+                    default -> 17;
+                };
+                map.put(puaCodePoint(hotbarLeftStart + HOTBAR_LEFT_GEAR_OFFSET + i), advance);
             }
             for (int i = 0; i < HOTBAR_LEFT_DIGIT_COUNT; i++) {
                 map.put(puaCodePoint(hotbarLeftStart + HOTBAR_LEFT_DIGIT_OFFSET + i),

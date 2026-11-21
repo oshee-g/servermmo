@@ -60,6 +60,10 @@ public final class HudSettings {
     private int panelOffsetY;
     private int textOffsetY;
     private int textOffsetX;
+    private int hotbarLeftOffsetX;
+    private int hotbarLeftOffsetY;
+    private int hotbarRightOffsetX;
+    private int hotbarRightOffsetY;
     private long updateIntervalTicks;
     private int hotbarAnchorX;
     private long damageHoldMillis;
@@ -81,6 +85,10 @@ public final class HudSettings {
         settings.panelOffsetY = clampOffsetY(config.getInt("hud.panel-offset-y", 0));
         settings.textOffsetY = clampTextY(config.getInt("hud.text-offset-y", 0));
         settings.textOffsetX = clampTextX(config.getInt("hud.text-offset-x", 0));
+        settings.hotbarLeftOffsetX = clampHotbarOffset(config.getInt("hud.hotbar-left-offset-x", 0));
+        settings.hotbarLeftOffsetY = clampHotbarOffset(config.getInt("hud.hotbar-left-offset-y", 0));
+        settings.hotbarRightOffsetX = clampHotbarOffset(config.getInt("hud.hotbar-right-offset-x", 0));
+        settings.hotbarRightOffsetY = clampHotbarOffset(config.getInt("hud.hotbar-right-offset-y", 0));
         settings.updateIntervalTicks = Math.max(1L, config.getLong("hud.update-interval-ticks", 2L));
         settings.hotbarAnchorX = config.getInt("hud.hotbar-anchor-x", DEFAULT_HOTBAR_ANCHOR_X);
         settings.damageHoldMillis = Math.max(0L, config.getLong("hud.damage-hold-seconds", 5L)) * 1000L;
@@ -133,6 +141,22 @@ public final class HudSettings {
         return textOffsetX;
     }
 
+    public int hotbarLeftOffsetX() {
+        return hotbarLeftOffsetX;
+    }
+
+    public int hotbarLeftOffsetY() {
+        return hotbarLeftOffsetY;
+    }
+
+    public int hotbarRightOffsetX() {
+        return hotbarRightOffsetX;
+    }
+
+    public int hotbarRightOffsetY() {
+        return hotbarRightOffsetY;
+    }
+
     public void screenWidth(int value) {
         this.screenWidth = Math.max(MIN_SCALED_WIDTH, value);
     }
@@ -159,6 +183,22 @@ public final class HudSettings {
 
     public void textOffsetX(int value) {
         this.textOffsetX = clampTextX(value);
+    }
+
+    public void hotbarLeftOffsetX(int value) {
+        this.hotbarLeftOffsetX = clampHotbarOffset(value);
+    }
+
+    public void hotbarLeftOffsetY(int value) {
+        this.hotbarLeftOffsetY = clampHotbarOffset(value);
+    }
+
+    public void hotbarRightOffsetX(int value) {
+        this.hotbarRightOffsetX = clampHotbarOffset(value);
+    }
+
+    public void hotbarRightOffsetY(int value) {
+        this.hotbarRightOffsetY = clampHotbarOffset(value);
     }
 
     public long updateIntervalTicks() {
@@ -247,6 +287,10 @@ public final class HudSettings {
         this.panelOffsetY = 0;
         this.textOffsetY = 0;
         this.textOffsetX = 0;
+        this.hotbarLeftOffsetX = 0;
+        this.hotbarLeftOffsetY = 0;
+        this.hotbarRightOffsetX = 0;
+        this.hotbarRightOffsetY = 0;
         this.hotbarAnchorX = DEFAULT_HOTBAR_ANCHOR_X;
     }
 
@@ -273,5 +317,10 @@ public final class HudSettings {
     private static int clampTextX(int value) {
         return Math.max(-HudText.TEXT_X_OFFSET_RANGE,
                 Math.min(HudText.TEXT_X_OFFSET_RANGE, value));
+    }
+
+    private static int clampHotbarOffset(int value) {
+        return Math.max(-HudText.ICON_OFFSET_RANGE,
+                Math.min(HudText.ICON_OFFSET_RANGE, value));
     }
 }

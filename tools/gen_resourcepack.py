@@ -66,6 +66,8 @@ HOTBAR_ASCENT = 0
 # Цифры хотбара: тот же атлас hud_digits.png, но ascent -6 — центр цифры
 # на той же высоте, что и центр значка 20 px (ascent 0): -(-6) + 4 = 10.
 HOTBAR_DIGIT_ASCENT = -6
+FADE_STEPS = 5
+HOTBAR_VARIANT_HEIGHT = 128
 # Панель класса — подложка под все четыре строки HUD, ячейка 256x96 (высота
 # 96, а не исходные 64: расчёт блока строк см. в PANEL в
 # tools/build_icon_atlases.py — нужно накрыть 77 px и дать панели запас по
@@ -148,9 +150,28 @@ PANEL_TOTAL = VARIANT_COUNT * PANEL_VARIANT_GLYPH_COUNT
 TEXT_START_INDEX = PANEL_START_INDEX + PANEL_TOTAL
 TEXT_VARIANT_TOTAL = VARIANT_COUNT * len(TEXT_CHARS)
 TEXT_SMALL_START_INDEX = TEXT_START_INDEX + TEXT_VARIANT_TOTAL
+TEXT_VARIANT_END_INDEX = TEXT_SMALL_START_INDEX + TEXT_VARIANT_TOTAL
+HOTBAR_LEFT_GEAR_COUNT = 3
+HOTBAR_LEFT_DIGIT_COUNT = 10
+HOTBAR_LEFT_GEAR_OFFSET = 0
+HOTBAR_LEFT_DIGIT_OFFSET = HOTBAR_LEFT_GEAR_COUNT
+HOTBAR_LEFT_FADE_OFFSET = HOTBAR_LEFT_GEAR_COUNT + HOTBAR_LEFT_DIGIT_COUNT
+HOTBAR_LEFT_VARIANT_GLYPH_COUNT = (
+    HOTBAR_LEFT_FADE_OFFSET + FADE_STEPS * 12)
+HOTBAR_LEFT_START_INDEX = TEXT_VARIANT_END_INDEX
+HOTBAR_LEFT_TOTAL = VARIANT_COUNT * HOTBAR_LEFT_VARIANT_GLYPH_COUNT
+HOTBAR_RIGHT_START_INDEX = HOTBAR_LEFT_START_INDEX + HOTBAR_LEFT_TOTAL
+HOTBAR_RIGHT_VARIANT_GLYPH_COUNT = len(ABILITY_CHARS)
+HOTBAR_RIGHT_TOTAL = VARIANT_COUNT * HOTBAR_RIGHT_VARIANT_GLYPH_COUNT
+PUA_TOTAL_USED = HOTBAR_RIGHT_START_INDEX + HOTBAR_RIGHT_TOTAL
+if PUA_TOTAL_USED > 2 * PUA_A_COUNT:
+    raise ValueError(f"HUD-глифы требуют {PUA_TOTAL_USED} PUA-кодов, доступно "
+                     f"{2 * PUA_A_COUNT}")
 
 
 def pua_codepoint(index: int) -> int:
+    if index < 0 or index >= 2 * PUA_A_COUNT:
+        raise ValueError(f"PUA-индекс вне диапазона: {index}")
     if index < PUA_A_COUNT:
         return PUA_START + index
     return 0x100000 + index - PUA_A_COUNT
@@ -256,6 +277,24 @@ def padded_digit_atlas(data: bytes) -> tuple[int, int, bytes]:
     return out_width, out_height, bytes(target)
 
 
+def select_atlas_cells(data: bytes, cols: int, indices: tuple[int, ...]) -> tuple[int, int, bytes]:
+    """Copy selected cells into a one-row atlas, preserving their pixel art."""
+    width, height, source = png_rgba(data)
+    if width % cols:
+        raise ValueError(f"атлас {width}x{height} не делится на {cols} столбцов")
+    cell_width, cell_height = width // cols, height
+    if any(index < 0 or index >= cols for index in indices):
+        raise ValueError(f"ячейка вне диапазона 0..{cols - 1}: {indices}")
+    output_width = cell_width * len(indices)
+    target = bytearray(output_width * cell_height * 4)
+    for out_col, source_col in enumerate(indices):
+        for y in range(cell_height):
+            src = (y * width + source_col * cell_width) * 4
+            dst = (y * output_width + out_col * cell_width) * 4
+            target[dst:dst + cell_width * 4] = source[src:src + cell_width * 4]
+    return output_width, cell_height, bytes(target)
+
+
 def padded_atlas(data: bytes, cols: int, rows: int, target_cell_height: int,
                  draw_height: int | None = None) -> tuple[int, int, bytes]:
     """Pad cells for large ascents, preserving the provider's original scale."""
@@ -356,9 +395,6 @@ def build_space_advances() -> dict:
 
 # Ступени затухания индикатора урона: ступень L занимает кодовые точки
 # 0xE200 + L*16 .. +11 (цифры, минус, сердце). Синхронно с build_hud_assets.py.
-FADE_STEPS = 5
-
-
 def fade_chars(step: int) -> str:
     base = 0xE200 + step * 16
     return "".join(chr(base + i) for i in range(12))
@@ -477,6 +513,57 @@ def build_font_json() -> dict:
             *[
                 {
                     "type": "bitmap",
+                    "file": "servermmo:font/hud_hotbar_left_icons_offset.png",
+                    "ascent": HOTBAR_ASCENT - offset,
+                    "height": HOTBAR_VARIANT_HEIGHT,
+                    "chars": [pua_chars(HOTBAR_LEFT_START_INDEX
+                                         + variant_index(offset) * HOTBAR_LEFT_VARIANT_GLYPH_COUNT
+                                         + HOTBAR_LEFT_GEAR_OFFSET,
+                                         HOTBAR_LEFT_GEAR_COUNT)],
+                }
+                for offset in range(-ICON_OFFSET_RANGE, ICON_OFFSET_RANGE + 1)
+            ],
+            *[
+                {
+                    "type": "bitmap",
+                    "file": "servermmo:font/hud_hotbar_digits_offset.png",
+                    "ascent": HOTBAR_DIGIT_ASCENT - offset,
+                    "height": HOTBAR_VARIANT_HEIGHT,
+                    "chars": [pua_chars(HOTBAR_LEFT_START_INDEX
+                                         + variant_index(offset) * HOTBAR_LEFT_VARIANT_GLYPH_COUNT
+                                         + HOTBAR_LEFT_DIGIT_OFFSET,
+                                         HOTBAR_LEFT_DIGIT_COUNT)],
+                }
+                for offset in range(-ICON_OFFSET_RANGE, ICON_OFFSET_RANGE + 1)
+            ],
+            *[
+                {
+                    "type": "bitmap",
+                    "file": f"servermmo:font/hud_fade{step}_hotbar_offset.png",
+                    "ascent": HOTBAR_DIGIT_ASCENT - offset,
+                    "height": HOTBAR_VARIANT_HEIGHT,
+                    "chars": [pua_chars(HOTBAR_LEFT_START_INDEX
+                                         + variant_index(offset) * HOTBAR_LEFT_VARIANT_GLYPH_COUNT
+                                         + HOTBAR_LEFT_FADE_OFFSET + step * 12, 12)],
+                }
+                for offset in range(-ICON_OFFSET_RANGE, ICON_OFFSET_RANGE + 1)
+                for step in range(FADE_STEPS)
+            ],
+            *[
+                {
+                    "type": "bitmap",
+                    "file": "servermmo:font/hud_ability_offset.png",
+                    "ascent": HOTBAR_ASCENT - offset,
+                    "height": HOTBAR_VARIANT_HEIGHT,
+                    "chars": [pua_chars(HOTBAR_RIGHT_START_INDEX
+                                         + variant_index(offset) * HOTBAR_RIGHT_VARIANT_GLYPH_COUNT,
+                                         HOTBAR_RIGHT_VARIANT_GLYPH_COUNT)],
+                }
+                for offset in range(-ICON_OFFSET_RANGE, ICON_OFFSET_RANGE + 1)
+            ],
+            *[
+                {
+                    "type": "bitmap",
                     "file": f"servermmo:font/{stem}_offset.png",
                     "ascent": ascent - texty,
                     "height": INLINE_VARIANT_HEIGHT,
@@ -573,11 +660,16 @@ def main() -> int:
 
     # У bitmap-провайдера ascent не может быть больше height. Расширяем
     # прозрачные ячейки вверх по запасу высоты, сохраняя исходный арт 1:1.
+    def write_offset_data(data: bytes, target: Path, cols: int,
+                          rows: int, cell_height: int, draw_height: int) -> None:
+        width, height, pixels = padded_atlas(
+            data, cols, rows, cell_height, draw_height)
+        write_rgba_png(target, width, height, pixels)
+
     def write_offset_atlas(source: Path, target: Path, cols: int,
                            rows: int, cell_height: int, draw_height: int) -> None:
-        width, height, pixels = padded_atlas(
-            source.read_bytes(), cols, rows, cell_height, draw_height)
-        write_rgba_png(target, width, height, pixels)
+        write_offset_data(source.read_bytes(), target, cols, rows,
+                          cell_height, draw_height)
 
     for stem, _glyphs, cols, rows, draw_h, _ascent in INLINE_GLYPHS:
         write_offset_atlas(textures / f"{stem}.png",
@@ -591,6 +683,26 @@ def main() -> int:
     write_offset_atlas(textures / "hud_panel.png",
                        textures / "hud_panel_offset.png",
                        PANEL_COLS, 5, PANEL_VARIANT_HEIGHT, PANEL_HEIGHT)
+
+    hotbar_icons_width, hotbar_icons_height, hotbar_icons = select_atlas_cells(
+        (ASSETS / "hud_gear.png").read_bytes(), len(GEAR_CHARS), (0, 1, 9))
+    hotbar_digits_width, hotbar_digits_height, hotbar_digits = select_atlas_cells(
+        (ASSETS / "hud_digits.png").read_bytes(), len(DIGIT_CHARS), tuple(range(10)))
+    write_offset_data(encode_rgba_png(hotbar_icons_width, hotbar_icons_height,
+                                      hotbar_icons),
+                      textures / "hud_hotbar_left_icons_offset.png",
+                      HOTBAR_LEFT_GEAR_COUNT, 1, HOTBAR_VARIANT_HEIGHT, HOTBAR_HEIGHT)
+    write_offset_data(encode_rgba_png(hotbar_digits_width, hotbar_digits_height,
+                                      hotbar_digits),
+                      textures / "hud_hotbar_digits_offset.png",
+                      HOTBAR_LEFT_DIGIT_COUNT, 1, HOTBAR_VARIANT_HEIGHT, GLYPH_HEIGHT)
+    write_offset_atlas(textures / "hud_ability.png",
+                       textures / "hud_ability_offset.png",
+                       len(ABILITY_CHARS), 1, HOTBAR_VARIANT_HEIGHT, HOTBAR_HEIGHT)
+    for step in range(FADE_STEPS):
+        write_offset_atlas(textures / f"hud_fade{step}.png",
+                           textures / f"hud_fade{step}_hotbar_offset.png",
+                           12, 1, HOTBAR_VARIANT_HEIGHT, GLYPH_HEIGHT)
 
     # --- ванильные сердца и полосы -----------------------------------------
     gui = PACK / "assets" / "minecraft" / "textures" / "gui"

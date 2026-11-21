@@ -61,6 +61,10 @@ final class HudCommand implements CommandExecutor {
             case "offsety" -> setOffsetY(sender, args);
             case "texty" -> setTextY(sender, args);
             case "textx" -> setTextX(sender, args);
+            case "hotbarleftx" -> setHotbarOffset(sender, args, true, true);
+            case "hotbarlefty" -> setHotbarOffset(sender, args, true, false);
+            case "hotbarrightx" -> setHotbarOffset(sender, args, false, true);
+            case "hotbarrighty" -> setHotbarOffset(sender, args, false, false);
             case "anchorx", "anchor", "якорь" -> setAnchor(sender, args);
             default -> {
                 help(sender);
@@ -346,6 +350,48 @@ final class HudCommand implements CommandExecutor {
         return true;
     }
 
+    private boolean setHotbarOffset(CommandSender sender, String[] args,
+                                    boolean left, boolean horizontal) {
+        String commandName = left ? "hotbarleft" : "hotbarright";
+        commandName += horizontal ? "x" : "y";
+        if (args.length < 2) {
+            sender.sendMessage(Component.text(
+                    "Укажите сдвиг: /hud " + commandName
+                            + " <пиксели> (от -100 до 100, положительное — "
+                            + (horizontal ? "вправо)" : "вниз)"),
+                    NamedTextColor.YELLOW));
+            return true;
+        }
+        Integer value = parseInt(args[1]);
+        if (value == null) {
+            sender.sendMessage(Component.text("Нужно целое число пикселей",
+                    NamedTextColor.RED));
+            return true;
+        }
+        if (!sender.hasPermission("servermmo.hud")) {
+            sender.sendMessage(Component.text("Недостаточно прав", NamedTextColor.RED));
+            return true;
+        }
+        if (left && horizontal) {
+            settings.hotbarLeftOffsetX(value);
+        } else if (left) {
+            settings.hotbarLeftOffsetY(value);
+        } else if (horizontal) {
+            settings.hotbarRightOffsetX(value);
+        } else {
+            settings.hotbarRightOffsetY(value);
+        }
+        int applied = left
+                ? (horizontal ? settings.hotbarLeftOffsetX() : settings.hotbarLeftOffsetY())
+                : (horizontal ? settings.hotbarRightOffsetX() : settings.hotbarRightOffsetY());
+        String side = left ? "левой части хотбара" : "правой части хотбара";
+        String direction = horizontal ? "по горизонтали" : "по вертикали";
+        applyAll(sender, "Готово: сдвиг " + side + " " + direction + " — "
+                + applied + " px (положительное — "
+                + (horizontal ? "вправо)" : "вниз)"));
+        return true;
+    }
+
     /** {@code /hud anchorx <пиксели>} — левый край строки хотбара. */
     private boolean setAnchor(CommandSender sender, String[] args) {
         if (args.length < 2) {
@@ -453,6 +499,12 @@ final class HudCommand implements CommandExecutor {
                 "/hud textx <пиксели> — сдвиг текстового блока влево/вправо "
                         + "(-100..100; эмблема остаётся на месте)", NamedTextColor.YELLOW));
         sender.sendMessage(Component.text(
+                "/hud hotbarleftx|hotbarlefty <пиксели> — сдвиг левой группы "
+                        + "индикаторов хотбара по X/Y (-100..100)", NamedTextColor.YELLOW));
+        sender.sendMessage(Component.text(
+                "/hud hotbarrightx|hotbarrighty <пиксели> — сдвиг правой группы "
+                        + "способностей по X/Y (-100..100)", NamedTextColor.YELLOW));
+        sender.sendMessage(Component.text(
                 "/hud anchorx <пиксели> — левый край строки хотбара (-91)",
                 NamedTextColor.YELLOW));
         sender.sendMessage(Component.text(
@@ -533,6 +585,10 @@ final class HudCommand implements CommandExecutor {
         plugin.getConfig().set("hud.panel-offset-y", settings.panelOffsetY());
         plugin.getConfig().set("hud.text-offset-y", settings.textOffsetY());
         plugin.getConfig().set("hud.text-offset-x", settings.textOffsetX());
+        plugin.getConfig().set("hud.hotbar-left-offset-x", settings.hotbarLeftOffsetX());
+        plugin.getConfig().set("hud.hotbar-left-offset-y", settings.hotbarLeftOffsetY());
+        plugin.getConfig().set("hud.hotbar-right-offset-x", settings.hotbarRightOffsetX());
+        plugin.getConfig().set("hud.hotbar-right-offset-y", settings.hotbarRightOffsetY());
         plugin.getConfig().set("hud.hotbar-anchor-x", settings.hotbarAnchorX());
         plugin.saveConfig();
         for (Player player : Bukkit.getOnlinePlayers()) {
@@ -551,6 +607,8 @@ final class HudCommand implements CommandExecutor {
 
     /** Подсказка аргументов для tab-complete. */
     public static List<String> keys() {
-        return List.of("scale", "screen", "margin", "offsetx", "offsety", "textx", "texty", "anchorx", "debug", "reset");
+        return List.of("scale", "screen", "margin", "offsetx", "offsety", "textx", "texty",
+                "hotbarleftx", "hotbarlefty", "hotbarrightx", "hotbarrighty",
+                "anchorx", "debug", "reset");
     }
 }

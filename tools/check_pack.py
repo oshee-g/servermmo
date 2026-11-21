@@ -26,7 +26,8 @@ from pathlib import Path
 
 from png_io import glyph_advance_grid, png_rgba
 from gen_resourcepack import (
-    INLINE_TOTAL, PANEL_TOTAL, TEXT_VARIANT_TOTAL, pua_codepoint,
+    HOTBAR_LEFT_TOTAL, HOTBAR_RIGHT_TOTAL, INLINE_TOTAL, PANEL_TOTAL,
+    TEXT_VARIANT_TOTAL, pua_codepoint,
 )
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -135,8 +136,9 @@ def check_codepoint_grid(font: dict, problems: list[str]) -> None:
 
 
 def check_texty_glyphs(font: dict, problems: list[str]) -> None:
-    """Проверяет все 201 варианта панели, текста и малых inline-глифов."""
-    total = INLINE_TOTAL + PANEL_TOTAL + 2 * TEXT_VARIANT_TOTAL
+    """Проверяет все 201 варианта панелей, текста и обеих сторон хотбара."""
+    total = (INLINE_TOTAL + PANEL_TOTAL + 2 * TEXT_VARIANT_TOTAL
+             + HOTBAR_LEFT_TOTAL + HOTBAR_RIGHT_TOTAL)
     expected = {pua_codepoint(index) for index in range(total)}
     found = {
         ord(char)
@@ -156,7 +158,8 @@ def check_texty_glyphs(font: dict, problems: list[str]) -> None:
             problems.append(f"{file}: варианты панели должны использовать ячейки 160 px")
         if file.endswith("_offset.png") and any(
                 stem in file for stem in ("hud_text", "hud_digits_inline", "hud_money",
-                                          "hud_level", "hud_clan")):
+                                          "hud_level", "hud_clan", "hud_hotbar",
+                                          "hud_fade", "hud_ability")):
             if provider.get("height") != 128:
                 problems.append(f"{file}: варианты текста/значков должны использовать height=128")
     space = next((provider.get("advances", {}) for provider in font.get("providers", [])

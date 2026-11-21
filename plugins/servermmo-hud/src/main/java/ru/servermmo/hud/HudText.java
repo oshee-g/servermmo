@@ -121,6 +121,22 @@ final class HudText {
 
     /** Ступеней затухания индикатора урона (0 - полная яркость). */
     static final int FADE_STEPS = 5;
+    /** supplementary-PUA layout synchronized with tools/gen_resourcepack.py. */
+    private static final int HOTBAR_LEFT_GEAR_COUNT = 3;
+    private static final int HOTBAR_LEFT_DIGIT_COUNT = 10;
+    private static final int HOTBAR_LEFT_GEAR_OFFSET = 0;
+    private static final int HOTBAR_LEFT_DIGIT_OFFSET = HOTBAR_LEFT_GEAR_COUNT;
+    private static final int HOTBAR_LEFT_FADE_OFFSET =
+            HOTBAR_LEFT_GEAR_COUNT + HOTBAR_LEFT_DIGIT_COUNT;
+    private static final int HOTBAR_LEFT_VARIANT_GLYPH_COUNT =
+            HOTBAR_LEFT_FADE_OFFSET + FADE_STEPS * 12;
+    private static final int HOTBAR_LEFT_START_INDEX =
+            TEXT_SMALL_START_INDEX + TEXT_VARIANT_TOTAL;
+    private static final int HOTBAR_LEFT_VARIANT_TOTAL =
+            VARIANT_COUNT * HOTBAR_LEFT_VARIANT_GLYPH_COUNT;
+    private static final int HOTBAR_RIGHT_START_INDEX =
+            HOTBAR_LEFT_START_INDEX + HOTBAR_LEFT_VARIANT_TOTAL;
+    private static final int HOTBAR_RIGHT_VARIANT_GLYPH_COUNT = 8;
     /** База кодовых точек ступеней: ступень L - FADE_BASE + L*16 + позиция. */
     private static final int FADE_BASE = 0xE200;
     /**
@@ -206,6 +222,28 @@ final class HudText {
             for (int i = 0; i < TEXT_CHARS.length(); i++) {
                 map.put(puaCodePoint(textStart + i), 16);
                 map.put(puaCodePoint(smallStart + i), 8);
+            }
+            int hotbarLeftStart = HOTBAR_LEFT_START_INDEX
+                    + variant * HOTBAR_LEFT_VARIANT_GLYPH_COUNT;
+            for (int i = 0; i < HOTBAR_LEFT_GEAR_COUNT; i++) {
+                map.put(puaCodePoint(hotbarLeftStart + HOTBAR_LEFT_GEAR_OFFSET + i), 20);
+            }
+            for (int i = 0; i < HOTBAR_LEFT_DIGIT_COUNT; i++) {
+                map.put(puaCodePoint(hotbarLeftStart + HOTBAR_LEFT_DIGIT_OFFSET + i),
+                        i == 1 ? 6 : 7);
+            }
+            for (int step = 0; step < FADE_STEPS; step++) {
+                int fadeStart = hotbarLeftStart + HOTBAR_LEFT_FADE_OFFSET + step * 12;
+                for (int digit = 0; digit <= 9; digit++) {
+                    map.put(puaCodePoint(fadeStart + digit), digit == 1 ? 6 : 7);
+                }
+                map.put(puaCodePoint(fadeStart + 10), 7);
+                map.put(puaCodePoint(fadeStart + 11), 8);
+            }
+            int hotbarRightStart = HOTBAR_RIGHT_START_INDEX
+                    + variant * HOTBAR_RIGHT_VARIANT_GLYPH_COUNT;
+            for (int i = 0; i < HOTBAR_RIGHT_VARIANT_GLYPH_COUNT; i++) {
+                map.put(puaCodePoint(hotbarRightStart + i), 20);
             }
         }
         for (int step = 0; step < FADE_STEPS; step++) {
@@ -514,53 +552,71 @@ final class HudText {
      * @param layout геометрия под экран игрока
      */
     Component hotbar(long health, long damage, long armor, long lastDamage, int fadeStep,
-                     int anchorX, int abilitySlots, HudLayout layout) {
-        String body = "" + GEAR_HEART + pad(ICON_GAP) + hotbarDigits(health) + pad(COLUMN_GAP)
-                + GEAR_SWORD + pad(ICON_GAP) + hotbarDigits(damage) + pad(COLUMN_GAP)
-                + GEAR_SHIELD + pad(ICON_GAP) + hotbarDigits(armor);
+                     int anchorX, int abilitySlots, HudLayout layout,
+                     int leftOffsetX, int leftOffsetY,
+                     int rightOffsetX, int rightOffsetY) {
+        int leftVariant = variantIndex(leftOffsetY);
+        String body = "" + hotbarLeftGlyph(GEAR_HEART, leftVariant)
+                + pad(ICON_GAP) + hotbarDigits(health, leftVariant) + pad(COLUMN_GAP)
+                + hotbarLeftGlyph(GEAR_SWORD, leftVariant)
+                + pad(ICON_GAP) + hotbarDigits(damage, leftVariant) + pad(COLUMN_GAP)
+                + hotbarLeftGlyph(GEAR_SHIELD, leftVariant)
+                + pad(ICON_GAP) + hotbarDigits(armor, leftVariant);
         if (fadeStep >= 0) {
-            body += pad(COLUMN_GAP) + indicator(lastDamage, fadeStep);
+            body += pad(COLUMN_GAP) + indicator(lastDamage, fadeStep, leftVariant);
         }
-        // Якорь удваивается: сдвиг двигает строку лишь наполовину своей
-        // величины, потому что клиент центрует строку по её суммарной ширине.
+        // Компенсирующие сдвиги сохраняют центр всей строки: leftX двигает
+        // только статистику, а rightX — только значки способностей.
         StringBuilder line = new StringBuilder(
                 shift(HudLayout.anchoredShift(anchorX, width(body), layout.interfaceWidth())));
-        line.append(body);
+        line.append(shift(leftOffsetX)).append(body).append(shift(-leftOffsetX));
         // Правый край хотбара - это +91 от центра; способности встают за ним.
         int slots = Math.max(0, Math.min(8, abilitySlots));
         if (slots > 0) {
             int bodyEnd = anchorX + width(body);
             line.append(pad(Math.max(0, 91 + 6 - bodyEnd)));
+            line.append(shift(rightOffsetX));
+            int rightVariant = variantIndex(rightOffsetY);
             for (int i = 0; i < slots; i++) {
-                line.append((char) (ABILITY_BASE + i));
+                int glyph = puaCodePoint(HOTBAR_RIGHT_START_INDEX
+                        + rightVariant * HOTBAR_RIGHT_VARIANT_GLYPH_COUNT + i);
+                line.appendCodePoint(glyph);
             }
+            line.append(shift(-rightOffsetX));
         }
         return Component.text(line.toString(), GLYPHS);
     }
 
     /** «-25♥» глифами ступени затухания (0 - полная яркость). */
-    String indicator(long amount, int fadeStep) {
+    String indicator(long amount, int fadeStep, int leftVariant) {
         int step = Math.max(0, Math.min(FADE_STEPS - 1, fadeStep));
-        int base = HOTBAR_FADE_BASE + step * 16;
+        int start = HOTBAR_LEFT_START_INDEX + leftVariant * HOTBAR_LEFT_VARIANT_GLYPH_COUNT
+                + HOTBAR_LEFT_FADE_OFFSET + step * 12;
         StringBuilder builder = new StringBuilder();
-        builder.append((char) (base + 10)); // минус
+        builder.appendCodePoint(puaCodePoint(start + 10)); // минус
         String digits = Long.toString(Math.max(0L, amount));
         for (int i = 0; i < digits.length(); i++) {
-            builder.append((char) (base + (digits.charAt(i) - '0')));
+            builder.appendCodePoint(puaCodePoint(start + digits.charAt(i) - '0'));
         }
-        builder.append((char) (base + 11)); // сердце
+        builder.appendCodePoint(puaCodePoint(start + 11)); // сердце
         return builder.toString();
     }
 
-    /**
-     * Число глифами цифр хотбара (те же PNG, что и цифры панели, но ниже —
-     * по центру опущенных значков). Панельные цифры не трогаем.
-     */
-    String hotbarDigits(long value) {
+    private int hotbarLeftGlyph(char glyph, int variant) {
+        int index = glyph == GEAR_HEART ? 0 : glyph == GEAR_SWORD ? 1 : 2;
+        return puaCodePoint(HOTBAR_LEFT_START_INDEX
+                + variant * HOTBAR_LEFT_VARIANT_GLYPH_COUNT
+                + HOTBAR_LEFT_GEAR_OFFSET + index);
+    }
+
+    /** Число глифами цифр хотбара; его вертикальный сдвиг общий с левой группой. */
+    String hotbarDigits(long value, int variant) {
         String digits = Long.toString(value);
         StringBuilder builder = new StringBuilder(digits.length());
         for (int i = 0; i < digits.length(); i++) {
-            builder.append((char) (HOTBAR_DIGIT_BASE + (digits.charAt(i) - '0')));
+            builder.appendCodePoint(puaCodePoint(HOTBAR_LEFT_START_INDEX
+                    + variant * HOTBAR_LEFT_VARIANT_GLYPH_COUNT
+                    + HOTBAR_LEFT_DIGIT_OFFSET + digits.charAt(i) - '0'));
         }
         return builder.toString();
     }

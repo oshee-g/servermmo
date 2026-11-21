@@ -162,6 +162,32 @@ def build_hotbar_center_atlas() -> None:
           "одна центральная ромб-рамка")
 
 
+def build_panel_atlas() -> None:
+    panels = []
+    for name in CLASSES:
+        path = ICONS / f"panel_{name}.png"
+        if not path.is_file():
+            sys.exit(f"нет панели {path}")
+        source = Image.open(path).convert("RGBA")
+        # У изображений разная прозрачная кайма, поэтому глифы иначе получают
+        # разный advance и центр рамки «прыгает» между классами. Сначала
+        # обрезаем только внешнюю прозрачную кайму, затем нормализуем видимую
+        # рамку до одной и той же ячейки 255x96.
+        visible = source.getchannel("A").point(
+            lambda alpha: 255 if alpha >= 32 else 0).getbbox()
+        if visible is None:
+            sys.exit(f"пустая панель {path}")
+        source = source.crop(visible)
+        fitted = source.resize((PANEL[0] - 1, PANEL[1]), Image.LANCZOS)
+        canvas = Image.new("RGBA", PANEL, (0, 0, 0, 0))
+        canvas.alpha_composite(fitted, (0, 0))
+        panels.append(canvas)
+    sheet = tile(panels, PANEL_COLS, PANEL)
+    sheet.save(OUT / "hud_panel.png", optimize=True)
+    print(f"hud_panel.png {sheet.size[0]}x{sheet.size[1]}: панели классов "
+          f"сеткой {PANEL_COLS}x{len(panels) // PANEL_COLS}")
+
+
 def main() -> int:
     gear = tile([fit(n, (HOTBAR, HOTBAR)) for n in GEAR], len(GEAR),
                 (HOTBAR, HOTBAR))
@@ -199,23 +225,7 @@ def main() -> int:
     print(f"hud_clan.png {clan_sheet.size[0]}x{clan_sheet.size[1]}: щиты клана "
           f"1..100 сеткой {LEVEL_COLS}x{10}")
 
-    panels = []
-    for name in CLASSES:
-        path = ICONS / f"panel_{name}.png"
-        if not path.is_file():
-            sys.exit(f"нет панели {path}")
-        source = Image.open(path).convert("RGBA")
-        # Оставляем один полностью прозрачный столбец справа: BitmapProvider
-        # задаёт advance = последняя видимая колонка + 1, и глиф должен быть
-        # ровно 256 px, а не 257.
-        fitted = source.resize((PANEL[0] - 1, PANEL[1]), Image.LANCZOS)
-        canvas = Image.new("RGBA", PANEL, (0, 0, 0, 0))
-        canvas.paste(fitted, (0, 0), fitted)
-        panels.append(canvas)
-    sheet = tile(panels, PANEL_COLS, PANEL)
-    sheet.save(OUT / "hud_panel.png", optimize=True)
-    print(f"hud_panel.png {sheet.size[0]}x{sheet.size[1]}: панели классов "
-          f"сеткой {PANEL_COLS}x{len(panels) // PANEL_COLS}")
+    build_panel_atlas()
     return 0
 
 
@@ -225,5 +235,8 @@ if __name__ == "__main__":
         raise SystemExit(0)
     if sys.argv[1:] == ["--center-only"]:
         build_hotbar_center_atlas()
+        raise SystemExit(0)
+    if sys.argv[1:] == ["--panels-only"]:
+        build_panel_atlas()
         raise SystemExit(0)
     raise SystemExit(main())

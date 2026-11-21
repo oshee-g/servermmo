@@ -115,8 +115,15 @@ def collect() -> dict[int, int]:
     panel_width = PANEL_CLASS_COUNT
     for offset in range(-PANEL_OFFSET_RANGE, PANEL_OFFSET_RANGE + 1):
         start = PANEL_START_INDEX + variant_index(offset) * PANEL_VARIANT_GLYPH_COUNT
-        add_atlas("hud_panel.png", pua_chars(start, panel_width), PANEL_COLS,
+        panel_glyphs = pua_chars(start, panel_width)
+        add_atlas("hud_panel.png", panel_glyphs, PANEL_COLS,
                   96, PANEL_VARIANT_HEIGHT)
+        if offset == 0:
+            advances = [metrics[ord(char)] for char in panel_glyphs]
+            if set(advances) != {256}:
+                raise ValueError(
+                    "панели классов должны иметь одинаковую ширину advance=256: "
+                    f"{advances}")
 
     # One icon atlas serves both sides; the codepoint variant still applies
     # independently to each side when HudText chooses its glyphs.

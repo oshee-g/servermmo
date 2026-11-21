@@ -105,11 +105,9 @@ final class HudText {
      * Полоса текста новых панелей: эмблема занимает левую часть, строки HUD
      * идут справа от неё. Координаты проверены на панели 256x96.
      */
-    private static final int CONTENT_LEFT = 66;
-    /** Безопасная правая граница текстовой области для каждого класса. */
-    private static final int[] CONTENT_RIGHT_BY_CLASS = {
-            236, 238, 236, 236, 236, 234, 232, 236, 236, 236
-    };
+    /** Единая текстовая область для всех десяти нормализованных панелей. */
+    private static final int CONTENT_LEFT = 84;
+    private static final int CONTENT_RIGHT = 238;
     /** Зазор между значком и числом, px. */
     private static final int ICON_GAP = 4;
     /** Зазор между колонками строки, px. */
@@ -359,33 +357,6 @@ final class HudText {
         return name;
     }
 
-    /** Индивидуальная граница текста под эмблемой и рамкой каждой панели. */
-    private static int contentLeft(int classIndex) {
-        return switch (classIndex) {
-            case 0 -> 72; // воин: отступить от выступов щита
-            case 1 -> 68; // лучник: освободить место под высокий щит
-            case 5 -> 72; // некромант: эмблема и черепа занимают больше места
-            case 6 -> 80; // викинг: крупный круглый щит занимает больше места
-            case 7 -> 70; // фермер: оставить место корзине у нижней строки
-            case 8 -> 70; // кузнец: отступить от наковальни
-            default -> CONTENT_LEFT;
-        };
-    }
-
-    private static int contentRight(int classIndex) {
-        return CONTENT_RIGHT_BY_CLASS[Math.max(0, Math.min(
-                CONTENT_RIGHT_BY_CLASS.length - 1, classIndex))];
-    }
-
-    /** Опустить подложку, чтобы строки HUD поднялись над полосами в арте. */
-    private static int classPanelOffset(int classIndex) {
-        return switch (classIndex) {
-            case 0, 6 -> -2; // воин и викинг: поднять строки на 2 px
-            case 7 -> -1; // фермер: небольшая корректировка на 1 px
-            default -> 0;
-        };
-    }
-
     /** Ширина глифа-панели класса: по ней считается сдвиг всей панели. */
     int panelWidth(int classIndex) {
         int index = Math.max(0, Math.min(PANEL_CLASS_COUNT - 1, classIndex));
@@ -584,15 +555,13 @@ final class HudText {
      */
     Component[] panel(HudProfile profile, String playerName, long level, long xp, long xpToNext,
                       HudLayout layout, int offsetY, int texty, int textx) {
-        int panelOffset = Math.max(-PANEL_OFFSET_RANGE, Math.min(PANEL_OFFSET_RANGE,
-                offsetY + classPanelOffset(profile.classIndex())));
+        int panelOffset = Math.max(-PANEL_OFFSET_RANGE, Math.min(PANEL_OFFSET_RANGE, offsetY));
         int variant = panelOffset + PANEL_OFFSET_RANGE;
         int panelGlyph = puaCodePoint(PANEL_START_INDEX + variant * PANEL_CLASS_COUNT
                 + profile.classIndex());
         int panelWidth = width(panelGlyph);
-        int contentLeft = contentLeft(profile.classIndex());
-        int contentRight = contentRight(profile.classIndex());
-        int textBudget = contentRight - contentLeft - textx;
+        int contentLeft = CONTENT_LEFT;
+        int textBudget = CONTENT_RIGHT - contentLeft - textx;
         int offset = layout.panelShift(panelWidth);
 
         // Строка 1: после эмблемы курсор возвращается к общей левой границе
@@ -606,11 +575,11 @@ final class HudText {
         boolean smallTitle = playerTitle.length() >= 11
                 || textWidth(playerTitle, texty)
                 > titleBudget(diamond, xpFraction, false, contentLeft,
-                        contentRight, textx, texty);
+                        CONTENT_RIGHT, textx, texty);
         int titleIconGap = smallTitle ? 3 : ICON_GAP;
         int titleColumnGap = smallTitle ? 4 : COLUMN_GAP;
         String title = fitTitle(playerTitle, diamond, xpFraction, texty,
-                smallTitle, contentLeft, contentRight, textx);
+                smallTitle, contentLeft, CONTENT_RIGHT, textx);
         int titleW = width(MONEY_SCROLL) + titleIconGap + textWidth(title, texty, smallTitle)
                 + titleColumnGap + width(diamond) + titleColumnGap
                 + width(inlineText(xpFraction, texty));

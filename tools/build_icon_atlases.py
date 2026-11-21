@@ -7,7 +7,7 @@
     рамку панели;
   * значки хотбара (сердце, меч, щит) — ячейки 20x20, как слот при
     масштабе интерфейса 2;
-  * рамки способностей — пустые стальные ромбы 24x24, чуть крупнее слота;
+  * в центре хотбара — одна пустая стальная ромб-рамка 24x24;
   * ромбы уровней игрока и щиты уровней клана — ячейки 24x24 (номер уже
     нарисован на них кодом, без «lvl»);
   * панели классов — 256x96 целиком, одним глифом (шире 256 нельзя:
@@ -128,7 +128,8 @@ def diamond_frame() -> Image.Image:
     draw.polygon(points(1), fill=(105, 117, 130, 255))
     draw.polygon(points(2), fill=(43, 53, 64, 255))
     draw.polygon(points(3), fill=(21, 28, 36, 255))
-    draw.polygon(points(4), fill=(11, 16, 23, 255))
+    # Transparent center leaves the middle slot visible and ready for art.
+    draw.polygon(points(4), fill=(0, 0, 0, 0))
     # Beveled silver-blue highlights on the upper-left and a darker lower-right edge.
     draw.line([(center, 1), (2, center - 1), (2, center), (center, hi - 1)],
               fill=(166, 177, 188, 255), width=1)
@@ -140,11 +141,18 @@ def diamond_frame() -> Image.Image:
 
 
 def build_ability_atlas() -> None:
-    ability = tile([diamond_frame() for _ in ABILITIES], len(ABILITIES),
-                   (ABILITY_FRAME, ABILITY_FRAME))
+    ability = tile([fit(name, (HOTBAR, HOTBAR)) for name in ABILITIES],
+                   len(ABILITIES), (HOTBAR, HOTBAR))
     ability.save(OUT / "hud_ability.png", optimize=True)
     print(f"hud_ability.png {ability.size[0]}x{ability.size[1]}: "
-          f"{len(ABILITIES)} пустых ромбов-рамок способностей")
+          f"{len(ABILITIES)} квадратных иконок способностей")
+
+
+def build_hotbar_center_atlas() -> None:
+    frame = diamond_frame()
+    frame.save(OUT / "hud_hotbar_center.png", optimize=True)
+    print(f"hud_hotbar_center.png {frame.size[0]}x{frame.size[1]}: "
+          "одна центральная ромб-рамка")
 
 
 def main() -> int:
@@ -158,6 +166,7 @@ def main() -> int:
     print(f"hud_money.png {money.size[0]}x{money.size[1]}: {', '.join(MONEY)}")
 
     build_ability_atlas()
+    build_hotbar_center_atlas()
 
     badges = []
     for n in range(1, 101):
@@ -206,5 +215,8 @@ def main() -> int:
 if __name__ == "__main__":
     if sys.argv[1:] == ["--ability-only"]:
         build_ability_atlas()
+        raise SystemExit(0)
+    if sys.argv[1:] == ["--center-only"]:
+        build_hotbar_center_atlas()
         raise SystemExit(0)
     raise SystemExit(main())

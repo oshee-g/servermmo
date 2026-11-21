@@ -9,8 +9,8 @@ from __future__ import annotations
 from pathlib import Path
 
 from gen_resourcepack import (
-    ABILITY_CHARS, CLAN_CHARS, DIGIT_CHARS, FADE_STEPS, GEAR_CHARS,
-    HOTBAR_ABILITY_HEIGHT, HOTBAR_DIGIT_CHARS, HOTBAR_HEIGHT,
+    ABILITY_CHARS, CENTER_DIAMOND_CHAR, CLAN_CHARS, DIGIT_CHARS, FADE_STEPS, GEAR_CHARS,
+    HOTBAR_CENTER_HEIGHT, HOTBAR_DIGIT_CHARS, HOTBAR_HEIGHT,
     HOTBAR_LEFT_DIGIT_FADE_COUNT,
     HOTBAR_LEFT_DIGIT_OFFSET, HOTBAR_LEFT_GEAR_COUNT, HOTBAR_LEFT_GEAR_OFFSET,
     HOTBAR_LEFT_START_INDEX, HOTBAR_LEFT_VARIANT_GLYPH_COUNT,
@@ -84,7 +84,8 @@ def collect() -> dict[int, int]:
           for step in range(FADE_STEPS)),
         ("hud_gear.png", GEAR_CHARS, len(GEAR_CHARS), HOTBAR_HEIGHT),
         ("hud_money.png", MONEY_CHARS, len(MONEY_CHARS), ICON_HEIGHT),
-        ("hud_ability.png", ABILITY_CHARS, 8, HOTBAR_ABILITY_HEIGHT),
+        ("hud_ability.png", ABILITY_CHARS, 8, HOTBAR_HEIGHT),
+        ("hud_hotbar_center.png", CENTER_DIAMOND_CHAR, 1, HOTBAR_CENTER_HEIGHT),
         ("hud_level.png", LEVEL_CHARS, LEVEL_COLS, ICON_HEIGHT),
         ("hud_clan.png", CLAN_CHARS, LEVEL_COLS, ICON_HEIGHT),
     )
@@ -130,7 +131,7 @@ def collect() -> dict[int, int]:
                   pua_chars(left_start + HOTBAR_LEFT_GEAR_OFFSET,
                             HOTBAR_LEFT_GEAR_COUNT)
                   + pua_chars(right_start, HOTBAR_RIGHT_VARIANT_GLYPH_COUNT),
-                  icon_count, HOTBAR_ABILITY_HEIGHT, HOTBAR_VARIANT_HEIGHT, icon_source)
+                  icon_count, HOTBAR_HEIGHT, HOTBAR_VARIANT_HEIGHT, icon_source)
         add_atlas("hud_hotbar_digits_fade_offset.png",
                   pua_chars(left_start + HOTBAR_LEFT_DIGIT_OFFSET,
                             HOTBAR_LEFT_DIGIT_FADE_COUNT),

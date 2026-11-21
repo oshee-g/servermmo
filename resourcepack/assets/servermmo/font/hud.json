@@ -58,9 +58,18 @@
       "type": "bitmap",
       "file": "servermmo:font/hud_ability.png",
       "ascent": 0,
-      "height": 24,
+      "height": 20,
       "chars": [
         ""
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "servermmo:font/hud_hotbar_center_offset.png",
+      "ascent": -34,
+      "height": 128,
+      "chars": [
+        ""
       ]
     },
     {

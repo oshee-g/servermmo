@@ -96,8 +96,9 @@ final class HudText {
     private static final char MONEY_SCROLL = '\uE314';
     /** Боевые очки: серебряная монета с двумя мечами. */
     private static final char MONEY_BATTLE = '\uE315';
-    /** Слоты способностей: 8 шт. */
+    /** Квадратные иконки справа: до 8 шт.; одна ромб-рамка — по центру хотбара. */
     private static final int ABILITY_BASE = 0xE320;
+    private static final char CENTER_DIAMOND = '\uE328';
 
     /**
      * Полоса текста новых панелей: эмблема занимает левую часть, строки HUD
@@ -201,6 +202,7 @@ final class HudText {
         for (int i = 0; i < 8; i++) {
             map.put((int) (ABILITY_BASE + i), 20);
         }
+        map.put((int) CENTER_DIAMOND, 24);
         for (int i = 0; i < 100; i++) {
             map.put((int) (LEVEL_BASE + i), 14);
         }
@@ -586,11 +588,16 @@ final class HudText {
                 int glyph = puaCodePoint(HOTBAR_RIGHT_START_INDEX
                         + rightVariant * HOTBAR_RIGHT_VARIANT_GLYPH_COUNT + i);
                 line.appendCodePoint(glyph);
-                if (i + 1 < slots) {
-                    line.append(pad(2));
-                }
             }
             line.append(shift(-rightOffsetX));
+
+            // Один дополнительный ромб центрируем относительно всего экрана.
+            // Парные сдвиги дают нулевую ширину, не меняя позиции остального HUD.
+            int lineWidth = width(line.toString());
+            int diamondWidth = width(CENTER_DIAMOND);
+            int centerShift = -(lineWidth + diamondWidth) / 2;
+            line.append(shift(centerShift)).append(CENTER_DIAMOND)
+                    .append(shift(-centerShift - diamondWidth));
         }
         return Component.text(line.toString(), GLYPHS);
     }

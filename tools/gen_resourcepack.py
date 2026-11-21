@@ -53,10 +53,10 @@ ICON_HEIGHT = 14
 # уходил за край экрана (базовая линия босс-бара у самого верха) — игрок
 # просил, чтобы всё было только на серой плитке.
 ICON_ASCENT = 9
-# Значки левой группы хотбара — ячейки 20x20, как слот при масштабе 2.
-# Рамки способностей — пустые ромбы 24x24, немного крупнее стандартного слота.
+# Значки групп по краям — ячейки 20x20; центральная пустая рамка — 24x24.
 HOTBAR_HEIGHT = 20
-HOTBAR_ABILITY_HEIGHT = 24
+HOTBAR_CENTER_HEIGHT = 24
+HOTBAR_CENTER_ASCENT = -34  # опускаем из строки actionbar к центру слота
 # Ascent 0: значки опущены на 13 px ниже, вплотную к ячейкам хотбара
 # (игрок просил прижать строку к ячейкам). Цифры хотбара идут отдельными
 # глифами с тем же центром (HOTBAR_DIGIT_ASCENT), чтобы не отрывались от
@@ -107,7 +107,8 @@ GEAR_CHARS = chars(0xE300, 10)      # сердце, меч, топор, посо
                                     # коса, вилы, лук, копьё, щит
 MONEY_CHARS = chars(0xE310, 6)      # монеты, коины, нанагемы, клан, свиток,
                                     # боевые очки
-ABILITY_CHARS = chars(0xE320, 8)    # восемь слотов способностей
+ABILITY_CHARS = chars(0xE320, 8)    # восемь квадратных иконок справа от хотбара
+CENTER_DIAMOND_CHAR = "\ue328"    # одна ромб-рамка в центральном слоте хотбара
 LEVEL_CHARS = chars(0xE400, 100)    # ромбы уровней игрока 1..100
 CLAN_CHARS = chars(0xE470, 100)     # щиты уровней клана 1..100
 PANEL_OFFSET_RANGE = 100           # /hud offsety: панель -100..+100 px
@@ -296,34 +297,25 @@ def select_atlas_cells(data: bytes, cols: int, indices: tuple[int, ...]) -> tupl
 
 
 def hotbar_icon_atlas_data() -> bytes:
-    """One atlas for 20px left icons and 24px ability diamonds."""
+    """One 11-glyph atlas for left stats icons and the square ability icons."""
     gear_cols = (0, 1, 9)
     gear_w, gear_h, gear = select_atlas_cells(
         (ASSETS / "hud_gear.png").read_bytes(), len(GEAR_CHARS), gear_cols)
     ability_w, ability_h, abilities = select_atlas_cells(
         (ASSETS / "hud_ability.png").read_bytes(), len(ABILITY_CHARS),
         tuple(range(len(ABILITY_CHARS))))
-    gear_cell = gear_w // len(gear_cols)
-    ability_cell = ability_w // len(ABILITY_CHARS)
-    if (gear_h != gear_cell or ability_h != HOTBAR_ABILITY_HEIGHT
-            or ability_cell != HOTBAR_ABILITY_HEIGHT):
-        raise ValueError("атласы хотбара имеют неожиданный размер ячейки")
-    cell = HOTBAR_ABILITY_HEIGHT
-    width = (len(gear_cols) + len(ABILITY_CHARS)) * cell
-    pixels = bytearray(width * cell * 4)
-    # Left-side icons stay 20x20 and top-aligned, preserving their old baseline.
-    for index in range(len(gear_cols)):
-        for y in range(gear_h):
-            src = (y * gear_w + index * gear_cell) * 4
-            dst = (y * width + index * cell) * 4
-            pixels[dst:dst + gear_cell * 4] = gear[src:src + gear_cell * 4]
-    for index in range(len(ABILITY_CHARS)):
-        for y in range(ability_h):
-            src = (y * ability_w + index * ability_cell) * 4
-            dst = (y * width + (len(gear_cols) + index) * cell) * 4
-            pixels[dst:dst + ability_cell * 4] = \
-                abilities[src:src + ability_cell * 4]
-    return encode_rgba_png(width, cell, bytes(pixels))
+    if gear_h != ability_h:
+        raise ValueError("иконки хотбара должны иметь одинаковую высоту ячейки")
+    width = gear_w + ability_w
+    pixels = bytearray(width * gear_h * 4)
+    for y in range(gear_h):
+        row_bytes = gear_w * 4
+        pixels[y * width * 4:y * width * 4 + row_bytes] = \
+            gear[y * gear_w * 4:(y + 1) * gear_w * 4]
+        start = (y * width + gear_w) * 4
+        pixels[start:start + ability_w * 4] = \
+            abilities[y * ability_w * 4:(y + 1) * ability_w * 4]
+    return encode_rgba_png(width, gear_h, bytes(pixels))
 
 
 def hotbar_digits_fade_atlas_data() -> bytes:
@@ -522,8 +514,15 @@ def build_font_json() -> dict:
                 "type": "bitmap",
                 "file": "servermmo:font/hud_ability.png",
                 "ascent": HOTBAR_ASCENT,
-                "height": HOTBAR_ABILITY_HEIGHT,
+                "height": HOTBAR_HEIGHT,
                 "chars": [ABILITY_CHARS],
+            },
+            {
+                "type": "bitmap",
+                "file": "servermmo:font/hud_hotbar_center_offset.png",
+                "ascent": HOTBAR_CENTER_ASCENT,
+                "height": HOTBAR_VARIANT_HEIGHT,
+                "chars": [CENTER_DIAMOND_CHAR],
             },
             {
                 "type": "bitmap",
@@ -686,7 +685,7 @@ def main() -> int:
     for name in ("hud_digits.png", "hud_icons.png", "hud_letters.png",
                  *(f"hud_fade{step}.png" for step in range(FADE_STEPS)),
                  "hud_gear.png", "hud_money.png", "hud_ability.png",
-                 "hud_level.png", "hud_clan.png", "hud_panel.png",
+                 "hud_hotbar_center.png", "hud_level.png", "hud_clan.png", "hud_panel.png",
                  "hud_text.png", "hud_text_small.png"):
         copy_asset(name, textures / name)
     copy_asset("pack_icon.png", PACK / "pack.png")
@@ -720,11 +719,14 @@ def main() -> int:
     write_offset_atlas(textures / "hud_panel.png",
                        textures / "hud_panel_offset.png",
                        PANEL_COLS, 5, PANEL_VARIANT_HEIGHT, PANEL_HEIGHT)
+    write_offset_atlas(textures / "hud_hotbar_center.png",
+                       textures / "hud_hotbar_center_offset.png",
+                       1, 1, HOTBAR_VARIANT_HEIGHT, HOTBAR_CENTER_HEIGHT)
 
     write_offset_data(hotbar_icon_atlas_data(),
                       textures / "hud_hotbar_icons_offset.png",
                       HOTBAR_LEFT_GEAR_COUNT + HOTBAR_RIGHT_VARIANT_GLYPH_COUNT,
-                      1, HOTBAR_VARIANT_HEIGHT, HOTBAR_ABILITY_HEIGHT)
+                      1, HOTBAR_VARIANT_HEIGHT, HOTBAR_HEIGHT)
     # Одинаковая базовая линия для этих глифов; цифры и индикатор физически
     # сдвинуты на 6 px вниз внутри ячейки, чтобы сохранить прежнее выравнивание.
     digit_fade_path = textures / "hud_hotbar_digits_fade_offset.png"

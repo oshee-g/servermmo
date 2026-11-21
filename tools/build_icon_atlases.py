@@ -5,8 +5,9 @@
   * цифры и буквы — 8 px (шрифт не трогаем);
   * значки панели (валюты, клан, свиток) — ячейки 24x24, чтобы не задевать
     рамку панели;
-  * значки хотбара (сердце, меч, щит, способности) — ячейки 20x20, как
-    ячейки хотбара при масштабе интерфейса 2, и все одного размера;
+  * значки хотбара (сердце, меч, щит) — ячейки 20x20, как слот при
+    масштабе интерфейса 2;
+  * рамки способностей — пустые стальные ромбы 24x24, чуть крупнее слота;
   * ромбы уровней игрока и щиты уровней клана — ячейки 24x24 (номер уже
     нарисован на них кодом, без «lvl»);
   * панели классов — 256x96 целиком, одним глифом (шире 256 нельзя:
@@ -29,7 +30,7 @@ import sys
 from pathlib import Path
 
 try:
-    from PIL import Image
+    from PIL import Image, ImageDraw
 except ImportError:  # pragma: no cover
     sys.exit("нужен Pillow: /tmp/venv/bin/python tools/build_icon_atlases.py")
 
@@ -41,6 +42,7 @@ OUT = ROOT / "tools" / "pack_assets"
 
 ICON = 24          # ячейка значка панели: height=24 в шрифте
 HOTBAR = 20        # ячейка значка хотбара: height=20, как ячейка хотбара
+ABILITY_FRAME = 24 # ромб-рамка способностей немного крупнее слота
 # Ячейка панели класса. Высота не исходные 64, а 96: три строки HUD
 # занимают 70 px, и панель с запасом накрывает их, а заодно выше и
 # представительнее (игрок просил панель повыше, а не пошире — ширину 256
@@ -106,6 +108,45 @@ def fit(name: str, size: tuple[int, int]) -> Image.Image:
     return canvas
 
 
+def diamond_frame() -> Image.Image:
+    """Empty, steel-edged diamond placeholder for future ability artwork."""
+    size = ABILITY_FRAME
+    center = size // 2
+    hi = size - 1
+
+    def points(inset: int) -> list[tuple[int, int]]:
+        low, high = inset, hi - inset
+        return [(center, low), (high - 1, center - 1), (high, center),
+                (center, high), (center - 1, high), (low, center),
+                (low, center - 1)]
+
+    image = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(image)
+    shadow = [(x, min(hi, y + 1)) for x, y in points(0)]
+    draw.polygon(shadow, fill=(3, 5, 8, 220))
+    draw.polygon(points(0), fill=(10, 13, 17, 255))
+    draw.polygon(points(1), fill=(105, 117, 130, 255))
+    draw.polygon(points(2), fill=(43, 53, 64, 255))
+    draw.polygon(points(3), fill=(21, 28, 36, 255))
+    draw.polygon(points(4), fill=(11, 16, 23, 255))
+    # Beveled silver-blue highlights on the upper-left and a darker lower-right edge.
+    draw.line([(center, 1), (2, center - 1), (2, center), (center, hi - 1)],
+              fill=(166, 177, 188, 255), width=1)
+    draw.line([(center, hi - 1), (hi - 1, center), (hi - 2, center - 1)],
+              fill=(37, 46, 57, 255), width=1)
+    draw.line([(center, 4), (4, center), (center, hi - 4),
+               (hi - 4, center)], fill=(58, 70, 82, 255), width=1)
+    return image
+
+
+def build_ability_atlas() -> None:
+    ability = tile([diamond_frame() for _ in ABILITIES], len(ABILITIES),
+                   (ABILITY_FRAME, ABILITY_FRAME))
+    ability.save(OUT / "hud_ability.png", optimize=True)
+    print(f"hud_ability.png {ability.size[0]}x{ability.size[1]}: "
+          f"{len(ABILITIES)} пустых ромбов-рамок способностей")
+
+
 def main() -> int:
     gear = tile([fit(n, (HOTBAR, HOTBAR)) for n in GEAR], len(GEAR),
                 (HOTBAR, HOTBAR))
@@ -116,10 +157,7 @@ def main() -> int:
     money.save(OUT / "hud_money.png", optimize=True)
     print(f"hud_money.png {money.size[0]}x{money.size[1]}: {', '.join(MONEY)}")
 
-    ability = tile([fit(n, (HOTBAR, HOTBAR)) for n in ABILITIES], len(ABILITIES),
-                   (HOTBAR, HOTBAR))
-    ability.save(OUT / "hud_ability.png", optimize=True)
-    print(f"hud_ability.png {ability.size[0]}x{ability.size[1]}: 8 способность")
+    build_ability_atlas()
 
     badges = []
     for n in range(1, 101):
@@ -166,4 +204,7 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    if sys.argv[1:] == ["--ability-only"]:
+        build_ability_atlas()
+        raise SystemExit(0)
     raise SystemExit(main())

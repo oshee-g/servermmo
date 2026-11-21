@@ -53,10 +53,10 @@ ICON_HEIGHT = 14
 # уходил за край экрана (базовая линия босс-бара у самого верха) — игрок
 # просил, чтобы всё было только на серой плитке.
 ICON_ASCENT = 9
-# Значки хотбара — ячейки 20x20, как ячейки самого хотбара при масштабе
-# интерфейса 2 (слот 16 px + рамка 2 px с каждой стороны). Все значки
-# хотбара одного размера: сердце, меч, щит и способности.
+# Значки левой группы хотбара — ячейки 20x20, как слот при масштабе 2.
+# Рамки способностей — пустые ромбы 24x24, немного крупнее стандартного слота.
 HOTBAR_HEIGHT = 20
+HOTBAR_ABILITY_HEIGHT = 24
 # Ascent 0: значки опущены на 13 px ниже, вплотную к ячейкам хотбара
 # (игрок просил прижать строку к ячейкам). Цифры хотбара идут отдельными
 # глифами с тем же центром (HOTBAR_DIGIT_ASCENT), чтобы не отрывались от
@@ -296,24 +296,34 @@ def select_atlas_cells(data: bytes, cols: int, indices: tuple[int, ...]) -> tupl
 
 
 def hotbar_icon_atlas_data() -> bytes:
-    """One 11-glyph atlas for the three left stats icons and eight abilities."""
+    """One atlas for 20px left icons and 24px ability diamonds."""
+    gear_cols = (0, 1, 9)
     gear_w, gear_h, gear = select_atlas_cells(
-        (ASSETS / "hud_gear.png").read_bytes(), len(GEAR_CHARS), (0, 1, 9))
+        (ASSETS / "hud_gear.png").read_bytes(), len(GEAR_CHARS), gear_cols)
     ability_w, ability_h, abilities = select_atlas_cells(
         (ASSETS / "hud_ability.png").read_bytes(), len(ABILITY_CHARS),
         tuple(range(len(ABILITY_CHARS))))
-    if gear_h != ability_h:
-        raise ValueError("иконки хотбара должны иметь одинаковую высоту ячейки")
-    width = gear_w + ability_w
-    pixels = bytearray(width * gear_h * 4)
-    for y in range(gear_h):
-        row_bytes = gear_w * 4
-        pixels[y * width * 4:y * width * 4 + row_bytes] = \
-            gear[y * gear_w * 4:(y + 1) * gear_w * 4]
-        start = (y * width + gear_w) * 4
-        pixels[start:start + ability_w * 4] = \
-            abilities[y * ability_w * 4:(y + 1) * ability_w * 4]
-    return encode_rgba_png(width, gear_h, bytes(pixels))
+    gear_cell = gear_w // len(gear_cols)
+    ability_cell = ability_w // len(ABILITY_CHARS)
+    if (gear_h != gear_cell or ability_h != HOTBAR_ABILITY_HEIGHT
+            or ability_cell != HOTBAR_ABILITY_HEIGHT):
+        raise ValueError("атласы хотбара имеют неожиданный размер ячейки")
+    cell = HOTBAR_ABILITY_HEIGHT
+    width = (len(gear_cols) + len(ABILITY_CHARS)) * cell
+    pixels = bytearray(width * cell * 4)
+    # Left-side icons stay 20x20 and top-aligned, preserving their old baseline.
+    for index in range(len(gear_cols)):
+        for y in range(gear_h):
+            src = (y * gear_w + index * gear_cell) * 4
+            dst = (y * width + index * cell) * 4
+            pixels[dst:dst + gear_cell * 4] = gear[src:src + gear_cell * 4]
+    for index in range(len(ABILITY_CHARS)):
+        for y in range(ability_h):
+            src = (y * ability_w + index * ability_cell) * 4
+            dst = (y * width + (len(gear_cols) + index) * cell) * 4
+            pixels[dst:dst + ability_cell * 4] = \
+                abilities[src:src + ability_cell * 4]
+    return encode_rgba_png(width, cell, bytes(pixels))
 
 
 def hotbar_digits_fade_atlas_data() -> bytes:
@@ -512,7 +522,7 @@ def build_font_json() -> dict:
                 "type": "bitmap",
                 "file": "servermmo:font/hud_ability.png",
                 "ascent": HOTBAR_ASCENT,
-                "height": HOTBAR_HEIGHT,
+                "height": HOTBAR_ABILITY_HEIGHT,
                 "chars": [ABILITY_CHARS],
             },
             {
@@ -714,7 +724,7 @@ def main() -> int:
     write_offset_data(hotbar_icon_atlas_data(),
                       textures / "hud_hotbar_icons_offset.png",
                       HOTBAR_LEFT_GEAR_COUNT + HOTBAR_RIGHT_VARIANT_GLYPH_COUNT,
-                      1, HOTBAR_VARIANT_HEIGHT, HOTBAR_HEIGHT)
+                      1, HOTBAR_VARIANT_HEIGHT, HOTBAR_ABILITY_HEIGHT)
     # Одинаковая базовая линия для этих глифов; цифры и индикатор физически
     # сдвинуты на 6 px вниз внутри ячейки, чтобы сохранить прежнее выравнивание.
     digit_fade_path = textures / "hud_hotbar_digits_fade_offset.png"

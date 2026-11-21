@@ -58,7 +58,7 @@
       "type": "bitmap",
       "file": "servermmo:font/hud_ability.png",
       "ascent": 0,
-      "height": 20,
+      "height": 24,
       "chars": [
         ""
       ]

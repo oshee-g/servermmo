@@ -586,6 +586,9 @@ final class HudText {
                 int glyph = puaCodePoint(HOTBAR_RIGHT_START_INDEX
                         + rightVariant * HOTBAR_RIGHT_VARIANT_GLYPH_COUNT + i);
                 line.appendCodePoint(glyph);
+                if (i + 1 < slots) {
+                    line.append(pad(2));
+                }
             }
             line.append(shift(-rightOffsetX));
         }

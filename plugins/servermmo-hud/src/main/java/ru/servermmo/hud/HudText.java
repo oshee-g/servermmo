@@ -156,72 +156,72 @@ final class HudText {
         this.advances = load(metrics);
     }
 
-    private static Map<Character, Integer> load(InputStream stream) {
+    private static Map<Integer, Integer> load(InputStream stream) {
         Map<Integer, Integer> map = new HashMap<>();
         // запасные значения: цифры 7 px, «1» 6 px, значки 32 px, панель 240 px
         for (char digit = '0'; digit <= '9'; digit++) {
-            map.put(digit, 7);
+            map.put((int) digit, 7);
         }
-        map.put('1', 6);
-        map.put('/', 7);
-        map.put(' ', 4);
+        map.put((int) '1', 6);
+        map.put((int) '/', 7);
+        map.put((int) ' ', 4);
         for (int i = 0; i < 12; i++) {
-            map.put((char) (HOTBAR_DIGIT_BASE + i), i == 1 ? 6 : 7);
+            map.put((int) (HOTBAR_DIGIT_BASE + i), i == 1 ? 6 : 7);
         }
         for (int step = 0; step < FADE_STEPS; step++) {
             int base = HOTBAR_FADE_BASE + step * 16;
             for (int digit = 0; digit <= 9; digit++) {
-                map.put((char) (base + digit), digit == 1 ? 6 : 7);
+                map.put((int) (base + digit), digit == 1 ? 6 : 7);
             }
-            map.put((char) (base + 10), 7);
-            map.put((char) (base + 11), 8);
+            map.put((int) (base + 10), 7);
+            map.put((int) (base + 11), 8);
         }
         for (char letter : "LVXP".toCharArray()) {
-            map.put(letter, 7);
+            map.put((int) letter, 7);
         }
-        map.put(HEART, 8);
-        map.put(SWORD, 8);
+        map.put((int) HEART, 8);
+        map.put((int) SWORD, 8);
         for (int i = 0; i < 10; i++) {
-            map.put((char) (0xE300 + i), 20);
+            map.put((int) (0xE300 + i), 20);
         }
         for (int i = 0; i < 6; i++) {
-            map.put((char) (0xE310 + i), 14);
+            map.put((int) (0xE310 + i), 14);
         }
         for (int i = 0; i < 8; i++) {
-            map.put((char) (ABILITY_BASE + i), 20);
+            map.put((int) (ABILITY_BASE + i), 20);
         }
         for (int i = 0; i < 100; i++) {
-            map.put((char) (LEVEL_BASE + i), 14);
+            map.put((int) (LEVEL_BASE + i), 14);
         }
         for (int i = 0; i < 100; i++) {
-            map.put((char) (CLAN_BASE + i), 14);
+            map.put((int) (CLAN_BASE + i), 14);
         }
         for (int i = 0; i < (2 * PANEL_OFFSET_RANGE + 1) * PANEL_CLASS_COUNT; i++) {
-            map.put((char) (PANEL_BASE + i), 256);
+            map.put((int) (PANEL_BASE + i), 256);
         }
         for (int i = 0; i < TEXT_CHARS.length(); i++) {
-            map.put((char) (TEXT_BASE + i), 16);
+            map.put((int) (TEXT_BASE + i), 16);
         }
         for (int v = 0; v < 2 * ICON_OFFSET_RANGE; v++) {
             for (int i = 0; i < TEXT_CHARS.length(); i++) {
-                map.put((char) (TEXT_VARIANT_BASE + v * TEXT_CHARS.length() + i), 16);
+                map.put((int) (TEXT_VARIANT_BASE + v * TEXT_CHARS.length() + i), 16);
             }
         }
         for (int i = 0; i < TEXT_CHARS.length(); i++) {
-            map.put((char) (TEXT_SMALL_BASE + i), 8);
+            map.put((int) (TEXT_SMALL_BASE + i), 8);
         }
         for (int v = 0; v < 2 * ICON_OFFSET_RANGE; v++) {
             for (int i = 0; i < TEXT_CHARS.length(); i++) {
-                map.put((char) (TEXT_SMALL_VARIANT_BASE + v * TEXT_CHARS.length() + i), 8);
+                map.put((int) (TEXT_SMALL_VARIANT_BASE + v * TEXT_CHARS.length() + i), 8);
             }
         }
         for (int step = 0; step < FADE_STEPS; step++) {
             int base = FADE_BASE + step * 16;
             for (int digit = 0; digit <= 9; digit++) {
-                map.put((char) (base + digit), digit == 1 ? 6 : 7);
+                map.put((int) (base + digit), digit == 1 ? 6 : 7);
             }
-            map.put((char) (base + 10), 7);
-            map.put((char) (base + 11), 8);
+            map.put((int) (base + 10), 7);
+            map.put((int) (base + 11), 8);
         }
         if (stream == null) {
             return map;

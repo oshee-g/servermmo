@@ -9,8 +9,9 @@ from __future__ import annotations
 from pathlib import Path
 
 from gen_resourcepack import (
-    ABILITY_CHARS, CENTER_DIAMOND_CHAR, CLAN_CHARS, DIGIT_CHARS, FADE_STEPS, GEAR_CHARS,
-    HOTBAR_CENTER_HEIGHT, HOTBAR_DIGIT_CHARS, HOTBAR_HEIGHT,
+    ABILITY_CHARS, CLAN_CHARS, DIGIT_CHARS, FADE_STEPS, GEAR_CHARS,
+    HOTBAR_CENTER_HEIGHT, HOTBAR_CENTER_START_INDEX,
+    HOTBAR_DIGIT_CHARS, HOTBAR_HEIGHT,
     HOTBAR_LEFT_DIGIT_FADE_COUNT,
     HOTBAR_LEFT_DIGIT_OFFSET, HOTBAR_LEFT_GEAR_COUNT, HOTBAR_LEFT_GEAR_OFFSET,
     HOTBAR_LEFT_START_INDEX, HOTBAR_LEFT_VARIANT_GLYPH_COUNT,
@@ -85,7 +86,6 @@ def collect() -> dict[int, int]:
         ("hud_gear.png", GEAR_CHARS, len(GEAR_CHARS), HOTBAR_HEIGHT),
         ("hud_money.png", MONEY_CHARS, len(MONEY_CHARS), ICON_HEIGHT),
         ("hud_ability.png", ABILITY_CHARS, 8, HOTBAR_HEIGHT),
-        ("hud_hotbar_center.png", CENTER_DIAMOND_CHAR, 1, HOTBAR_CENTER_HEIGHT),
         ("hud_level.png", LEVEL_CHARS, LEVEL_COLS, ICON_HEIGHT),
         ("hud_clan.png", CLAN_CHARS, LEVEL_COLS, ICON_HEIGHT),
     )
@@ -122,6 +122,7 @@ def collect() -> dict[int, int]:
     # independently to each side when HudText chooses its glyphs.
     icon_source = hotbar_icon_atlas_data()
     digit_fade_source = hotbar_digits_fade_atlas_data()
+    center_source = (ASSETS / "hud_hotbar_center.png").read_bytes()
     icon_count = HOTBAR_LEFT_GEAR_COUNT + HOTBAR_RIGHT_VARIANT_GLYPH_COUNT
     for offset in range(-ICON_OFFSET_RANGE, ICON_OFFSET_RANGE + 1):
         variant = variant_index(offset)
@@ -136,6 +137,9 @@ def collect() -> dict[int, int]:
                   pua_chars(left_start + HOTBAR_LEFT_DIGIT_OFFSET,
                             HOTBAR_LEFT_DIGIT_FADE_COUNT),
                   14, HOTBAR_VARIANT_HEIGHT, source_data=digit_fade_source)
+        add_atlas("hud_hotbar_center_offset.png",
+                  pua_chars(HOTBAR_CENTER_START_INDEX + variant, 1),
+                  1, HOTBAR_CENTER_HEIGHT, HOTBAR_VARIANT_HEIGHT, center_source)
 
     # Spaces and cursor shifts are defined by the font's space provider.
     for char, advance in build_space_advances().items():

@@ -26,7 +26,8 @@ from pathlib import Path
 
 from png_io import glyph_advance_grid, png_rgba
 from gen_resourcepack import (
-    HOTBAR_LEFT_TOTAL, HOTBAR_RIGHT_TOTAL, INLINE_TOTAL, PANEL_TOTAL,
+    HOTBAR_CENTER_TOTAL, HOTBAR_LEFT_TOTAL, HOTBAR_RIGHT_TOTAL,
+    INLINE_TOTAL, PANEL_TOTAL,
     TEXT_VARIANT_TOTAL, pua_codepoint,
 )
 
@@ -138,7 +139,7 @@ def check_codepoint_grid(font: dict, problems: list[str]) -> None:
 def check_texty_glyphs(font: dict, problems: list[str]) -> None:
     """Проверяет все 201 варианта панелей, текста и обеих сторон хотбара."""
     total = (INLINE_TOTAL + PANEL_TOTAL + 2 * TEXT_VARIANT_TOTAL
-             + HOTBAR_LEFT_TOTAL + HOTBAR_RIGHT_TOTAL)
+             + HOTBAR_LEFT_TOTAL + HOTBAR_RIGHT_TOTAL + HOTBAR_CENTER_TOTAL)
     expected = {pua_codepoint(index) for index in range(total)}
     found = {
         ord(char)

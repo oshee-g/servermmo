@@ -185,7 +185,8 @@ final class PlayerHud {
                 settings.hotbarAnchorX(), settings.abilitySlots(),
                 settings.layout(store.get(player.getUniqueId())),
                 settings.hotbarLeftOffsetX(), settings.hotbarLeftOffsetY(),
-                settings.hotbarRightOffsetX(), settings.hotbarRightOffsetY());
+                settings.hotbarRightOffsetX(), settings.hotbarRightOffsetY(),
+                settings.hotbarCenterOffsetX(), settings.hotbarCenterOffsetY());
         ticksSinceActionBar++;
         // Экшн-бар сам гаснет примерно за 3 секунды: пересылаем раз в секунду,
         // даже если строка не менялась.

@@ -96,9 +96,8 @@ final class HudText {
     private static final char MONEY_SCROLL = '\uE314';
     /** Боевые очки: серебряная монета с двумя мечами. */
     private static final char MONEY_BATTLE = '\uE315';
-    /** Квадратные иконки справа: до 8 шт.; одна ромб-рамка — по центру хотбара. */
+    /** Квадратные иконки справа: до 8 шт. */
     private static final int ABILITY_BASE = 0xE320;
-    private static final char CENTER_DIAMOND = '\uE328';
 
     /**
      * Полоса текста новых панелей: эмблема занимает левую часть, строки HUD
@@ -138,6 +137,8 @@ final class HudText {
     private static final int HOTBAR_RIGHT_START_INDEX =
             HOTBAR_LEFT_START_INDEX + HOTBAR_LEFT_VARIANT_TOTAL;
     private static final int HOTBAR_RIGHT_VARIANT_GLYPH_COUNT = 8;
+    private static final int HOTBAR_CENTER_START_INDEX = HOTBAR_RIGHT_START_INDEX
+            + VARIANT_COUNT * HOTBAR_RIGHT_VARIANT_GLYPH_COUNT;
     /** База кодовых точек ступеней: ступень L - FADE_BASE + L*16 + позиция. */
     private static final int FADE_BASE = 0xE200;
     /**
@@ -202,7 +203,9 @@ final class HudText {
         for (int i = 0; i < 8; i++) {
             map.put((int) (ABILITY_BASE + i), 20);
         }
-        map.put((int) CENTER_DIAMOND, 24);
+        for (int variant = 0; variant < VARIANT_COUNT; variant++) {
+            map.put(puaCodePoint(HOTBAR_CENTER_START_INDEX + variant), 24);
+        }
         for (int i = 0; i < 100; i++) {
             map.put((int) (LEVEL_BASE + i), 14);
         }
@@ -550,13 +553,16 @@ final class HudText {
      * @param anchorX левый край строки относительно центра экрана, px
      *                (-91 - левый край хотбара)
      * @param fadeStep ступень затухания индикатора, -1 - индикатора нет
-     * @param abilitySlots сколько квадратов способностей рисовать
+     * @param abilitySlots сколько квадратных значков способностей рисовать
      * @param layout геометрия под экран игрока
+     * @param centerOffsetX сдвиг центрального ромба по горизонтали
+     * @param centerOffsetY сдвиг центрального ромба по вертикали
      */
     Component hotbar(long health, long damage, long armor, long lastDamage, int fadeStep,
                      int anchorX, int abilitySlots, HudLayout layout,
                      int leftOffsetX, int leftOffsetY,
-                     int rightOffsetX, int rightOffsetY) {
+                     int rightOffsetX, int rightOffsetY,
+                     int centerOffsetX, int centerOffsetY) {
         int leftVariant = variantIndex(leftOffsetY);
         StringBuilder bodyBuilder = new StringBuilder();
         bodyBuilder.appendCodePoint(hotbarLeftGlyph(GEAR_HEART, leftVariant))
@@ -594,9 +600,11 @@ final class HudText {
             // Один дополнительный ромб центрируем относительно всего экрана.
             // Парные сдвиги дают нулевую ширину, не меняя позиции остального HUD.
             int lineWidth = width(line.toString());
-            int diamondWidth = width(CENTER_DIAMOND);
-            int centerShift = -(lineWidth + diamondWidth) / 2;
-            line.append(shift(centerShift)).append(CENTER_DIAMOND)
+            int centerVariant = variantIndex(centerOffsetY);
+            int diamondCodePoint = puaCodePoint(HOTBAR_CENTER_START_INDEX + centerVariant);
+            int diamondWidth = width(diamondCodePoint);
+            int centerShift = -(lineWidth + diamondWidth) / 2 + centerOffsetX;
+            line.append(shift(centerShift)).appendCodePoint(diamondCodePoint)
                     .append(shift(-centerShift - diamondWidth));
         }
         return Component.text(line.toString(), GLYPHS);

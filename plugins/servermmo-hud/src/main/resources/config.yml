@@ -32,6 +32,8 @@
 #   /hud hotbarlefty -3    сдвиг левых индикаторов хотбара по Y
 #   /hud hotbarrightx -4   сдвиг правых способностей по X
 #   /hud hotbarrighty 3    сдвиг правых способностей по Y
+#   /hud hotbarcenterx 4   сдвиг центрального ромба по X
+#   /hud hotbarcentery -3  сдвиг центрального ромба по Y
 #   /hud anchorx -91       левый край строки хотбара
 #   /hud debug             расчёт отступов по всем масштабам
 #   /hud reset             заводские значения
@@ -69,6 +71,9 @@ hud:
   hotbar-left-offset-y: 0
   hotbar-right-offset-x: 0
   hotbar-right-offset-y: 0
+  # Сдвиг одного ромба относительно центра хотбара по X/Y, -100..100 px.
+  hotbar-center-offset-x: 0
+  hotbar-center-offset-y: 0
 
   # Сколько квадратов способностей рисовать справа от хотбара (0..8).
   # Логики за ними нет - это картинки, слоты просто заполняются подряд.

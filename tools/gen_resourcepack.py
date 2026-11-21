@@ -56,7 +56,7 @@ ICON_ASCENT = 9
 # Значки групп по краям — ячейки 20x20; центральная пустая рамка — 24x24.
 HOTBAR_HEIGHT = 20
 HOTBAR_CENTER_HEIGHT = 24
-HOTBAR_CENTER_ASCENT = -34  # опускаем из строки actionbar к центру слота
+HOTBAR_CENTER_BASELINE_OFFSET = 34  # опускаем рамку к центру слота хотбара
 # Ascent 0: значки опущены на 13 px ниже, вплотную к ячейкам хотбара
 # (игрок просил прижать строку к ячейкам). Цифры хотбара идут отдельными
 # глифами с тем же центром (HOTBAR_DIGIT_ASCENT), чтобы не отрывались от
@@ -108,7 +108,6 @@ GEAR_CHARS = chars(0xE300, 10)      # сердце, меч, топор, посо
 MONEY_CHARS = chars(0xE310, 6)      # монеты, коины, нанагемы, клан, свиток,
                                     # боевые очки
 ABILITY_CHARS = chars(0xE320, 8)    # восемь квадратных иконок справа от хотбара
-CENTER_DIAMOND_CHAR = "\ue328"    # одна ромб-рамка в центральном слоте хотбара
 LEVEL_CHARS = chars(0xE400, 100)    # ромбы уровней игрока 1..100
 CLAN_CHARS = chars(0xE470, 100)     # щиты уровней клана 1..100
 PANEL_OFFSET_RANGE = 100           # /hud offsety: панель -100..+100 px
@@ -164,7 +163,9 @@ HOTBAR_LEFT_TOTAL = VARIANT_COUNT * HOTBAR_LEFT_VARIANT_GLYPH_COUNT
 HOTBAR_RIGHT_START_INDEX = HOTBAR_LEFT_START_INDEX + HOTBAR_LEFT_TOTAL
 HOTBAR_RIGHT_VARIANT_GLYPH_COUNT = len(ABILITY_CHARS)
 HOTBAR_RIGHT_TOTAL = VARIANT_COUNT * HOTBAR_RIGHT_VARIANT_GLYPH_COUNT
-PUA_TOTAL_USED = HOTBAR_RIGHT_START_INDEX + HOTBAR_RIGHT_TOTAL
+HOTBAR_CENTER_START_INDEX = HOTBAR_RIGHT_START_INDEX + HOTBAR_RIGHT_TOTAL
+HOTBAR_CENTER_TOTAL = VARIANT_COUNT
+PUA_TOTAL_USED = HOTBAR_CENTER_START_INDEX + HOTBAR_CENTER_TOTAL
 if PUA_TOTAL_USED > 2 * PUA_A_COUNT:
     raise ValueError(f"HUD-глифы требуют {PUA_TOTAL_USED} PUA-кодов, доступно "
                      f"{2 * PUA_A_COUNT}")
@@ -391,6 +392,23 @@ def encode_rgba_png(width: int, height: int, pixels: bytes) -> bytes:
             + chunk(b"IDAT", zlib.compress(bytes(raw), 9)) + chunk(b"IEND", b""))
 
 
+def hotbar_center_atlas_data() -> bytes:
+    """Make a 128px bitmap cell with the 24px frame lowered to the slot row."""
+    width, source_height, source = png_rgba(
+        (ASSETS / "hud_hotbar_center.png").read_bytes())
+    if (width, source_height) != (HOTBAR_CENTER_HEIGHT, HOTBAR_CENTER_HEIGHT):
+        raise ValueError("центральная ромб-рамка должна быть 24x24")
+    height = HOTBAR_VARIANT_HEIGHT
+    top = HOTBAR_CENTER_BASELINE_OFFSET
+    if top + source_height > height:
+        raise ValueError("центральная ромб-рамка не помещается в ячейку шрифта")
+    pixels = bytearray(width * height * 4)
+    for y in range(source_height):
+        start = ((top + y) * width) * 4
+        pixels[start:start + width * 4] = source[y * width * 4:(y + 1) * width * 4]
+    return encode_rgba_png(width, height, bytes(pixels))
+
+
 def write_rgba_png(path: Path, width: int, height: int, pixels: bytes) -> None:
     path.write_bytes(encode_rgba_png(width, height, pixels))
 
@@ -517,13 +535,17 @@ def build_font_json() -> dict:
                 "height": HOTBAR_HEIGHT,
                 "chars": [ABILITY_CHARS],
             },
-            {
-                "type": "bitmap",
-                "file": "servermmo:font/hud_hotbar_center_offset.png",
-                "ascent": HOTBAR_CENTER_ASCENT,
-                "height": HOTBAR_VARIANT_HEIGHT,
-                "chars": [CENTER_DIAMOND_CHAR],
-            },
+            *[
+                {
+                    "type": "bitmap",
+                    "file": "servermmo:font/hud_hotbar_center_offset.png",
+                    "ascent": -offset,
+                    "height": HOTBAR_VARIANT_HEIGHT,
+                    "chars": [pua_chars(HOTBAR_CENTER_START_INDEX
+                                         + variant_index(offset), 1)],
+                }
+                for offset in range(-ICON_OFFSET_RANGE, ICON_OFFSET_RANGE + 1)
+            ],
             {
                 "type": "bitmap",
                 "file": "servermmo:font/hud_level.png",
@@ -719,9 +741,8 @@ def main() -> int:
     write_offset_atlas(textures / "hud_panel.png",
                        textures / "hud_panel_offset.png",
                        PANEL_COLS, 5, PANEL_VARIANT_HEIGHT, PANEL_HEIGHT)
-    write_offset_atlas(textures / "hud_hotbar_center.png",
-                       textures / "hud_hotbar_center_offset.png",
-                       1, 1, HOTBAR_VARIANT_HEIGHT, HOTBAR_CENTER_HEIGHT)
+    (textures / "hud_hotbar_center_offset.png").write_bytes(
+        hotbar_center_atlas_data())
 
     write_offset_data(hotbar_icon_atlas_data(),
                       textures / "hud_hotbar_icons_offset.png",

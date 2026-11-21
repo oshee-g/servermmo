@@ -64,6 +64,8 @@ public final class HudSettings {
     private int hotbarLeftOffsetY;
     private int hotbarRightOffsetX;
     private int hotbarRightOffsetY;
+    private int hotbarCenterOffsetX;
+    private int hotbarCenterOffsetY;
     private long updateIntervalTicks;
     private int hotbarAnchorX;
     private long damageHoldMillis;
@@ -89,6 +91,8 @@ public final class HudSettings {
         settings.hotbarLeftOffsetY = clampHotbarOffset(config.getInt("hud.hotbar-left-offset-y", 0));
         settings.hotbarRightOffsetX = clampHotbarOffset(config.getInt("hud.hotbar-right-offset-x", 0));
         settings.hotbarRightOffsetY = clampHotbarOffset(config.getInt("hud.hotbar-right-offset-y", 0));
+        settings.hotbarCenterOffsetX = clampHotbarOffset(config.getInt("hud.hotbar-center-offset-x", 0));
+        settings.hotbarCenterOffsetY = clampHotbarOffset(config.getInt("hud.hotbar-center-offset-y", 0));
         settings.updateIntervalTicks = Math.max(1L, config.getLong("hud.update-interval-ticks", 2L));
         settings.hotbarAnchorX = config.getInt("hud.hotbar-anchor-x", DEFAULT_HOTBAR_ANCHOR_X);
         settings.damageHoldMillis = Math.max(0L, config.getLong("hud.damage-hold-seconds", 5L)) * 1000L;
@@ -157,6 +161,14 @@ public final class HudSettings {
         return hotbarRightOffsetY;
     }
 
+    public int hotbarCenterOffsetX() {
+        return hotbarCenterOffsetX;
+    }
+
+    public int hotbarCenterOffsetY() {
+        return hotbarCenterOffsetY;
+    }
+
     public void screenWidth(int value) {
         this.screenWidth = Math.max(MIN_SCALED_WIDTH, value);
     }
@@ -199,6 +211,14 @@ public final class HudSettings {
 
     public void hotbarRightOffsetY(int value) {
         this.hotbarRightOffsetY = clampHotbarOffset(value);
+    }
+
+    public void hotbarCenterOffsetX(int value) {
+        this.hotbarCenterOffsetX = clampHotbarOffset(value);
+    }
+
+    public void hotbarCenterOffsetY(int value) {
+        this.hotbarCenterOffsetY = clampHotbarOffset(value);
     }
 
     public long updateIntervalTicks() {
@@ -291,6 +311,8 @@ public final class HudSettings {
         this.hotbarLeftOffsetY = 0;
         this.hotbarRightOffsetX = 0;
         this.hotbarRightOffsetY = 0;
+        this.hotbarCenterOffsetX = 0;
+        this.hotbarCenterOffsetY = 0;
         this.hotbarAnchorX = DEFAULT_HOTBAR_ANCHOR_X;
     }
 

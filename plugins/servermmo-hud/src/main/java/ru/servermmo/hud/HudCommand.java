@@ -65,6 +65,8 @@ final class HudCommand implements CommandExecutor {
             case "hotbarlefty" -> setHotbarOffset(sender, args, true, false);
             case "hotbarrightx" -> setHotbarOffset(sender, args, false, true);
             case "hotbarrighty" -> setHotbarOffset(sender, args, false, false);
+            case "hotbarcenterx" -> setHotbarCenterOffset(sender, args, true);
+            case "hotbarcentery" -> setHotbarCenterOffset(sender, args, false);
             case "anchorx", "anchor", "якорь" -> setAnchor(sender, args);
             default -> {
                 help(sender);
@@ -392,6 +394,41 @@ final class HudCommand implements CommandExecutor {
         return true;
     }
 
+    private boolean setHotbarCenterOffset(CommandSender sender, String[] args,
+                                          boolean horizontal) {
+        String commandName = horizontal ? "hotbarcenterx" : "hotbarcentery";
+        String direction = horizontal ? "вправо" : "вниз";
+        if (args.length < 2) {
+            sender.sendMessage(Component.text(
+                    "Укажите сдвиг: /hud " + commandName
+                            + " <пиксели> (от -100 до 100, положительное — "
+                            + direction + ")",
+                    NamedTextColor.YELLOW));
+            return true;
+        }
+        Integer value = parseInt(args[1]);
+        if (value == null) {
+            sender.sendMessage(Component.text("Нужно целое число пикселей",
+                    NamedTextColor.RED));
+            return true;
+        }
+        if (!sender.hasPermission("servermmo.hud")) {
+            sender.sendMessage(Component.text("Недостаточно прав", NamedTextColor.RED));
+            return true;
+        }
+        if (horizontal) {
+            settings.hotbarCenterOffsetX(value);
+        } else {
+            settings.hotbarCenterOffsetY(value);
+        }
+        int applied = horizontal ? settings.hotbarCenterOffsetX()
+                : settings.hotbarCenterOffsetY();
+        applyAll(sender, "Готово: центральный ромб сдвинут на " + applied
+                + " px по " + (horizontal ? "горизонтали" : "вертикали")
+                + " (положительное — " + direction + ")");
+        return true;
+    }
+
     /** {@code /hud anchorx <пиксели>} — левый край строки хотбара. */
     private boolean setAnchor(CommandSender sender, String[] args) {
         if (args.length < 2) {
@@ -505,6 +542,9 @@ final class HudCommand implements CommandExecutor {
                 "/hud hotbarrightx|hotbarrighty <пиксели> — сдвиг правой группы "
                         + "способностей по X/Y (-100..100)", NamedTextColor.YELLOW));
         sender.sendMessage(Component.text(
+                "/hud hotbarcenterx|hotbarcentery <пиксели> — сдвиг центрального "
+                        + "ромба по X/Y (-100..100)", NamedTextColor.YELLOW));
+        sender.sendMessage(Component.text(
                 "/hud anchorx <пиксели> — левый край строки хотбара (-91)",
                 NamedTextColor.YELLOW));
         sender.sendMessage(Component.text(
@@ -589,6 +629,8 @@ final class HudCommand implements CommandExecutor {
         plugin.getConfig().set("hud.hotbar-left-offset-y", settings.hotbarLeftOffsetY());
         plugin.getConfig().set("hud.hotbar-right-offset-x", settings.hotbarRightOffsetX());
         plugin.getConfig().set("hud.hotbar-right-offset-y", settings.hotbarRightOffsetY());
+        plugin.getConfig().set("hud.hotbar-center-offset-x", settings.hotbarCenterOffsetX());
+        plugin.getConfig().set("hud.hotbar-center-offset-y", settings.hotbarCenterOffsetY());
         plugin.getConfig().set("hud.hotbar-anchor-x", settings.hotbarAnchorX());
         plugin.saveConfig();
         for (Player player : Bukkit.getOnlinePlayers()) {
@@ -609,6 +651,6 @@ final class HudCommand implements CommandExecutor {
     public static List<String> keys() {
         return List.of("scale", "screen", "margin", "offsetx", "offsety", "textx", "texty",
                 "hotbarleftx", "hotbarlefty", "hotbarrightx", "hotbarrighty",
-                "anchorx", "debug", "reset");
+                "hotbarcenterx", "hotbarcentery", "anchorx", "debug", "reset");
     }
 }

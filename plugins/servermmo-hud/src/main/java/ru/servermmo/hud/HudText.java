@@ -556,15 +556,20 @@ final class HudText {
                      int leftOffsetX, int leftOffsetY,
                      int rightOffsetX, int rightOffsetY) {
         int leftVariant = variantIndex(leftOffsetY);
-        String body = "" + hotbarLeftGlyph(GEAR_HEART, leftVariant)
-                + pad(ICON_GAP) + hotbarDigits(health, leftVariant) + pad(COLUMN_GAP)
-                + hotbarLeftGlyph(GEAR_SWORD, leftVariant)
-                + pad(ICON_GAP) + hotbarDigits(damage, leftVariant) + pad(COLUMN_GAP)
-                + hotbarLeftGlyph(GEAR_SHIELD, leftVariant)
-                + pad(ICON_GAP) + hotbarDigits(armor, leftVariant);
+        StringBuilder bodyBuilder = new StringBuilder();
+        bodyBuilder.appendCodePoint(hotbarLeftGlyph(GEAR_HEART, leftVariant))
+                .append(pad(ICON_GAP)).append(hotbarDigits(health, leftVariant))
+                .append(pad(COLUMN_GAP))
+                .appendCodePoint(hotbarLeftGlyph(GEAR_SWORD, leftVariant))
+                .append(pad(ICON_GAP)).append(hotbarDigits(damage, leftVariant))
+                .append(pad(COLUMN_GAP))
+                .appendCodePoint(hotbarLeftGlyph(GEAR_SHIELD, leftVariant))
+                .append(pad(ICON_GAP)).append(hotbarDigits(armor, leftVariant));
         if (fadeStep >= 0) {
-            body += pad(COLUMN_GAP) + indicator(lastDamage, fadeStep, leftVariant);
+            bodyBuilder.append(pad(COLUMN_GAP))
+                    .append(indicator(lastDamage, fadeStep, leftVariant));
         }
+        String body = bodyBuilder.toString();
         // Компенсирующие сдвиги сохраняют центр всей строки: leftX двигает
         // только статистику, а rightX — только значки способностей.
         StringBuilder line = new StringBuilder(

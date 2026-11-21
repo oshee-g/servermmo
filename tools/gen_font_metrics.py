@@ -10,11 +10,9 @@ from pathlib import Path
 
 from gen_resourcepack import (
     ABILITY_CHARS, CLAN_CHARS, DIGIT_CHARS, FADE_STEPS, GEAR_CHARS,
-    HOTBAR_ASCENT, HOTBAR_DIGIT_ASCENT, HOTBAR_DIGIT_CHARS, HOTBAR_HEIGHT,
-    HOTBAR_LEFT_DIGIT_COUNT,
-    HOTBAR_LEFT_DIGIT_OFFSET, HOTBAR_LEFT_FADE_OFFSET, HOTBAR_LEFT_GEAR_COUNT,
-    HOTBAR_LEFT_GEAR_OFFSET, HOTBAR_LEFT_START_INDEX,
-    HOTBAR_LEFT_VARIANT_GLYPH_COUNT, HOTBAR_RIGHT_START_INDEX,
+    HOTBAR_DIGIT_CHARS, HOTBAR_HEIGHT, HOTBAR_LEFT_DIGIT_FADE_COUNT,
+    HOTBAR_LEFT_DIGIT_OFFSET, HOTBAR_LEFT_GEAR_COUNT, HOTBAR_LEFT_GEAR_OFFSET,
+    HOTBAR_LEFT_START_INDEX, HOTBAR_RIGHT_START_INDEX,
     HOTBAR_RIGHT_VARIANT_GLYPH_COUNT, HOTBAR_VARIANT_HEIGHT,
     ICON_CHARS, ICON_HEIGHT,
     ICON_OFFSET_RANGE, INLINE_GLYPH_COUNT, INLINE_GLYPHS, INLINE_START_INDEX,
@@ -23,8 +21,9 @@ from gen_resourcepack import (
     PANEL_VARIANT_GLYPH_COUNT, TEXT_CHARS, TEXT_COLS, TEXT_HEIGHT,
     INLINE_VARIANT_HEIGHT, PANEL_VARIANT_HEIGHT, TEXT_SMALL_START_INDEX,
     TEXT_START_INDEX, TEXT_VARIANT_HEIGHT, build_space_advances, chars,
-    encode_rgba_png, fade_chars, hotbar_fade_chars, padded_atlas,
-    padded_digit_atlas, pua_chars, select_atlas_cells, variant_index,
+    encode_rgba_png, fade_chars, hotbar_digits_fade_atlas_data,
+    hotbar_icon_atlas_data, hotbar_fade_chars, padded_atlas,
+    padded_digit_atlas, pua_chars, variant_index,
 )
 from png_io import glyph_advance_grid, png_rgba
 
@@ -116,33 +115,24 @@ def collect() -> dict[int, int]:
         add_atlas("hud_panel.png", pua_chars(start, panel_width), PANEL_COLS,
                   96, PANEL_VARIANT_HEIGHT)
 
-    # Hotbar left side: three gear icons, decimal digits and all damage fades.
-    icon_width, icon_height, icon_pixels = select_atlas_cells(
-        (ASSETS / "hud_gear.png").read_bytes(), len(GEAR_CHARS), (0, 1, 9))
-    icon_source = encode_rgba_png(icon_width, icon_height, icon_pixels)
-    digit_width, digit_height, digit_pixels = select_atlas_cells(
-        (ASSETS / "hud_digits.png").read_bytes(), len(DIGIT_CHARS), tuple(range(10)))
-    digit_source = encode_rgba_png(digit_width, digit_height, digit_pixels)
+    # One icon atlas serves both sides; the codepoint variant still applies
+    # independently to each side when HudText chooses its glyphs.
+    icon_source = hotbar_icon_atlas_data()
+    digit_fade_source = hotbar_digits_fade_atlas_data()
+    icon_count = HOTBAR_LEFT_GEAR_COUNT + HOTBAR_RIGHT_VARIANT_GLYPH_COUNT
     for offset in range(-ICON_OFFSET_RANGE, ICON_OFFSET_RANGE + 1):
         variant = variant_index(offset)
-        start = HOTBAR_LEFT_START_INDEX + variant * HOTBAR_LEFT_VARIANT_GLYPH_COUNT
-        add_atlas("hotbar_left_icons_variant.png",
-                  pua_chars(start + HOTBAR_LEFT_GEAR_OFFSET, HOTBAR_LEFT_GEAR_COUNT),
-                  HOTBAR_LEFT_GEAR_COUNT, HOTBAR_HEIGHT, HOTBAR_VARIANT_HEIGHT,
-                  icon_source)
-        add_atlas("hotbar_digits_variant.png",
-                  pua_chars(start + HOTBAR_LEFT_DIGIT_OFFSET, HOTBAR_LEFT_DIGIT_COUNT),
-                  HOTBAR_LEFT_DIGIT_COUNT, 8, HOTBAR_VARIANT_HEIGHT, digit_source)
-        for step in range(FADE_STEPS):
-            add_atlas(f"hud_fade{step}.png",
-                      pua_chars(start + HOTBAR_LEFT_FADE_OFFSET + step * 12, 12),
-                      12, 8, HOTBAR_VARIANT_HEIGHT)
-
-    # Hotbar right side: ability slots use their own independent ascent series.
-    for offset in range(-ICON_OFFSET_RANGE, ICON_OFFSET_RANGE + 1):
-        start = HOTBAR_RIGHT_START_INDEX + variant_index(offset) * HOTBAR_RIGHT_VARIANT_GLYPH_COUNT
-        add_atlas("hud_ability.png", pua_chars(start, HOTBAR_RIGHT_VARIANT_GLYPH_COUNT),
-                  HOTBAR_RIGHT_VARIANT_GLYPH_COUNT, HOTBAR_HEIGHT, HOTBAR_VARIANT_HEIGHT)
+        left_start = HOTBAR_LEFT_START_INDEX + variant * HOTBAR_LEFT_VARIANT_GLYPH_COUNT
+        right_start = HOTBAR_RIGHT_START_INDEX + variant * HOTBAR_RIGHT_VARIANT_GLYPH_COUNT
+        add_atlas("hud_hotbar_icons_offset.png",
+                  pua_chars(left_start + HOTBAR_LEFT_GEAR_OFFSET,
+                            HOTBAR_LEFT_GEAR_COUNT)
+                  + pua_chars(right_start, HOTBAR_RIGHT_VARIANT_GLYPH_COUNT),
+                  icon_count, HOTBAR_HEIGHT, HOTBAR_VARIANT_HEIGHT, icon_source)
+        add_atlas("hud_hotbar_digits_fade_offset.png",
+                  pua_chars(left_start + HOTBAR_LEFT_DIGIT_OFFSET,
+                            HOTBAR_LEFT_DIGIT_FADE_COUNT),
+                  14, HOTBAR_VARIANT_HEIGHT, source_data=digit_fade_source)
 
     # Spaces and cursor shifts are defined by the font's space provider.
     for char, advance in build_space_advances().items():

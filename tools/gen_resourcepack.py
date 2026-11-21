@@ -156,8 +156,8 @@ HOTBAR_LEFT_DIGIT_COUNT = 10
 HOTBAR_LEFT_GEAR_OFFSET = 0
 HOTBAR_LEFT_DIGIT_OFFSET = HOTBAR_LEFT_GEAR_COUNT
 HOTBAR_LEFT_FADE_OFFSET = HOTBAR_LEFT_GEAR_COUNT + HOTBAR_LEFT_DIGIT_COUNT
-HOTBAR_LEFT_VARIANT_GLYPH_COUNT = (
-    HOTBAR_LEFT_FADE_OFFSET + FADE_STEPS * 12)
+HOTBAR_LEFT_VARIANT_GLYPH_COUNT = HOTBAR_LEFT_FADE_OFFSET + FADE_STEPS * 12
+HOTBAR_LEFT_DIGIT_FADE_COUNT = HOTBAR_LEFT_VARIANT_GLYPH_COUNT - HOTBAR_LEFT_DIGIT_OFFSET
 HOTBAR_LEFT_START_INDEX = TEXT_VARIANT_END_INDEX
 HOTBAR_LEFT_TOTAL = VARIANT_COUNT * HOTBAR_LEFT_VARIANT_GLYPH_COUNT
 HOTBAR_RIGHT_START_INDEX = HOTBAR_LEFT_START_INDEX + HOTBAR_LEFT_TOTAL
@@ -293,6 +293,55 @@ def select_atlas_cells(data: bytes, cols: int, indices: tuple[int, ...]) -> tupl
             dst = (y * output_width + out_col * cell_width) * 4
             target[dst:dst + cell_width * 4] = source[src:src + cell_width * 4]
     return output_width, cell_height, bytes(target)
+
+
+def hotbar_icon_atlas_data() -> bytes:
+    """One 11-glyph atlas for the three left stats icons and eight abilities."""
+    gear_w, gear_h, gear = select_atlas_cells(
+        (ASSETS / "hud_gear.png").read_bytes(), len(GEAR_CHARS), (0, 1, 9))
+    ability_w, ability_h, abilities = select_atlas_cells(
+        (ASSETS / "hud_ability.png").read_bytes(), len(ABILITY_CHARS),
+        tuple(range(len(ABILITY_CHARS))))
+    if gear_h != ability_h:
+        raise ValueError("иконки хотбара должны иметь одинаковую высоту ячейки")
+    width = gear_w + ability_w
+    pixels = bytearray(width * gear_h * 4)
+    for y in range(gear_h):
+        row_bytes = gear_w * 4
+        pixels[y * width * 4:y * width * 4 + row_bytes] = \
+            gear[y * gear_w * 4:(y + 1) * gear_w * 4]
+        start = (y * width + gear_w) * 4
+        pixels[start:start + ability_w * 4] = \
+            abilities[y * ability_w * 4:(y + 1) * ability_w * 4]
+    return encode_rgba_png(width, gear_h, bytes(pixels))
+
+
+def hotbar_digits_fade_atlas_data() -> bytes:
+    """Pack 10 digits and five 12-glyph damage sets into one bitmap atlas."""
+    cols = 14
+    cell_width = GLYPH_HEIGHT
+    cell_height = HOTBAR_VARIANT_HEIGHT
+    count = HOTBAR_LEFT_DIGIT_FADE_COUNT
+    rows = (count + cols - 1) // cols
+    width, height = cols * cell_width, rows * cell_height
+    pixels = bytearray(width * height * 4)
+    sources = [((ASSETS / "hud_digits.png").read_bytes(), tuple(range(10)))]
+    sources.extend(((ASSETS / f"hud_fade{step}.png").read_bytes(), tuple(range(12)))
+                   for step in range(FADE_STEPS))
+    out_index = 0
+    for data, indices in sources:
+        source_width, source_height, source = png_rgba(data)
+        source_cols = source_width // cell_width
+        if source_height != cell_width or source_width % cell_width:
+            raise ValueError(f"цифровой атлас имеет неожиданную сетку {source_width}x{source_height}")
+        for source_index in indices:
+            col, row = out_index % cols, out_index // cols
+            for y in range(source_height):
+                src = (y * source_width + source_index % source_cols * cell_width) * 4
+                dst = ((row * cell_height + 6 + y) * width + col * cell_width) * 4
+                pixels[dst:dst + cell_width * 4] = source[src:src + cell_width * 4]
+            out_index += 1
+    return encode_rgba_png(width, height, bytes(pixels))
 
 
 def padded_atlas(data: bytes, cols: int, rows: int, target_cell_height: int,
@@ -513,51 +562,29 @@ def build_font_json() -> dict:
             *[
                 {
                     "type": "bitmap",
-                    "file": "servermmo:font/hud_hotbar_left_icons_offset.png",
+                    "file": "servermmo:font/hud_hotbar_icons_offset.png",
                     "ascent": HOTBAR_ASCENT - offset,
                     "height": HOTBAR_VARIANT_HEIGHT,
                     "chars": [pua_chars(HOTBAR_LEFT_START_INDEX
                                          + variant_index(offset) * HOTBAR_LEFT_VARIANT_GLYPH_COUNT
                                          + HOTBAR_LEFT_GEAR_OFFSET,
-                                         HOTBAR_LEFT_GEAR_COUNT)],
+                                         HOTBAR_LEFT_GEAR_COUNT)
+                              + pua_chars(HOTBAR_RIGHT_START_INDEX
+                                          + variant_index(offset) * HOTBAR_RIGHT_VARIANT_GLYPH_COUNT,
+                                          HOTBAR_RIGHT_VARIANT_GLYPH_COUNT)],
                 }
                 for offset in range(-ICON_OFFSET_RANGE, ICON_OFFSET_RANGE + 1)
             ],
             *[
                 {
                     "type": "bitmap",
-                    "file": "servermmo:font/hud_hotbar_digits_offset.png",
-                    "ascent": HOTBAR_DIGIT_ASCENT - offset,
-                    "height": HOTBAR_VARIANT_HEIGHT,
-                    "chars": [pua_chars(HOTBAR_LEFT_START_INDEX
-                                         + variant_index(offset) * HOTBAR_LEFT_VARIANT_GLYPH_COUNT
-                                         + HOTBAR_LEFT_DIGIT_OFFSET,
-                                         HOTBAR_LEFT_DIGIT_COUNT)],
-                }
-                for offset in range(-ICON_OFFSET_RANGE, ICON_OFFSET_RANGE + 1)
-            ],
-            *[
-                {
-                    "type": "bitmap",
-                    "file": f"servermmo:font/hud_fade{step}_hotbar_offset.png",
-                    "ascent": HOTBAR_DIGIT_ASCENT - offset,
-                    "height": HOTBAR_VARIANT_HEIGHT,
-                    "chars": [pua_chars(HOTBAR_LEFT_START_INDEX
-                                         + variant_index(offset) * HOTBAR_LEFT_VARIANT_GLYPH_COUNT
-                                         + HOTBAR_LEFT_FADE_OFFSET + step * 12, 12)],
-                }
-                for offset in range(-ICON_OFFSET_RANGE, ICON_OFFSET_RANGE + 1)
-                for step in range(FADE_STEPS)
-            ],
-            *[
-                {
-                    "type": "bitmap",
-                    "file": "servermmo:font/hud_ability_offset.png",
+                    "file": "servermmo:font/hud_hotbar_digits_fade_offset.png",
                     "ascent": HOTBAR_ASCENT - offset,
                     "height": HOTBAR_VARIANT_HEIGHT,
-                    "chars": [pua_chars(HOTBAR_RIGHT_START_INDEX
-                                         + variant_index(offset) * HOTBAR_RIGHT_VARIANT_GLYPH_COUNT,
-                                         HOTBAR_RIGHT_VARIANT_GLYPH_COUNT)],
+                    "chars": grid(pua_chars(HOTBAR_LEFT_START_INDEX
+                                             + variant_index(offset) * HOTBAR_LEFT_VARIANT_GLYPH_COUNT
+                                             + HOTBAR_LEFT_DIGIT_OFFSET,
+                                             HOTBAR_LEFT_DIGIT_FADE_COUNT), 14),
                 }
                 for offset in range(-ICON_OFFSET_RANGE, ICON_OFFSET_RANGE + 1)
             ],
@@ -684,25 +711,19 @@ def main() -> int:
                        textures / "hud_panel_offset.png",
                        PANEL_COLS, 5, PANEL_VARIANT_HEIGHT, PANEL_HEIGHT)
 
-    hotbar_icons_width, hotbar_icons_height, hotbar_icons = select_atlas_cells(
-        (ASSETS / "hud_gear.png").read_bytes(), len(GEAR_CHARS), (0, 1, 9))
-    hotbar_digits_width, hotbar_digits_height, hotbar_digits = select_atlas_cells(
-        (ASSETS / "hud_digits.png").read_bytes(), len(DIGIT_CHARS), tuple(range(10)))
-    write_offset_data(encode_rgba_png(hotbar_icons_width, hotbar_icons_height,
-                                      hotbar_icons),
-                      textures / "hud_hotbar_left_icons_offset.png",
-                      HOTBAR_LEFT_GEAR_COUNT, 1, HOTBAR_VARIANT_HEIGHT, HOTBAR_HEIGHT)
-    write_offset_data(encode_rgba_png(hotbar_digits_width, hotbar_digits_height,
-                                      hotbar_digits),
-                      textures / "hud_hotbar_digits_offset.png",
-                      HOTBAR_LEFT_DIGIT_COUNT, 1, HOTBAR_VARIANT_HEIGHT, GLYPH_HEIGHT)
-    write_offset_atlas(textures / "hud_ability.png",
-                       textures / "hud_ability_offset.png",
-                       len(ABILITY_CHARS), 1, HOTBAR_VARIANT_HEIGHT, HOTBAR_HEIGHT)
-    for step in range(FADE_STEPS):
-        write_offset_atlas(textures / f"hud_fade{step}.png",
-                           textures / f"hud_fade{step}_hotbar_offset.png",
-                           12, 1, HOTBAR_VARIANT_HEIGHT, GLYPH_HEIGHT)
+    write_offset_data(hotbar_icon_atlas_data(),
+                      textures / "hud_hotbar_icons_offset.png",
+                      HOTBAR_LEFT_GEAR_COUNT + HOTBAR_RIGHT_VARIANT_GLYPH_COUNT,
+                      1, HOTBAR_VARIANT_HEIGHT, HOTBAR_HEIGHT)
+    # Одинаковая базовая линия для этих глифов; цифры и индикатор физически
+    # сдвинуты на 6 px вниз внутри ячейки, чтобы сохранить прежнее выравнивание.
+    digit_fade_path = textures / "hud_hotbar_digits_fade_offset.png"
+    digit_fade_path.write_bytes(hotbar_digits_fade_atlas_data())
+    for stale_name in (
+            "hud_hotbar_left_icons_offset.png", "hud_hotbar_digits_offset.png",
+            "hud_ability_offset.png",
+            *(f"hud_fade{step}_hotbar_offset.png" for step in range(FADE_STEPS))):
+        (textures / stale_name).unlink(missing_ok=True)
 
     # --- ванильные сердца и полосы -----------------------------------------
     gui = PACK / "assets" / "minecraft" / "textures" / "gui"

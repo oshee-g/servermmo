@@ -251,7 +251,7 @@ final class HudCommand implements CommandExecutor {
 
     /**
      * {@code /hud offsety <px>} — сдвиг текста и значков панели вниз
-     * относительно её картинки, в пикселях интерфейса (-15..15).
+     * относительно её картинки, в пикселях интерфейса (-100..100).
      *
      * <p>Базовая линия босс-бара фиксирована клиентом, поэтому на самом
      * деле двигается картинка панели в противоположную сторону: визуально
@@ -261,7 +261,7 @@ final class HudCommand implements CommandExecutor {
     private boolean setOffsetY(CommandSender sender, String[] args) {
         if (args.length < 2) {
             sender.sendMessage(Component.text(
-                    "Укажите сдвиг: /hud offsety <пиксели> (от -15 до 15, "
+                    "Укажите сдвиг: /hud offsety <пиксели> (от -100 до 100, "
                             + "положительное — контент ниже)",
                     NamedTextColor.YELLOW));
             return true;
@@ -285,7 +285,7 @@ final class HudCommand implements CommandExecutor {
 
     /**
      * {@code /hud texty <px>} — сдвиг текста панели вниз относительно
-     * значков, в пикселях интерфейса (-5..5).
+     * значков, в пикселях интерфейса (-100..100).
      *
      * <p>Текст — шрифт клиента, его базовая линия фиксирована, поэтому
      * на самом деле двигаются значки вверх: визуально текст оказывается
@@ -294,7 +294,7 @@ final class HudCommand implements CommandExecutor {
     private boolean setTextY(CommandSender sender, String[] args) {
         if (args.length < 2) {
             sender.sendMessage(Component.text(
-                    "Укажите сдвиг: /hud texty <пиксели> (от -5 до 5, "
+                    "Укажите сдвиг: /hud texty <пиксели> (от -100 до 100, "
                             + "положительное — текст ниже)",
                     NamedTextColor.YELLOW));
             return true;
@@ -414,11 +414,11 @@ final class HudCommand implements CommandExecutor {
                         + "от края по текущему масштабу", NamedTextColor.YELLOW));
         sender.sendMessage(Component.text(
                 "/hud offsety <пиксели> — сдвиг текста и значков вниз "
-                        + "относительно картинки панели (-15..15)",
+                        + "относительно картинки панели (-100..100)",
                 NamedTextColor.YELLOW));
         sender.sendMessage(Component.text(
                 "/hud texty <пиксели> — сдвиг текста вниз относительно "
-                        + "значков (-5..5)", NamedTextColor.YELLOW));
+                        + "значков (-100..100)", NamedTextColor.YELLOW));
         sender.sendMessage(Component.text(
                 "/hud anchorx <пиксели> — левый край строки хотбара (-91)",
                 NamedTextColor.YELLOW));

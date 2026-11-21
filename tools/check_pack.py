@@ -25,6 +25,9 @@ import zipfile
 from pathlib import Path
 
 from png_io import glyph_advance_grid, png_rgba
+from gen_resourcepack import (
+    INLINE_TOTAL, PANEL_TOTAL, TEXT_VARIANT_TOTAL, pua_codepoint,
+)
 
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_ZIP = ROOT / "server" / "resourcepack" / "servermmo-hud.zip"
@@ -132,9 +135,9 @@ def check_codepoint_grid(font: dict, problems: list[str]) -> None:
 
 
 def check_texty_glyphs(font: dict, problems: list[str]) -> None:
-    """/hud texty включает уникальные bitmap-глифы цифр и малых значков."""
-    base, count, variants = 0xF0000, 218, 11
-    expected = set(range(base, base + count * variants))
+    """Проверяет все 201 варианта панели, текста и малых inline-глифов."""
+    total = INLINE_TOTAL + PANEL_TOTAL + 2 * TEXT_VARIANT_TOTAL
+    expected = {pua_codepoint(index) for index in range(total)}
     found = {
         ord(char)
         for provider in font.get("providers", [])
@@ -144,7 +147,18 @@ def check_texty_glyphs(font: dict, problems: list[str]) -> None:
     }
     missing = expected - found
     if missing:
-        problems.append(f"/hud texty: отсутствуют {len(missing)} вариантов малых глифов")
+        problems.append(f"варианты HUD-глифов: отсутствуют {len(missing)} из {total} PUA-кодов")
+    for provider in font.get("providers", []):
+        if provider.get("type") != "bitmap":
+            continue
+        file = provider.get("file", "")
+        if file.endswith("hud_panel_offset.png") and provider.get("height") != 160:
+            problems.append(f"{file}: варианты панели должны использовать ячейки 160 px")
+        if file.endswith("_offset.png") and any(
+                stem in file for stem in ("hud_text", "hud_digits_inline", "hud_money",
+                                          "hud_level", "hud_clan")):
+            if provider.get("height") != 128:
+                problems.append(f"{file}: варианты текста/значков должны использовать height=128")
     space = next((provider.get("advances", {}) for provider in font.get("providers", [])
                   if provider.get("type") == "space"), {})
     if space.get(chr(0xE101)) != 4:
@@ -194,6 +208,8 @@ def check_metrics(font: dict, names: set[str], zf: zipfile.ZipFile,
                   problems: list[str]) -> None:
     """Таблица ширин глифов в плагине должна совпадать с атласами пака."""
     measured: dict[str, int] = {}
+    image_cache: dict[str, tuple[int, int, bytes]] = {}
+    advance_cache: dict[tuple[str, int, int, int], list[list[int]]] = {}
     for provider in font.get("providers", []):
         # Пробелы и сдвиги курсора заданы в space-провайдере, а не в PNG.
         if provider.get("type") == "space":
@@ -210,19 +226,29 @@ def check_metrics(font: dict, names: set[str], zf: zipfile.ZipFile,
         cols = max(1, len(rows_chars[0])) if rows_chars else 1
         rows_count = max(1, len(rows_chars))
         try:
-            width, height, pixels = png_rgba(zf.read(texture))
+            if texture not in image_cache:
+                image_cache[texture] = png_rgba(zf.read(texture))
+            width, height, pixels = image_cache[texture]
         except ValueError:
             continue
-        cell_w, cell_h = width // cols, height // rows_count
-        # Масштаб провайдера (height / высота ячейки): значки панели
-        # рисуются 16 px из ячеек 24 px, ширина масштабируется как у игры.
+        # Масштаб провайдера (height / высота ячейки): ширина глифа
+        # масштабируется точно так же, как в клиенте Minecraft.
         prov_height = provider.get("height")
-        scale = (prov_height / cell_h) if isinstance(prov_height, int) and cell_h else 1.0
+        cache_key = (texture, cols, rows_count,
+                     prov_height if isinstance(prov_height, int) else 0)
+        if cache_key not in advance_cache:
+            cell_w, cell_h = width // cols, height // rows_count
+            scale = (prov_height / cell_h) if isinstance(prov_height, int) and cell_h else 1.0
+            advance_cache[cache_key] = [
+                [glyph_advance_grid(width, height, pixels, cell_w, cell_h,
+                                    col_index, row_index, scale)
+                 for col_index in range(cols)]
+                for row_index in range(rows_count)
+            ]
+        advances = advance_cache[cache_key]
         for row_index, row in enumerate(rows_chars):
             for col_index, char in enumerate(row):
-                measured[char] = glyph_advance_grid(width, height, pixels,
-                                                    cell_w, cell_h,
-                                                    col_index, row_index, scale)
+                measured[char] = advances[row_index][col_index]
     expected = ",".join(f"{ord(ch):x}:{adv}" for ch, adv in sorted(measured.items()))
     if not METRICS_FILE.is_file():
         problems.append("нет font-metrics.properties — запусти tools/gen_font_metrics.py")
@@ -247,6 +273,7 @@ def check_glyph_fits_atlas(font: dict, names: set[str], zf: zipfile.ZipFile,
     этом загружается без ошибок, и в логе ничего не видно.</p>
     """
     atlas = 256
+    image_sizes: dict[str, tuple[int, int]] = {}
     for provider in font.get("providers", []):
         if provider.get("type") != "bitmap":
             continue
@@ -259,7 +286,9 @@ def check_glyph_fits_atlas(font: dict, names: set[str], zf: zipfile.ZipFile,
             continue
         cols, rows_count = len(rows_chars[0]), len(rows_chars)
         try:
-            width, height, _ = png_rgba(zf.read(texture))
+            if texture not in image_sizes:
+                image_sizes[texture] = png_size(zf.read(texture))
+            width, height = image_sizes[texture]
         except ValueError:
             continue
         cell_w, cell_h = width // cols, height // rows_count

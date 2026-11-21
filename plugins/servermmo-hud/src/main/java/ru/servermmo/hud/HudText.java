@@ -44,22 +44,14 @@ final class HudText {
             .font(Key.key("servermmo", "hud"))
             .color(NamedTextColor.WHITE)
             .build();
-    /** Панели классов: 10 шт.; диапазон E700..E835 отдельно от хотбарных глифов. */
-    private static final int PANEL_BASE = 0xE700;
+    /** Панели классов: по одному глифу на класс в каждом варианте offsety. */
     private static final int PANEL_CLASS_COUNT = HudProfile.CLASSES.length;
-    /**
-     * Диапазон команды {@code /hud offsety}: контент панели можно сдвинуть
-     * вниз относительно картинки на -15..+15 px. У каждого сдвига свой
-     * вариант глифа панели (та же картинка, другой ascent в паке).
-     */
-    static final int PANEL_OFFSET_RANGE = 15;
-    /**
-     * Диапазон команды {@code /hud texty}: текст панели можно сдвинуть
-     * вниз относительно значков на -5..+5 px. Текст — свои глифы, поэтому
-     * двигается сам текст (варианты глифов с разной высотой в паке).
-     * texty=0 — базовые глифы.
-     */
-    static final int ICON_OFFSET_RANGE = 5;
+    /** Диапазоны точных смещений команд, в пикселях интерфейса. */
+    static final int PANEL_OFFSET_RANGE = 100;
+    static final int ICON_OFFSET_RANGE = 100;
+    private static final int VARIANT_COUNT = 2 * ICON_OFFSET_RANGE + 1;
+    private static final int PUA_START = 0xF0000;
+    private static final int PUA_FIRST_PLANE_COUNT = 0xFFFFE - PUA_START;
     /**
      * Текст панели своими глифами (атлас hud_text.png): кириллица, латиница,
      * цифры и знаки. Текст и мелкие значки/цифры используют варианты высоты
@@ -74,16 +66,18 @@ final class HudText {
             + "0123456789"
             + "_/-·.,!?:;()[]{}+=*#@%&|<>"
             + "—–«»№°±×÷§`'\"\\~^$";
-    private static final int TEXT_SMALL_BASE = 0xE840;
-    private static final int TEXT_SMALL_VARIANT_BASE = TEXT_SMALL_BASE + TEXT_CHARS.length();
-    /** Варианты вертикального сдвига для цифр и малых значков, supplementary PUA. */
-    private static final int INLINE_VARIANT_BASE = 0xF0000;
+    /** Inline-варианты: цифры, валюты, уровни и уровни клана. */
     private static final int INLINE_GLYPH_COUNT = 218;
     private static final int INLINE_MONEY_OFFSET = 12;
     private static final int INLINE_LEVEL_OFFSET = 18;
     private static final int INLINE_CLAN_OFFSET = 118;
-    private static final int TEXT_BASE = 0xF000;
-    private static final int TEXT_VARIANT_BASE = 0xF100;
+    private static final int INLINE_START_INDEX = 0;
+    private static final int INLINE_VARIANT_TOTAL = VARIANT_COUNT * INLINE_GLYPH_COUNT;
+    private static final int PANEL_START_INDEX = INLINE_VARIANT_TOTAL;
+    private static final int PANEL_VARIANT_TOTAL = VARIANT_COUNT * PANEL_CLASS_COUNT;
+    private static final int TEXT_START_INDEX = PANEL_START_INDEX + PANEL_VARIANT_TOTAL;
+    private static final int TEXT_VARIANT_TOTAL = VARIANT_COUNT * TEXT_CHARS.length();
+    private static final int TEXT_SMALL_START_INDEX = TEXT_START_INDEX + TEXT_VARIANT_TOTAL;
     /** Ромбы уровней игрока 1..100 (номер нарисован на ромбе, без «lvl»). */
     private static final int LEVEL_BASE = 0xE400;
     /** Щиты уровней клана 1..100 (номер нарисован на щите, без «lvl»). */
@@ -196,23 +190,21 @@ final class HudText {
         for (int i = 0; i < 100; i++) {
             map.put((int) (CLAN_BASE + i), 14);
         }
-        for (int i = 0; i < (2 * PANEL_OFFSET_RANGE + 1) * PANEL_CLASS_COUNT; i++) {
-            map.put((int) (PANEL_BASE + i), 256);
-        }
-        for (int i = 0; i < TEXT_CHARS.length(); i++) {
-            map.put((int) (TEXT_BASE + i), 16);
-        }
-        for (int v = 0; v < 2 * ICON_OFFSET_RANGE; v++) {
-            for (int i = 0; i < TEXT_CHARS.length(); i++) {
-                map.put((int) (TEXT_VARIANT_BASE + v * TEXT_CHARS.length() + i), 16);
+        for (int variant = 0; variant < VARIANT_COUNT; variant++) {
+            int inlineStart = INLINE_START_INDEX + variant * INLINE_GLYPH_COUNT;
+            for (int i = 0; i < INLINE_GLYPH_COUNT; i++) {
+                int advance = i < INLINE_MONEY_OFFSET ? 7 : 14;
+                map.put(puaCodePoint(inlineStart + i), advance);
             }
-        }
-        for (int i = 0; i < TEXT_CHARS.length(); i++) {
-            map.put((int) (TEXT_SMALL_BASE + i), 8);
-        }
-        for (int v = 0; v < 2 * ICON_OFFSET_RANGE; v++) {
+            int panelStart = PANEL_START_INDEX + variant * PANEL_CLASS_COUNT;
+            for (int i = 0; i < PANEL_CLASS_COUNT; i++) {
+                map.put(puaCodePoint(panelStart + i), 256);
+            }
+            int textStart = TEXT_START_INDEX + variant * TEXT_CHARS.length();
+            int smallStart = TEXT_SMALL_START_INDEX + variant * TEXT_CHARS.length();
             for (int i = 0; i < TEXT_CHARS.length(); i++) {
-                map.put((int) (TEXT_SMALL_VARIANT_BASE + v * TEXT_CHARS.length() + i), 8);
+                map.put(puaCodePoint(textStart + i), 16);
+                map.put(puaCodePoint(smallStart + i), 8);
             }
         }
         for (int step = 0; step < FADE_STEPS; step++) {
@@ -326,26 +318,22 @@ final class HudText {
 
     /** Ширина глифа-панели класса: по ней считается сдвиг всей панели. */
     int panelWidth(int classIndex) {
-        return width((char) (PANEL_BASE + Math.max(0,
-                Math.min(PANEL_CLASS_COUNT - 1, classIndex))));
+        int index = Math.max(0, Math.min(PANEL_CLASS_COUNT - 1, classIndex));
+        return width(puaCodePoint(PANEL_START_INDEX + variantIndex(0) * PANEL_CLASS_COUNT + index));
     }
 
     /** Глиф текста с учётом сдвига (texty) и размера шрифта. */
-    private char textGlyph(char ch, int texty) {
+    private int textGlyph(char ch, int texty) {
         return textGlyph(ch, texty, false);
     }
 
-    private char textGlyph(char ch, int texty, boolean small) {
+    private int textGlyph(char ch, int texty, boolean small) {
         int index = TEXT_CHARS.indexOf(ch);
         if (index < 0) {
             index = TEXT_CHARS.indexOf('?');
         }
-        if (texty == 0) {
-            return (char) ((small ? TEXT_SMALL_BASE : TEXT_BASE) + index);
-        }
-        int variant = texty < 0 ? texty + ICON_OFFSET_RANGE : texty + ICON_OFFSET_RANGE - 1;
-        int base = small ? TEXT_SMALL_VARIANT_BASE : TEXT_VARIANT_BASE;
-        return (char) (base + variant * TEXT_CHARS.length() + index);
+        int start = small ? TEXT_SMALL_START_INDEX : TEXT_START_INDEX;
+        return puaCodePoint(start + variantIndex(texty) * TEXT_CHARS.length() + index);
     }
 
     /** Строка текста в глифы шрифта панели (пробел — space-провайдер). */
@@ -359,16 +347,32 @@ final class HudText {
             char ch = text.charAt(i);
             // Обычный пробел некоторые версии клиента рисуют без advance в
             // bitmap-шрифте; явный space-глиф гарантирует видимый интервал.
-            sb.append(ch == ' ' ? BLANK_4 : textGlyph(ch, texty, small));
+            if (ch == ' ') {
+                sb.append(BLANK_4);
+            } else {
+                sb.appendCodePoint(textGlyph(ch, texty, small));
+            }
         }
         return sb.toString();
     }
 
+    private static int variantIndex(int offset) {
+        return Math.max(-ICON_OFFSET_RANGE, Math.min(ICON_OFFSET_RANGE, offset))
+                + ICON_OFFSET_RANGE;
+    }
+
+    private static int puaCodePoint(int index) {
+        return index < PUA_FIRST_PLANE_COUNT
+                ? PUA_START + index
+                : 0x100000 + index - PUA_FIRST_PLANE_COUNT;
+    }
+
+    private static String glyphString(int codePoint) {
+        return new String(Character.toChars(codePoint));
+    }
+
     /** Подбирает вертикальный вариант цифры/малого значка под /hud texty. */
     private static int inlineGlyph(int codePoint, int texty) {
-        if (texty == 0) {
-            return codePoint;
-        }
         int offset;
         int index;
         if (codePoint >= '0' && codePoint <= '9') {
@@ -389,15 +393,11 @@ final class HudText {
         } else {
             return codePoint;
         }
-        int variant = Math.max(-ICON_OFFSET_RANGE, Math.min(ICON_OFFSET_RANGE, texty))
-                + ICON_OFFSET_RANGE;
-        return INLINE_VARIANT_BASE + variant * INLINE_GLYPH_COUNT + offset + index;
+        int variant = variantIndex(texty);
+        return puaCodePoint(INLINE_START_INDEX + variant * INLINE_GLYPH_COUNT + offset + index);
     }
 
     private static String inlineText(String text, int texty) {
-        if (texty == 0) {
-            return text;
-        }
         StringBuilder shifted = new StringBuilder(text.length());
         for (int i = 0; i < text.length();) {
             int codePoint = text.codePointAt(i);
@@ -423,8 +423,8 @@ final class HudText {
      *
      * @param layout геометрия под экран игрока (ширина интерфейса и отступ)
      * @param offsetY сдвиг текста и значков вниз относительно картинки
-     *                панели, px (-15..15, команда {@code /hud offsety})
-     * @param texty сдвиг текста вниз относительно значков, px (-5..5,
+     *                панели, px (-100..100, команда {@code /hud offsety})
+     * @param texty сдвиг текста вниз относительно значков, px (-100..100,
      *              команда {@code /hud texty}; цифры и малые значки следуют за текстом)
      */
     Component[] panel(HudProfile profile, String playerName, long level, long xp, long xpToNext,
@@ -432,7 +432,8 @@ final class HudText {
         int panelOffset = Math.max(-PANEL_OFFSET_RANGE, Math.min(PANEL_OFFSET_RANGE,
                 offsetY + classPanelOffset(profile.classIndex())));
         int variant = panelOffset + PANEL_OFFSET_RANGE;
-        char panelGlyph = (char) (PANEL_BASE + variant * PANEL_CLASS_COUNT + profile.classIndex());
+        int panelGlyph = puaCodePoint(PANEL_START_INDEX + variant * PANEL_CLASS_COUNT
+                + profile.classIndex());
         int panelWidth = width(panelGlyph);
         int contentLeft = contentLeft(profile.classIndex());
         int offset = layout.panelShift(panelWidth);
@@ -455,7 +456,7 @@ final class HudText {
         int titleTail = Math.max(0, panelWidth - contentLeft - titleW);
 
         Component first = Component.text(shift(offset), GLYPHS)
-                .append(Component.text(String.valueOf(panelGlyph), GLYPHS))
+                .append(Component.text(glyphString(panelGlyph), GLYPHS))
                 .append(Component.text(shift(-(panelWidth - contentLeft)), GLYPHS))
                 .append(Component.text(inlineText(String.valueOf(MONEY_SCROLL), texty)
                         + pad(titleIconGap), GLYPHS))

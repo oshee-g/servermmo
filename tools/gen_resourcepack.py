@@ -84,9 +84,9 @@ HOTBAR_DIGIT_ASCENT = -6
 PANEL_HEIGHT = 96
 PANEL_ASCENT = 33
 
-# Кодовые точки. Занято: 0xE010/11/13 (старые значки), 0xE100-0xE10C
-# (пробелы), 0xE110+ (сдвиги вправо), 0xE120+ (сдвиги влево),
-# 0xE200-0xE24B (ступени затухания урона). Новое — с 0xE300.
+# Старые диапазоны: 0xE010/11/13 (значки), 0xE100-0xE10C (пробелы),
+# 0xE110+ и 0xE120+ (сдвиги), 0xE200-0xE24B (затухание урона),
+# 0xE300+ (значки панели/хотбара). Варианты HUD занимают supplementary PUA.
 def chars(base: int, count: int) -> str:
     return "".join(chr(base + i) for i in range(count))
 
@@ -108,18 +108,18 @@ MONEY_CHARS = chars(0xE310, 6)      # монеты, коины, нанагемы
 ABILITY_CHARS = chars(0xE320, 8)    # восемь слотов способностей
 LEVEL_CHARS = chars(0xE400, 100)    # ромбы уровней игрока 1..100
 CLAN_CHARS = chars(0xE470, 100)     # щиты уровней клана 1..100
-PANEL_OFFSET_RANGE = 15             # команда /hud offsety: сдвиг контента -15..+15
+PANEL_OFFSET_RANGE = 100           # /hud offsety: панель -100..+100 px
+ICON_OFFSET_RANGE = 100             # /hud texty: текст -100..+100 px
 PANEL_CLASS_COUNT = 10
-PANEL_BASE = 0xE700  # новый диапазон не пересекается с цифрами хотбара E600..E65B
-PANEL_CHARS = chars(PANEL_BASE + PANEL_OFFSET_RANGE * PANEL_CLASS_COUNT, PANEL_CLASS_COUNT)
-# Варианты глифа панели с разной высотой (ascent): плагин выбирает вариант
-# по команде /hud offsety, чтобы двигать текст и значки относительно
-# картинки панели. Вариант i рисуется с ascent PANEL_ASCENT + (i - диапазон).
-PANEL_VARIANTS = [chars(PANEL_BASE + i * PANEL_CLASS_COUNT, PANEL_CLASS_COUNT)
-                  for i in range(2 * PANEL_OFFSET_RANGE + 1)]
-ICON_OFFSET_RANGE = 5               # команда /hud texty: текст ниже/выше значков, -5..+5
-# Текст панели своими глифами (команда /hud texty): кириллица, латиница,
-# цифры и знаки. Атлас — tools/build_text_font.py (hud_text.png).
+TEXT_COLS = 19
+TEXT_HEIGHT = 16
+TEXT_ASCENT = 6
+TEXT_VARIANT_HEIGHT = 128
+INLINE_VARIANT_HEIGHT = 128
+PANEL_VARIANT_HEIGHT = 160
+PUA_START = 0xF0000
+PUA_A_COUNT = 0xFFFFE - PUA_START
+
 TEXT_CHARS = (
     "АБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ"
     "абвгдежзийклмнопрстуфхцчшщъыьэюя"
@@ -130,43 +130,47 @@ TEXT_CHARS = (
     "_/-·.,!?:;()[]{}+=*#@%&|<>"
     "—–«»№°±×÷§`'\"\\~^$"
 )
-# Компактный текст занимает свободный диапазон E840..EF98: 11 вариантов
-# (обычный + 10 сдвигов /hud texty) по всем символам до основной полосы F000.
-TEXT_SMALL_BASE = 0xE840
-TEXT_SMALL_VARIANT_BASE = TEXT_SMALL_BASE + len(TEXT_CHARS)
-TEXT_BASE = 0xF000
-TEXT_VARIANT_BASE = 0xF100
-TEXT_COLS = 19
-TEXT_HEIGHT = 16
-TEXT_ASCENT = 6  # базовая линия глифа внутри ячейки атласа
 
-# Inline-глифы HUD (цифры и небольшие значки) тоже получают варианты по
-# /hud texty. Вынесены в supplementary PUA, чтобы не пересекать занятые
-# диапазоны BMP. Каждая группа: файл, исходный диапазон, количество столбцов,
-# высота bitmap-провайдера и базовый ascent.
+# База: глифы, столбцы, строки исходного атласа, высота рисования, ascent.
 INLINE_GLYPHS = (
-    ("hud_digits_inline.png", DIGIT_CHARS, len(DIGIT_CHARS), 16, 7),
-    ("hud_money.png", MONEY_CHARS, len(MONEY_CHARS), ICON_HEIGHT, ICON_ASCENT),
-    ("hud_level.png", LEVEL_CHARS, 10, ICON_HEIGHT, ICON_ASCENT),
-    ("hud_clan.png", CLAN_CHARS, 10, ICON_HEIGHT, ICON_ASCENT),
+    ("hud_digits_inline", DIGIT_CHARS, 12, 1, 16, 7),
+    ("hud_money", MONEY_CHARS, 6, 1, ICON_HEIGHT, ICON_ASCENT),
+    ("hud_level", LEVEL_CHARS, 10, 10, ICON_HEIGHT, ICON_ASCENT),
+    ("hud_clan", CLAN_CHARS, 10, 10, ICON_HEIGHT, ICON_ASCENT),
 )
-INLINE_VARIANT_BASE = 0xF0000
-INLINE_GLYPH_COUNT = sum(len(chars_) for _, chars_, *_ in INLINE_GLYPHS)
+INLINE_GLYPH_COUNT = sum(len(glyphs) for _, glyphs, *_ in INLINE_GLYPHS)
+VARIANT_COUNT = 2 * ICON_OFFSET_RANGE + 1
+INLINE_START_INDEX = 0
+INLINE_TOTAL = VARIANT_COUNT * INLINE_GLYPH_COUNT
+PANEL_START_INDEX = INLINE_TOTAL
+PANEL_VARIANT_GLYPH_COUNT = PANEL_CLASS_COUNT
+PANEL_TOTAL = VARIANT_COUNT * PANEL_VARIANT_GLYPH_COUNT
+TEXT_START_INDEX = PANEL_START_INDEX + PANEL_TOTAL
+TEXT_VARIANT_TOTAL = VARIANT_COUNT * len(TEXT_CHARS)
+TEXT_SMALL_START_INDEX = TEXT_START_INDEX + TEXT_VARIANT_TOTAL
 
 
-def _text_variants() -> list:
-    """(строка глифов, ascent) для каждого сдвига texty != 0."""
-    out = []
-    for v in range(2 * ICON_OFFSET_RANGE):
-        texty = v - ICON_OFFSET_RANGE if v < ICON_OFFSET_RANGE else v - ICON_OFFSET_RANGE + 1
-        out.append((chars(TEXT_VARIANT_BASE + v * len(TEXT_CHARS), len(TEXT_CHARS)),
-                    TEXT_ASCENT - texty))
-    return out
+def pua_codepoint(index: int) -> int:
+    if index < PUA_A_COUNT:
+        return PUA_START + index
+    return 0x100000 + index - PUA_A_COUNT
 
 
-TEXT_VARIANTS = _text_variants()
-LEVEL_COLS = 10                     # сетка 10x10
-PANEL_COLS = 2                      # сетка 2x5 (10 классов)
+def pua_chars(start: int, count: int) -> str:
+    return "".join(chr(pua_codepoint(start + i)) for i in range(count))
+
+
+def variant_index(offset: int) -> int:
+    return max(-ICON_OFFSET_RANGE, min(ICON_OFFSET_RANGE, offset)) + ICON_OFFSET_RANGE
+
+
+def panel_chars(variant: int) -> str:
+    start = PANEL_START_INDEX + variant * PANEL_VARIANT_GLYPH_COUNT
+    return pua_chars(start, PANEL_CLASS_COUNT)
+
+
+LEVEL_COLS = 10
+PANEL_COLS = 2
 
 
 def grid(chars_row: str, cols: int) -> list[str]:
@@ -252,7 +256,36 @@ def padded_digit_atlas(data: bytes) -> tuple[int, int, bytes]:
     return out_width, out_height, bytes(target)
 
 
-def write_rgba_png(path: Path, width: int, height: int, pixels: bytes) -> None:
+def padded_atlas(data: bytes, cols: int, rows: int, target_cell_height: int,
+                 draw_height: int | None = None) -> tuple[int, int, bytes]:
+    """Pad cells for large ascents, preserving the provider's original scale."""
+    width, height, source = png_rgba(data)
+    if width % cols or height % rows:
+        raise ValueError(f"атлас {width}x{height} не делится на сетку {cols}x{rows}")
+    cell_width, cell_height = width // cols, height // rows
+    draw_height = cell_height if draw_height is None else draw_height
+    if target_cell_height < draw_height:
+        raise ValueError(f"высота ячейки {target_cell_height} меньше глифа {draw_height}")
+    if draw_height > cell_height:
+        raise ValueError(f"нельзя растянуть ячейку {cell_height} до {draw_height}")
+    draw_width = max(1, round(cell_width * draw_height / cell_height))
+    target_height = rows * target_cell_height
+    target = bytearray(width * target_height * 4)
+    for row in range(rows):
+        for col in range(cols):
+            for y in range(draw_height):
+                source_y = min(cell_height - 1, int(y * cell_height / draw_height))
+                for x in range(draw_width):
+                    source_x = min(cell_width - 1, int(x * cell_width / draw_width))
+                    src = ((row * cell_height + source_y) * width
+                           + col * cell_width + source_x) * 4
+                    dst = ((row * target_cell_height + y) * width
+                           + col * cell_width + x) * 4
+                    target[dst:dst + 4] = source[src:src + 4]
+    return width, target_height, bytes(target)
+
+
+def encode_rgba_png(width: int, height: int, pixels: bytes) -> bytes:
     raw = bytearray()
     stride = width * 4
     for y in range(height):
@@ -264,8 +297,12 @@ def write_rgba_png(path: Path, width: int, height: int, pixels: bytes) -> None:
                 + struct.pack(">I", zlib.crc32(kind + payload) & 0xFFFFFFFF))
 
     header = struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0)
-    path.write_bytes(b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", header)
-                     + chunk(b"IDAT", zlib.compress(bytes(raw), 9)) + chunk(b"IEND", b""))
+    return (b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", header)
+            + chunk(b"IDAT", zlib.compress(bytes(raw), 9)) + chunk(b"IEND", b""))
+
+
+def write_rgba_png(path: Path, width: int, height: int, pixels: bytes) -> None:
+    path.write_bytes(encode_rgba_png(width, height, pixels))
 
 
 def write_blank_png(path: Path, width: int, height: int) -> None:
@@ -327,11 +364,12 @@ def fade_chars(step: int) -> str:
     return "".join(chr(base + i) for i in range(12))
 
 
-def _inline_glyph_groups():
+def inline_glyph_groups():
     offset = 0
-    for filename, source_chars, cols, height, ascent in INLINE_GLYPHS:
-        yield filename, source_chars, cols, height, ascent, offset
-        offset += len(source_chars)
+    for group in INLINE_GLYPHS:
+        stem, glyphs, cols, rows, draw_h, ascent = group
+        yield stem, glyphs, cols, rows, draw_h, ascent, offset
+        offset += len(glyphs)
 
 
 def build_font_json() -> dict:
@@ -409,12 +447,12 @@ def build_font_json() -> dict:
             *[
                 {
                     "type": "bitmap",
-                    "file": "servermmo:font/hud_panel.png",
-                    "ascent": PANEL_ASCENT + (i - PANEL_OFFSET_RANGE),
-                    "height": PANEL_HEIGHT,
-                    "chars": grid(variant, PANEL_COLS),
+                    "file": "servermmo:font/hud_panel_offset.png",
+                    "ascent": PANEL_ASCENT + offset,
+                    "height": PANEL_VARIANT_HEIGHT,
+                    "chars": grid(panel_chars(variant_index(offset)), PANEL_COLS),
                 }
-                for i, variant in enumerate(PANEL_VARIANTS)
+                for offset in range(-PANEL_OFFSET_RANGE, PANEL_OFFSET_RANGE + 1)
             ],
             *[
                 {
@@ -439,51 +477,40 @@ def build_font_json() -> dict:
             *[
                 {
                     "type": "bitmap",
-                    "file": f"servermmo:font/{filename}",
+                    "file": f"servermmo:font/{stem}_offset.png",
                     "ascent": ascent - texty,
-                    "height": height,
-                    "chars": grid(chars(INLINE_VARIANT_BASE
-                                        + (texty + ICON_OFFSET_RANGE) * INLINE_GLYPH_COUNT
-                                        + group_offset, len(source_chars)), cols),
+                    "height": INLINE_VARIANT_HEIGHT,
+                    "chars": grid(pua_chars(INLINE_START_INDEX
+                                             + variant_index(texty) * INLINE_GLYPH_COUNT
+                                             + group_offset, len(source_chars)), cols),
                 }
                 for texty in range(-ICON_OFFSET_RANGE, ICON_OFFSET_RANGE + 1)
-                for filename, source_chars, cols, height, ascent, group_offset
-                in _inline_glyph_groups()
+                for stem, source_chars, cols, rows, draw_h, ascent, group_offset
+                in inline_glyph_groups()
             ],
-            {
-                "type": "bitmap",
-                "file": "servermmo:font/hud_text.png",
-                "ascent": TEXT_ASCENT,
-                "height": TEXT_HEIGHT,
-                "chars": grid(chars(TEXT_BASE, len(TEXT_CHARS)), TEXT_COLS),
-            },
             *[
                 {
                     "type": "bitmap",
-                    "file": "servermmo:font/hud_text.png",
-                    "ascent": ascent,
-                    "height": TEXT_HEIGHT,
-                    "chars": grid(variant, TEXT_COLS),
+                    "file": "servermmo:font/hud_text_offset.png",
+                    "ascent": TEXT_ASCENT - texty,
+                    "height": TEXT_VARIANT_HEIGHT,
+                    "chars": grid(pua_chars(TEXT_START_INDEX
+                                             + variant_index(texty) * len(TEXT_CHARS),
+                                             len(TEXT_CHARS)), TEXT_COLS),
                 }
-                for variant, ascent in TEXT_VARIANTS
+                for texty in range(-ICON_OFFSET_RANGE, ICON_OFFSET_RANGE + 1)
             ],
-            {
-                "type": "bitmap",
-                "file": "servermmo:font/hud_text_small.png",
-                "ascent": TEXT_ASCENT,
-                "height": TEXT_HEIGHT,
-                "chars": grid(chars(TEXT_SMALL_BASE, len(TEXT_CHARS)), TEXT_COLS),
-            },
             *[
                 {
                     "type": "bitmap",
-                    "file": "servermmo:font/hud_text_small.png",
-                    "ascent": ascent,
-                    "height": TEXT_HEIGHT,
-                    "chars": grid(chars(TEXT_SMALL_VARIANT_BASE
-                                        + v * len(TEXT_CHARS), len(TEXT_CHARS)), TEXT_COLS),
+                    "file": "servermmo:font/hud_text_small_offset.png",
+                    "ascent": TEXT_ASCENT - texty,
+                    "height": TEXT_VARIANT_HEIGHT,
+                    "chars": grid(pua_chars(TEXT_SMALL_START_INDEX
+                                             + variant_index(texty) * len(TEXT_CHARS),
+                                             len(TEXT_CHARS)), TEXT_COLS),
                 }
-                for v, (_variant, ascent) in enumerate(TEXT_VARIANTS)
+                for texty in range(-ICON_OFFSET_RANGE, ICON_OFFSET_RANGE + 1)
             ],
             {
                 "type": "space",
@@ -543,6 +570,27 @@ def main() -> int:
         (ASSETS / "hud_digits.png").read_bytes())
     write_rgba_png(textures / "hud_digits_inline.png",
                    padded_width, padded_height, padded_pixels)
+
+    # У bitmap-провайдера ascent не может быть больше height. Расширяем
+    # прозрачные ячейки вверх по запасу высоты, сохраняя исходный арт 1:1.
+    def write_offset_atlas(source: Path, target: Path, cols: int,
+                           rows: int, cell_height: int, draw_height: int) -> None:
+        width, height, pixels = padded_atlas(
+            source.read_bytes(), cols, rows, cell_height, draw_height)
+        write_rgba_png(target, width, height, pixels)
+
+    for stem, _glyphs, cols, rows, draw_h, _ascent in INLINE_GLYPHS:
+        write_offset_atlas(textures / f"{stem}.png",
+                           textures / f"{stem}_offset.png",
+                           cols, rows, INLINE_VARIANT_HEIGHT, draw_h)
+    text_rows = (len(TEXT_CHARS) + TEXT_COLS - 1) // TEXT_COLS
+    for stem in ("hud_text", "hud_text_small"):
+        write_offset_atlas(textures / f"{stem}.png",
+                           textures / f"{stem}_offset.png",
+                           TEXT_COLS, text_rows, TEXT_VARIANT_HEIGHT, TEXT_HEIGHT)
+    write_offset_atlas(textures / "hud_panel.png",
+                       textures / "hud_panel_offset.png",
+                       PANEL_COLS, 5, PANEL_VARIANT_HEIGHT, PANEL_HEIGHT)
 
     # --- ванильные сердца и полосы -----------------------------------------
     gui = PACK / "assets" / "minecraft" / "textures" / "gui"

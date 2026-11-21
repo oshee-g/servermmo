@@ -106,11 +106,17 @@ final class HudText {
      * идут справа от неё. Координаты проверены на панели 256x96.
      */
     private static final int CONTENT_LEFT = 66;
-    private static final int CONTENT_RIGHT = 244;
+    /** Безопасная правая граница текстовой области для каждого класса. */
+    private static final int[] CONTENT_RIGHT_BY_CLASS = {
+            236, 238, 236, 236, 236, 234, 232, 236, 236, 236
+    };
     /** Зазор между значком и числом, px. */
     private static final int ICON_GAP = 4;
     /** Зазор между колонками строки, px. */
     private static final int COLUMN_GAP = 6;
+    /** Более плотные интервалы валютной строки, чтобы четыре значения помещались. */
+    private static final int MONEY_ICON_GAP = 1;
+    private static final int MONEY_COLUMN_GAP = 1;
 
     /** Сердце (здоровье) и меч (урон) - старые 8-пиксельные глифы. */
     static final char HEART = '\uE010';
@@ -334,16 +340,18 @@ final class HudText {
      * шрифт; если даже в нём строка не помещается, аккуратно обрезается.
      */
     private int titleBudget(char diamond, String xpFraction, boolean small,
-                            int contentLeft, int textx, int texty) {
+                            int contentLeft, int contentRight, int textx, int texty) {
         int iconGap = small ? 3 : ICON_GAP;
         int columnGap = small ? 4 : COLUMN_GAP;
-        return (CONTENT_RIGHT - contentLeft - textx) - width(MONEY_SCROLL) - iconGap
+        return (contentRight - contentLeft - textx) - width(MONEY_SCROLL) - iconGap
                 - width(diamond) - columnGap - width(inlineText(xpFraction, texty)) - columnGap;
     }
 
     private String fitTitle(String playerName, char diamond, String xpFraction,
-                            int texty, boolean small, int contentLeft, int textx) {
-        int budget = titleBudget(diamond, xpFraction, small, contentLeft, textx, texty);
+                            int texty, boolean small, int contentLeft, int contentRight,
+                            int textx) {
+        int budget = titleBudget(diamond, xpFraction, small, contentLeft,
+                contentRight, textx, texty);
         String name = playerName == null ? "" : playerName;
         while (textWidth(name, texty, small) > budget && !name.isEmpty()) {
             name = name.substring(0, name.length() - 1);
@@ -355,10 +363,18 @@ final class HudText {
     private static int contentLeft(int classIndex) {
         return switch (classIndex) {
             case 0 -> 72; // воин: отступить от выступов щита
+            case 1 -> 68; // лучник: освободить место под высокий щит
+            case 5 -> 72; // некромант: эмблема и черепа занимают больше места
             case 6 -> 80; // викинг: крупный круглый щит занимает больше места
             case 7 -> 70; // фермер: оставить место корзине у нижней строки
+            case 8 -> 70; // кузнец: отступить от наковальни
             default -> CONTENT_LEFT;
         };
+    }
+
+    private static int contentRight(int classIndex) {
+        return CONTENT_RIGHT_BY_CLASS[Math.max(0, Math.min(
+                CONTENT_RIGHT_BY_CLASS.length - 1, classIndex))];
     }
 
     /** Опустить подложку, чтобы строки HUD поднялись над полосами в арте. */
@@ -454,13 +470,18 @@ final class HudText {
     private static final long[] COMPACT_DIVISORS = {
             1L, 1_000L, 1_000_000L, 1_000_000_000L, 1_000_000_000_000L
     };
-    private static final String[] COMPACT_SUFFIXES = {"", "к", "м", "млрд", "трлн"};
+    private static final String[] COMPACT_SUFFIXES = {"", "к", "м", "B", "T"};
 
     /**
      * Числа HUD: до тысячи без суффикса, затем K/M/B/T с тремя значащими
      * цифрами и русской десятичной запятой (например, 1,31к и 27,4к).
      */
     static String compactNumber(long value) {
+        return compactNumber(value, 3);
+    }
+
+    private static String compactNumber(long value, int significantDigits) {
+        int precision = Math.max(1, Math.min(3, significantDigits));
         BigDecimal absolute = BigDecimal.valueOf(value).abs();
         if (absolute.compareTo(BigDecimal.valueOf(1_000L)) < 0) {
             return Long.toString(value);
@@ -474,9 +495,11 @@ final class HudText {
         while (true) {
             BigDecimal scaled = absolute.divide(BigDecimal.valueOf(COMPACT_DIVISORS[unit]),
                     2, RoundingMode.HALF_UP);
-            int decimalPlaces = scaled.compareTo(BigDecimal.TEN) < 0 ? 2
-                    : scaled.compareTo(BigDecimal.valueOf(100L)) < 0 ? 1 : 0;
-            scaled = scaled.setScale(decimalPlaces, RoundingMode.HALF_UP).stripTrailingZeros();
+            int decimalPlaces = scaled.compareTo(BigDecimal.TEN) < 0 ? precision - 1
+                    : scaled.compareTo(BigDecimal.valueOf(100L)) < 0 ? precision - 2
+                    : precision - 3;
+            scaled = scaled.setScale(Math.max(0, decimalPlaces), RoundingMode.HALF_UP)
+                    .stripTrailingZeros();
             if (scaled.compareTo(BigDecimal.valueOf(1_000L)) >= 0
                     && unit < COMPACT_DIVISORS.length - 1) {
                 unit++;
@@ -500,6 +523,41 @@ final class HudText {
             i += Character.charCount(codePoint);
         }
         return shifted.toString();
+    }
+
+    private String compactFraction(long value, long total, int maxWidth, int texty) {
+        String fraction = "";
+        for (int precision = 3; precision >= 1; precision--) {
+            fraction = compactNumber(value, precision) + "/" + compactNumber(total, precision);
+            if (width(inlineText(fraction, texty)) <= maxWidth) {
+                break;
+            }
+        }
+        return fraction;
+    }
+
+    private String moneyRow(long[] amounts, int precision) {
+        char[] icons = {MONEY_COINS, MONEY_STAR, MONEY_GEM, MONEY_BATTLE};
+        StringBuilder row = new StringBuilder();
+        for (int i = 0; i < icons.length; i++) {
+            if (i > 0) {
+                row.append(pad(MONEY_COLUMN_GAP));
+            }
+            row.append(icons[i]).append(pad(MONEY_ICON_GAP))
+                    .append(compactNumber(amounts[i], precision));
+        }
+        return row.toString();
+    }
+
+    private String fitMoneyRow(long[] amounts, int maxWidth, int texty) {
+        String row = moneyRow(amounts, 3);
+        for (int precision = 3; precision >= 1; precision--) {
+            row = moneyRow(amounts, precision);
+            if (width(inlineText(row, texty)) <= maxWidth) {
+                break;
+            }
+        }
+        return row;
     }
 
     /**
@@ -533,21 +591,26 @@ final class HudText {
                 + profile.classIndex());
         int panelWidth = width(panelGlyph);
         int contentLeft = contentLeft(profile.classIndex());
+        int contentRight = contentRight(profile.classIndex());
+        int textBudget = contentRight - contentLeft - textx;
         int offset = layout.panelShift(panelWidth);
 
         // Строка 1: после эмблемы курсор возвращается к общей левой границе
         // текстовой полосы. Свиток, ник и уровень идут подряд; хвост сохраняет
         // одинаковую общую ширину всех трёх строк.
-        String xpFraction = compactNumber(xp) + "/" + compactNumber(xpToNext);
         char diamond = (char) (LEVEL_BASE + levelIndex(level));
+        int xpBudget = Math.max(0, textBudget - width(MONEY_SCROLL) - ICON_GAP
+                - width(diamond) - 2 * COLUMN_GAP);
+        String xpFraction = compactFraction(xp, xpToNext, xpBudget, texty);
         String playerTitle = playerName == null ? "" : playerName;
         boolean smallTitle = playerTitle.length() >= 11
                 || textWidth(playerTitle, texty)
-                > titleBudget(diamond, xpFraction, false, contentLeft, textx, texty);
+                > titleBudget(diamond, xpFraction, false, contentLeft,
+                        contentRight, textx, texty);
         int titleIconGap = smallTitle ? 3 : ICON_GAP;
         int titleColumnGap = smallTitle ? 4 : COLUMN_GAP;
         String title = fitTitle(playerTitle, diamond, xpFraction, texty,
-                smallTitle, contentLeft, textx);
+                smallTitle, contentLeft, contentRight, textx);
         int titleW = width(MONEY_SCROLL) + titleIconGap + textWidth(title, texty, smallTitle)
                 + titleColumnGap + width(diamond) + titleColumnGap
                 + width(inlineText(xpFraction, texty));
@@ -567,12 +630,12 @@ final class HudText {
         // Строка 2: клан - щит уровня, название и опыт клана дробью.
         // Строка 2 начинается на той же координате, что и строка 1.
         char clanShield = (char) (CLAN_BASE + levelIndex(profile.clanLevel()));
-        String clanXp = compactNumber(profile.clanXp()) + "/"
-                + compactNumber(profile.clanXpToNext());
+        int clanXpBudget = Math.max(0, textBudget - width(clanShield) - 2 * COLUMN_GAP);
+        String clanXp = compactFraction(profile.clanXp(), profile.clanXpToNext(),
+                clanXpBudget, texty);
         String clanName = profile.clanName().isEmpty() ? "Без клана" : profile.clanName();
         int clanXpWidth = width(inlineText(clanXp, texty));
-        int clanBudget = (CONTENT_RIGHT - contentLeft - textx) - width(clanShield) - COLUMN_GAP
-                - COLUMN_GAP - clanXpWidth;
+        int clanBudget = textBudget - width(clanShield) - 2 * COLUMN_GAP - clanXpWidth;
         while (textWidth(clanName, texty) > clanBudget && !clanName.isEmpty()) {
             clanName = clanName.substring(0, clanName.length() - 1);
         }
@@ -587,12 +650,8 @@ final class HudText {
                 .append(Component.text(tail(clanTail), GLYPHS));
 
         // Строка 3: четыре валюты - значок и число; начинается под первой.
-        String money = "" + MONEY_COINS + pad(ICON_GAP) + compactNumber(profile.coins())
-                + pad(COLUMN_GAP) + MONEY_STAR + pad(ICON_GAP)
-                + compactNumber(profile.starCoins()) + pad(COLUMN_GAP)
-                + MONEY_GEM + pad(ICON_GAP) + compactNumber(profile.nanogems())
-                + pad(COLUMN_GAP) + MONEY_BATTLE + pad(ICON_GAP)
-                + compactNumber(profile.battlePoints());
+        String money = fitMoneyRow(new long[]{profile.coins(), profile.starCoins(),
+                profile.nanogems(), profile.battlePoints()}, textBudget, texty);
         int moneyW = width(inlineText(money, texty));
         int moneyTail = panelWidth - contentLeft - textx - moneyW;
         Component third = Component.text(shift(offset) + pad(contentLeft) + shift(textx)

@@ -4,8 +4,8 @@
 Запускается в CI после ``tools/gen_resourcepack.py``. Проверяет то, из-за
 чего HUD раньше не отображался:
 
-* шрифт HUD на месте и все bitmap-провайдеры — квадратные ячейки 8x8;
-* текстуры глифов действительно 8x8 (или кратны 8 по ширине);
+* шрифт HUD на месте, а bitmap-провайдеры используют ячейки нужного размера;
+* исходные мелкие текстуры глифов квадратные; диапазоны сдвигов проверены;
 * чернила глифов лежат в строках 0..6 ячейки — ровно как заглавные буквы и
   цифры ванильного ``ascii.png`` (height 8, ascent 7, строка 7 — базовая
   линия); иначе в подписи моба значки «прыгают» относительно имени, которое
@@ -34,6 +34,7 @@ REQUIRED = [
     "assets/servermmo/font/hud.json",
     "assets/servermmo/textures/font/hud_text_small.png",
     "assets/servermmo/textures/font/hud_digits.png",
+    "assets/servermmo/textures/font/hud_digits_inline.png",
     "assets/servermmo/textures/font/hud_icons.png",
     "assets/servermmo/textures/font/hud_letters.png",
     "assets/minecraft/textures/gui/icons.png",
@@ -128,6 +129,26 @@ def check_codepoint_grid(font: dict, problems: list[str]) -> None:
                                 f"({type(row).__name__}). Клиент ждёт массив "
                                 f"строк, на вложенный массив падает весь "
                                 f"файл шрифта целиком")
+
+
+def check_texty_glyphs(font: dict, problems: list[str]) -> None:
+    """/hud texty включает уникальные bitmap-глифы цифр и малых значков."""
+    base, count, variants = 0xF0000, 218, 11
+    expected = set(range(base, base + count * variants))
+    found = {
+        ord(char)
+        for provider in font.get("providers", [])
+        if provider.get("type") == "bitmap"
+        for row in provider.get("chars", [])
+        for char in row
+    }
+    missing = expected - found
+    if missing:
+        problems.append(f"/hud texty: отсутствуют {len(missing)} вариантов малых глифов")
+    space = next((provider.get("advances", {}) for provider in font.get("providers", [])
+                  if provider.get("type") == "space"), {})
+    if space.get(chr(0xE101)) != 4:
+        problems.append("явный пробел текста E101 должен иметь ширину 4 px")
 
 
 def check_space_glyphs(font: dict, problems: list[str]) -> None:
@@ -342,6 +363,7 @@ def main() -> int:
             if any(ch not in seen for ch in "LVXP"):
                 problems.append("в шрифте нет букв LVL/XP для строк HUD")
             check_space_glyphs(font, problems)
+            check_texty_glyphs(font, problems)
             check_codepoint_grid(font, problems)
             check_shift_range(font, problems)
             check_glyph_fits_atlas(font, names, zf, problems)

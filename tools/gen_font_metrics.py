@@ -25,7 +25,10 @@ from gen_resourcepack import (ABILITY_CHARS, CLAN_CHARS, DIGIT_CHARS, FADE_STEPS
                               PANEL_VARIANTS, TEXT_CHARS, TEXT_VARIANTS, TEXT_COLS,
                               TEXT_BASE, TEXT_SMALL_BASE, TEXT_SMALL_VARIANT_BASE,
                               chars, LEVEL_COLS, PANEL_COLS, fade_chars,
-                              hotbar_fade_chars, build_space_advances)
+                              hotbar_fade_chars, build_space_advances,
+                              INLINE_VARIANT_BASE, INLINE_GLYPH_COUNT,
+                              ICON_OFFSET_RANGE, _inline_glyph_groups,
+                              padded_digit_atlas)
 from png_io import glyph_advance, glyph_advance_grid, png_rgba
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -56,6 +59,12 @@ ATLASES = (
     ("hud_ability.png", ABILITY_CHARS, len(ABILITY_CHARS), 20),
     ("hud_level.png", LEVEL_CHARS, LEVEL_COLS, 14),
     ("hud_clan.png", CLAN_CHARS, LEVEL_COLS, 14),
+    *((filename, chars(INLINE_VARIANT_BASE
+                       + (texty + ICON_OFFSET_RANGE) * INLINE_GLYPH_COUNT
+                       + group_offset, len(source_chars)), cols, height)
+      for texty in range(-ICON_OFFSET_RANGE, ICON_OFFSET_RANGE + 1)
+      for filename, source_chars, cols, height, _ascent, group_offset
+      in _inline_glyph_groups()),
     # Текст панели своими глифами (база + варианты для /hud texty).
     ("hud_text.png", chars(TEXT_BASE, len(TEXT_CHARS)), TEXT_COLS, 16),
     *(("hud_text.png", variant, TEXT_COLS, 16)
@@ -73,7 +82,11 @@ ATLASES = (
 def collect() -> dict[str, int]:
     metrics: dict[str, int] = {}
     for name, chars, cols, draw_h in ATLASES:
-        width, height, pixels = png_rgba((ASSETS / name).read_bytes())
+        if name == "hud_digits_inline.png":
+            width, height, pixels = padded_digit_atlas(
+                (ASSETS / "hud_digits.png").read_bytes())
+        else:
+            width, height, pixels = png_rgba((ASSETS / name).read_bytes())
         rows = (len(chars) + cols - 1) // cols
         cell_w, cell_h = width // cols, height // rows
         scale = draw_h / cell_h

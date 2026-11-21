@@ -258,8 +258,8 @@ WorldEdit/WorldGuard, Simple Voice Chat. Подробнее — в `plugins/READ
 за 40-значным SHA коммита, в котором лежит этот zip, и SHA-1 самого файла:
 
 ```properties
-resource-pack=https://raw.githubusercontent.com/oshee-g/servermmo/74ce111abc5be5308f1f11e71aec8305735fac81/server/resourcepack/servermmo-hud.zip
-resource-pack-sha1=51b94f182c1670f6d968a81cfb36c9a0c1749f83
+resource-pack=https://raw.githubusercontent.com/oshee-g/servermmo/48c0167d7b6b7dd12d2724c1676de0b3a65340ac/server/resourcepack/servermmo-hud.zip
+resource-pack-sha1=351b895308b22a4118f82d370d8597a3ececfbc2
 resource-pack-prompt={"text":"ServerMMO HUD resource pack","color":"gold"}
 require-resource-pack=true
 ```

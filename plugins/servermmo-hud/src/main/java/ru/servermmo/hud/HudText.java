@@ -62,7 +62,8 @@ final class HudText {
     static final int ICON_OFFSET_RANGE = 5;
     /**
      * Текст панели своими глифами (атлас hud_text.png): кириллица, латиница,
-     * цифры и знаки. База — texty=0, варианты — сдвиг текста (команда texty).
+     * цифры и знаки. Текст и мелкие значки/цифры используют варианты высоты
+     * для команды texty; большая эмблема панели остаётся на месте.
      */
     private static final String TEXT_CHARS =
             "АБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ"
@@ -75,6 +76,12 @@ final class HudText {
             + "—–«»№°±×÷§`'\"\\~^$";
     private static final int TEXT_SMALL_BASE = 0xE840;
     private static final int TEXT_SMALL_VARIANT_BASE = TEXT_SMALL_BASE + TEXT_CHARS.length();
+    /** Варианты вертикального сдвига для цифр и малых значков, supplementary PUA. */
+    private static final int INLINE_VARIANT_BASE = 0xF0000;
+    private static final int INLINE_GLYPH_COUNT = 218;
+    private static final int INLINE_MONEY_OFFSET = 12;
+    private static final int INLINE_LEVEL_OFFSET = 18;
+    private static final int INLINE_CLAN_OFFSET = 118;
     private static final int TEXT_BASE = 0xF000;
     private static final int TEXT_VARIANT_BASE = 0xF100;
     /** Ромбы уровней игрока 1..100 (номер нарисован на ромбе, без «lvl»). */
@@ -143,14 +150,14 @@ final class HudText {
      */
     private static final int SHIFT_BITS = 11;
 
-    private final Map<Character, Integer> advances;
+    private final Map<Integer, Integer> advances;
 
     HudText(InputStream metrics) {
         this.advances = load(metrics);
     }
 
     private static Map<Character, Integer> load(InputStream stream) {
-        Map<Character, Integer> map = new HashMap<>();
+        Map<Integer, Integer> map = new HashMap<>();
         // запасные значения: цифры 7 px, «1» 6 px, значки 32 px, панель 240 px
         for (char digit = '0'; digit <= '9'; digit++) {
             map.put(digit, 7);
@@ -232,8 +239,8 @@ final class HudText {
                         continue;
                     }
                     try {
-                        char ch = (char) Integer.parseInt(pair.substring(0, colon).trim(), 16);
-                        map.put(ch, Integer.parseInt(pair.substring(colon + 1).trim()));
+                        int codePoint = Integer.parseInt(pair.substring(0, colon).trim(), 16);
+                        map.put(codePoint, Integer.parseInt(pair.substring(colon + 1).trim()));
                     } catch (NumberFormatException ignored) {
                         // битая строка - останется запасное значение
                     }
@@ -246,13 +253,19 @@ final class HudText {
     }
 
     int width(char ch) {
-        return advances.getOrDefault(ch, 7);
+        return width((int) ch);
+    }
+
+    private int width(int codePoint) {
+        return advances.getOrDefault(codePoint, 7);
     }
 
     int width(String text) {
         int total = 0;
-        for (int i = 0; i < text.length(); i++) {
-            total += width(text.charAt(i));
+        for (int i = 0; i < text.length();) {
+            int codePoint = text.codePointAt(i);
+            total += width(codePoint);
+            i += Character.charCount(codePoint);
         }
         return total;
     }
@@ -344,9 +357,54 @@ final class HudText {
         StringBuilder sb = new StringBuilder(text.length());
         for (int i = 0; i < text.length(); i++) {
             char ch = text.charAt(i);
-            sb.append(ch == ' ' ? ' ' : textGlyph(ch, texty, small));
+            // Обычный пробел некоторые версии клиента рисуют без advance в
+            // bitmap-шрифте; явный space-глиф гарантирует видимый интервал.
+            sb.append(ch == ' ' ? BLANK_4 : textGlyph(ch, texty, small));
         }
         return sb.toString();
+    }
+
+    /** Подбирает вертикальный вариант цифры/малого значка под /hud texty. */
+    private static int inlineGlyph(int codePoint, int texty) {
+        if (texty == 0) {
+            return codePoint;
+        }
+        int offset;
+        int index;
+        if (codePoint >= '0' && codePoint <= '9') {
+            offset = 0;
+            index = codePoint - '0';
+        } else if (codePoint == '/') {
+            offset = 0;
+            index = 10;
+        } else if (codePoint >= 0xE310 && codePoint < 0xE316) {
+            offset = INLINE_MONEY_OFFSET;
+            index = codePoint - 0xE310;
+        } else if (codePoint >= LEVEL_BASE && codePoint < LEVEL_BASE + 100) {
+            offset = INLINE_LEVEL_OFFSET;
+            index = codePoint - LEVEL_BASE;
+        } else if (codePoint >= CLAN_BASE && codePoint < CLAN_BASE + 100) {
+            offset = INLINE_CLAN_OFFSET;
+            index = codePoint - CLAN_BASE;
+        } else {
+            return codePoint;
+        }
+        int variant = Math.max(-ICON_OFFSET_RANGE, Math.min(ICON_OFFSET_RANGE, texty))
+                + ICON_OFFSET_RANGE;
+        return INLINE_VARIANT_BASE + variant * INLINE_GLYPH_COUNT + offset + index;
+    }
+
+    private static String inlineText(String text, int texty) {
+        if (texty == 0) {
+            return text;
+        }
+        StringBuilder shifted = new StringBuilder(text.length());
+        for (int i = 0; i < text.length();) {
+            int codePoint = text.codePointAt(i);
+            shifted.appendCodePoint(inlineGlyph(codePoint, texty));
+            i += Character.charCount(codePoint);
+        }
+        return shifted.toString();
     }
 
     /**
@@ -367,7 +425,7 @@ final class HudText {
      * @param offsetY сдвиг текста и значков вниз относительно картинки
      *                панели, px (-15..15, команда {@code /hud offsety})
      * @param texty сдвиг текста вниз относительно значков, px (-5..5,
-     *              команда {@code /hud texty}; двигаются значки)
+     *              команда {@code /hud texty}; цифры и малые значки следуют за текстом)
      */
     Component[] panel(HudProfile profile, String playerName, long level, long xp, long xpToNext,
                       HudLayout layout, int offsetY, int texty) {
@@ -399,10 +457,12 @@ final class HudText {
         Component first = Component.text(shift(offset), GLYPHS)
                 .append(Component.text(String.valueOf(panelGlyph), GLYPHS))
                 .append(Component.text(shift(-(panelWidth - contentLeft)), GLYPHS))
-                .append(Component.text(MONEY_SCROLL + pad(titleIconGap), GLYPHS))
+                .append(Component.text(inlineText(String.valueOf(MONEY_SCROLL), texty)
+                        + pad(titleIconGap), GLYPHS))
                 .append(Component.text(toGlyphs(title, texty, smallTitle), GLYPHS))
-                .append(Component.text(pad(titleColumnGap) + diamond + pad(titleColumnGap)
-                        + xpFraction, GLYPHS))
+                .append(Component.text(pad(titleColumnGap)
+                        + inlineText(String.valueOf(diamond), texty)
+                        + pad(titleColumnGap) + inlineText(xpFraction, texty), GLYPHS))
                 .append(Component.text(pad(titleTail), GLYPHS));
 
         // Строка 2: клан - щит уровня, название и опыт клана дробью.
@@ -419,9 +479,10 @@ final class HudText {
                 + COLUMN_GAP + width(clanXp);
         int clanTail = Math.max(0, panelWidth - contentLeft - clanW);
         Component second = Component.text(shift(offset) + pad(contentLeft), GLYPHS)
-                .append(Component.text(String.valueOf(clanShield) + pad(COLUMN_GAP), GLYPHS))
+                .append(Component.text(inlineText(String.valueOf(clanShield), texty)
+                        + pad(COLUMN_GAP), GLYPHS))
                 .append(Component.text(toGlyphs(clanName, texty), GLYPHS))
-                .append(Component.text(pad(COLUMN_GAP) + clanXp, GLYPHS))
+                .append(Component.text(pad(COLUMN_GAP) + inlineText(clanXp, texty), GLYPHS))
                 .append(Component.text(pad(clanTail), GLYPHS));
 
         // Строка 3: четыре валюты - значок и число; начинается под первой.
@@ -431,8 +492,8 @@ final class HudText {
                 + MONEY_BATTLE + pad(ICON_GAP) + profile.battlePoints();
         int moneyW = width(money);
         int moneyTail = Math.max(0, panelWidth - contentLeft - moneyW);
-        Component third = Component.text(shift(offset) + pad(contentLeft) + money
-                + pad(moneyTail), GLYPHS);
+        Component third = Component.text(shift(offset) + pad(contentLeft)
+                + inlineText(money, texty) + pad(moneyTail), GLYPHS);
 
         return new Component[]{first, second, third};
     }

@@ -27,6 +27,8 @@ import zipfile
 import zlib
 from pathlib import Path
 
+from png_io import png_rgba
+
 ROOT = Path(__file__).resolve().parent.parent
 PACK = ROOT / "resourcepack"
 ASSETS = ROOT / "tools" / "pack_assets"
@@ -138,6 +140,19 @@ TEXT_COLS = 19
 TEXT_HEIGHT = 16
 TEXT_ASCENT = 6  # базовая линия глифа внутри ячейки атласа
 
+# Inline-глифы HUD (цифры и небольшие значки) тоже получают варианты по
+# /hud texty. Вынесены в supplementary PUA, чтобы не пересекать занятые
+# диапазоны BMP. Каждая группа: файл, исходный диапазон, количество столбцов,
+# высота bitmap-провайдера и базовый ascent.
+INLINE_GLYPHS = (
+    ("hud_digits_inline.png", DIGIT_CHARS, len(DIGIT_CHARS), 16, 7),
+    ("hud_money.png", MONEY_CHARS, len(MONEY_CHARS), ICON_HEIGHT, ICON_ASCENT),
+    ("hud_level.png", LEVEL_CHARS, 10, ICON_HEIGHT, ICON_ASCENT),
+    ("hud_clan.png", CLAN_CHARS, 10, ICON_HEIGHT, ICON_ASCENT),
+)
+INLINE_VARIANT_BASE = 0xF0000
+INLINE_GLYPH_COUNT = sum(len(chars_) for _, chars_, *_ in INLINE_GLYPHS)
+
 
 def _text_variants() -> list:
     """(строка глифов, ascent) для каждого сдвига texty != 0."""
@@ -215,6 +230,44 @@ EXTRA_HUD_SPRITES = {
 }
 
 
+def padded_digit_atlas(data: bytes) -> tuple[int, int, bytes]:
+    """Помещает исходные 8x8 цифры в прозрачные ячейки 16x16.
+
+    Это сохраняет пиксельный размер цифр и позволяет ascent-вариантам
+    /hud texty иметь диапазон выше исходной высоты глифа.
+    """
+    width, height, source = png_rgba(data)
+    cols = len(DIGIT_CHARS)
+    cell = width // cols
+    if width % cols or height != cell:
+        raise ValueError("hud_digits.png должен быть сеткой из 12 квадратных глифов")
+    out_cell = 16
+    out_width, out_height = cols * out_cell, out_cell
+    target = bytearray(out_width * out_height * 4)
+    for index in range(cols):
+        for y in range(cell):
+            src_start = (y * width + index * cell) * 4
+            dst_start = (y * out_width + index * out_cell) * 4
+            target[dst_start:dst_start + cell * 4] = source[src_start:src_start + cell * 4]
+    return out_width, out_height, bytes(target)
+
+
+def write_rgba_png(path: Path, width: int, height: int, pixels: bytes) -> None:
+    raw = bytearray()
+    stride = width * 4
+    for y in range(height):
+        raw.append(0)
+        raw.extend(pixels[y * stride:(y + 1) * stride])
+
+    def chunk(kind: bytes, payload: bytes) -> bytes:
+        return (struct.pack(">I", len(payload)) + kind + payload
+                + struct.pack(">I", zlib.crc32(kind + payload) & 0xFFFFFFFF))
+
+    header = struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0)
+    path.write_bytes(b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", header)
+                     + chunk(b"IDAT", zlib.compress(bytes(raw), 9)) + chunk(b"IEND", b""))
+
+
 def write_blank_png(path: Path, width: int, height: int) -> None:
     """Полностью прозрачный PNG без зависимостей."""
     raw = bytearray()
@@ -272,6 +325,13 @@ FADE_STEPS = 5
 def fade_chars(step: int) -> str:
     base = 0xE200 + step * 16
     return "".join(chr(base + i) for i in range(12))
+
+
+def _inline_glyph_groups():
+    offset = 0
+    for filename, source_chars, cols, height, ascent in INLINE_GLYPHS:
+        yield filename, source_chars, cols, height, ascent, offset
+        offset += len(source_chars)
 
 
 def build_font_json() -> dict:
@@ -376,6 +436,20 @@ def build_font_json() -> dict:
                 }
                 for step in range(FADE_STEPS)
             ],
+            *[
+                {
+                    "type": "bitmap",
+                    "file": f"servermmo:font/{filename}",
+                    "ascent": ascent - texty,
+                    "height": height,
+                    "chars": grid(chars(INLINE_VARIANT_BASE
+                                        + (texty + ICON_OFFSET_RANGE) * INLINE_GLYPH_COUNT
+                                        + group_offset, len(source_chars)), cols),
+                }
+                for texty in range(-ICON_OFFSET_RANGE, ICON_OFFSET_RANGE + 1)
+                for filename, source_chars, cols, height, ascent, group_offset
+                in _inline_glyph_groups()
+            ],
             {
                 "type": "bitmap",
                 "file": "servermmo:font/hud_text.png",
@@ -465,6 +539,10 @@ def main() -> int:
                  "hud_text.png", "hud_text_small.png"):
         copy_asset(name, textures / name)
     copy_asset("pack_icon.png", PACK / "pack.png")
+    padded_width, padded_height, padded_pixels = padded_digit_atlas(
+        (ASSETS / "hud_digits.png").read_bytes())
+    write_rgba_png(textures / "hud_digits_inline.png",
+                   padded_width, padded_height, padded_pixels)
 
     # --- ванильные сердца и полосы -----------------------------------------
     gui = PACK / "assets" / "minecraft" / "textures" / "gui"

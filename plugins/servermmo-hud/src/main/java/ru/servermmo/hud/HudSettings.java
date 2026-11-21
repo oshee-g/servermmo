@@ -59,6 +59,7 @@ public final class HudSettings {
     private int marginLeft;
     private int panelOffsetY;
     private int textOffsetY;
+    private int textOffsetX;
     private long updateIntervalTicks;
     private int hotbarAnchorX;
     private long damageHoldMillis;
@@ -79,6 +80,7 @@ public final class HudSettings {
         settings.marginLeft = clampMargin(config.getInt("hud.margin-left", DEFAULT_MARGIN_LEFT));
         settings.panelOffsetY = clampOffsetY(config.getInt("hud.panel-offset-y", 0));
         settings.textOffsetY = clampTextY(config.getInt("hud.text-offset-y", 0));
+        settings.textOffsetX = clampTextX(config.getInt("hud.text-offset-x", 0));
         settings.updateIntervalTicks = Math.max(1L, config.getLong("hud.update-interval-ticks", 2L));
         settings.hotbarAnchorX = config.getInt("hud.hotbar-anchor-x", DEFAULT_HOTBAR_ANCHOR_X);
         settings.damageHoldMillis = Math.max(0L, config.getLong("hud.damage-hold-seconds", 5L)) * 1000L;
@@ -126,6 +128,11 @@ public final class HudSettings {
         return textOffsetY;
     }
 
+    /** Горизонтальный сдвиг текста, цифр и малых значков относительно эмблемы. */
+    public int textOffsetX() {
+        return textOffsetX;
+    }
+
     public void screenWidth(int value) {
         this.screenWidth = Math.max(MIN_SCALED_WIDTH, value);
     }
@@ -148,6 +155,10 @@ public final class HudSettings {
 
     public void textOffsetY(int value) {
         this.textOffsetY = clampTextY(value);
+    }
+
+    public void textOffsetX(int value) {
+        this.textOffsetX = clampTextX(value);
     }
 
     public long updateIntervalTicks() {
@@ -235,6 +246,7 @@ public final class HudSettings {
         this.marginLeft = DEFAULT_MARGIN_LEFT;
         this.panelOffsetY = 0;
         this.textOffsetY = 0;
+        this.textOffsetX = 0;
         this.hotbarAnchorX = DEFAULT_HOTBAR_ANCHOR_X;
     }
 
@@ -256,5 +268,10 @@ public final class HudSettings {
     private static int clampTextY(int value) {
         return Math.max(-HudText.ICON_OFFSET_RANGE,
                 Math.min(HudText.ICON_OFFSET_RANGE, value));
+    }
+
+    private static int clampTextX(int value) {
+        return Math.max(-HudText.TEXT_X_OFFSET_RANGE,
+                Math.min(HudText.TEXT_X_OFFSET_RANGE, value));
     }
 }

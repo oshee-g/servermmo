@@ -49,6 +49,7 @@ final class HudText {
     /** Диапазоны точных смещений команд, в пикселях интерфейса. */
     static final int PANEL_OFFSET_RANGE = 100;
     static final int ICON_OFFSET_RANGE = 100;
+    static final int TEXT_X_OFFSET_RANGE = 100;
     private static final int VARIANT_COUNT = 2 * ICON_OFFSET_RANGE + 1;
     private static final int PUA_START = 0xF0000;
     private static final int PUA_FIRST_PLANE_COUNT = 0xFFFFE - PUA_START;
@@ -280,16 +281,17 @@ final class HudText {
      * Ник первой строки: при достижении 11 символов переходит на компактный
      * шрифт; если даже в нём строка не помещается, аккуратно обрезается.
      */
-    private int titleBudget(char diamond, String xpFraction, boolean small, int contentLeft) {
+    private int titleBudget(char diamond, String xpFraction, boolean small,
+                            int contentLeft, int textx) {
         int iconGap = small ? 3 : ICON_GAP;
         int columnGap = small ? 4 : COLUMN_GAP;
-        return (CONTENT_RIGHT - contentLeft) - width(MONEY_SCROLL) - iconGap
+        return (CONTENT_RIGHT - contentLeft - textx) - width(MONEY_SCROLL) - iconGap
                 - width(diamond) - columnGap - width(xpFraction) - columnGap;
     }
 
     private String fitTitle(String playerName, char diamond, String xpFraction,
-                            int texty, boolean small, int contentLeft) {
-        int budget = titleBudget(diamond, xpFraction, small, contentLeft);
+                            int texty, boolean small, int contentLeft, int textx) {
+        int budget = titleBudget(diamond, xpFraction, small, contentLeft, textx);
         String name = playerName == null ? "" : playerName;
         while (textWidth(name, texty, small) > budget && !name.isEmpty()) {
             name = name.substring(0, name.length() - 1);
@@ -418,17 +420,19 @@ final class HudText {
      * <p>Все три строки получают один и тот же сдвиг {@code P} и добиваются
      * до полной ширины панели, поэтому их центры совпадают. Начало текста
      * выбирается отдельно для класса с учётом ширины его эмблемы и декора.
-     * Ставить сдвиг в конфиг нельзя: он в пикселях
-     * интерфейса и при смене масштаба GUI меняется в разы.</p>
+     * Сдвиг панели от центра в конфиг не кладём: он в пикселях интерфейса и
+     * при смене масштаба GUI меняется в разы.</p>
      *
      * @param layout геометрия под экран игрока (ширина интерфейса и отступ)
      * @param offsetY сдвиг текста и значков вниз относительно картинки
      *                панели, px (-100..100, команда {@code /hud offsety})
      * @param texty сдвиг текста вниз относительно значков, px (-100..100,
      *              команда {@code /hud texty}; цифры и малые значки следуют за текстом)
+     * @param textx сдвиг всего текстового блока по горизонтали, px (-100..100,
+     *              команда {@code /hud textx}; крупная эмблема остаётся на месте)
      */
     Component[] panel(HudProfile profile, String playerName, long level, long xp, long xpToNext,
-                      HudLayout layout, int offsetY, int texty) {
+                      HudLayout layout, int offsetY, int texty, int textx) {
         int panelOffset = Math.max(-PANEL_OFFSET_RANGE, Math.min(PANEL_OFFSET_RANGE,
                 offsetY + classPanelOffset(profile.classIndex())));
         int variant = panelOffset + PANEL_OFFSET_RANGE;
@@ -446,45 +450,45 @@ final class HudText {
         String playerTitle = playerName == null ? "" : playerName;
         boolean smallTitle = playerTitle.length() >= 11
                 || textWidth(playerTitle, texty)
-                > titleBudget(diamond, xpFraction, false, contentLeft);
+                > titleBudget(diamond, xpFraction, false, contentLeft, textx);
         int titleIconGap = smallTitle ? 3 : ICON_GAP;
         int titleColumnGap = smallTitle ? 4 : COLUMN_GAP;
         String title = fitTitle(playerTitle, diamond, xpFraction, texty,
-                smallTitle, contentLeft);
+                smallTitle, contentLeft, textx);
         int titleW = width(MONEY_SCROLL) + titleIconGap + textWidth(title, texty, smallTitle)
                 + titleColumnGap + width(diamond) + titleColumnGap + width(xpFraction);
-        int titleTail = Math.max(0, panelWidth - contentLeft - titleW);
+        int titleTail = panelWidth - contentLeft - textx - titleW;
 
         Component first = Component.text(shift(offset), GLYPHS)
                 .append(Component.text(glyphString(panelGlyph), GLYPHS))
-                .append(Component.text(shift(-(panelWidth - contentLeft)), GLYPHS))
+                .append(Component.text(shift(-(panelWidth - contentLeft) + textx), GLYPHS))
                 .append(Component.text(inlineText(String.valueOf(MONEY_SCROLL), texty)
                         + pad(titleIconGap), GLYPHS))
                 .append(Component.text(toGlyphs(title, texty, smallTitle), GLYPHS))
                 .append(Component.text(pad(titleColumnGap)
                         + inlineText(String.valueOf(diamond), texty)
                         + pad(titleColumnGap) + inlineText(xpFraction, texty), GLYPHS))
-                .append(Component.text(pad(titleTail), GLYPHS));
+                .append(Component.text(tail(titleTail), GLYPHS));
 
         // Строка 2: клан - щит уровня, название и опыт клана дробью.
         // Строка 2 начинается на той же координате, что и строка 1.
         char clanShield = (char) (CLAN_BASE + levelIndex(profile.clanLevel()));
         String clanXp = profile.clanXp() + "/" + profile.clanXpToNext();
         String clanName = profile.clanName().isEmpty() ? "Без клана" : profile.clanName();
-        int clanBudget = (CONTENT_RIGHT - contentLeft) - width(clanShield) - COLUMN_GAP
+        int clanBudget = (CONTENT_RIGHT - contentLeft - textx) - width(clanShield) - COLUMN_GAP
                 - COLUMN_GAP - width(clanXp);
         while (textWidth(clanName, texty) > clanBudget && !clanName.isEmpty()) {
             clanName = clanName.substring(0, clanName.length() - 1);
         }
         int clanW = width(clanShield) + COLUMN_GAP + textWidth(clanName, texty)
                 + COLUMN_GAP + width(clanXp);
-        int clanTail = Math.max(0, panelWidth - contentLeft - clanW);
-        Component second = Component.text(shift(offset) + pad(contentLeft), GLYPHS)
+        int clanTail = panelWidth - contentLeft - textx - clanW;
+        Component second = Component.text(shift(offset) + pad(contentLeft) + shift(textx), GLYPHS)
                 .append(Component.text(inlineText(String.valueOf(clanShield), texty)
                         + pad(COLUMN_GAP), GLYPHS))
                 .append(Component.text(toGlyphs(clanName, texty), GLYPHS))
                 .append(Component.text(pad(COLUMN_GAP) + inlineText(clanXp, texty), GLYPHS))
-                .append(Component.text(pad(clanTail), GLYPHS));
+                .append(Component.text(tail(clanTail), GLYPHS));
 
         // Строка 3: четыре валюты - значок и число; начинается под первой.
         String money = "" + MONEY_COINS + pad(ICON_GAP) + profile.coins() + pad(COLUMN_GAP)
@@ -492,9 +496,9 @@ final class HudText {
                 + MONEY_GEM + pad(ICON_GAP) + profile.nanogems() + pad(COLUMN_GAP)
                 + MONEY_BATTLE + pad(ICON_GAP) + profile.battlePoints();
         int moneyW = width(money);
-        int moneyTail = Math.max(0, panelWidth - contentLeft - moneyW);
-        Component third = Component.text(shift(offset) + pad(contentLeft)
-                + inlineText(money, texty) + pad(moneyTail), GLYPHS);
+        int moneyTail = panelWidth - contentLeft - textx - moneyW;
+        Component third = Component.text(shift(offset) + pad(contentLeft) + shift(textx)
+                + inlineText(money, texty) + tail(moneyTail), GLYPHS);
 
         return new Component[]{first, second, third};
     }
@@ -578,6 +582,11 @@ final class HudText {
             }
         }
         return builder.toString();
+    }
+
+    /** Сохраняет общую ширину строки даже если содержимое вышло за панель. */
+    private String tail(int pixels) {
+        return pad(Math.max(0, pixels)) + shift(Math.min(0, pixels));
     }
 
     private static char blankGlyph(int width) {

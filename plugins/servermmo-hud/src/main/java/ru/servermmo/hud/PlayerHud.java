@@ -147,7 +147,8 @@ final class PlayerHud {
 
         HudProfile profile = store.get(player.getUniqueId());
         Component[] lines = text.panel(profile, player.getName(), level, xp, xpToNext,
-                settings.layout(profile), settings.panelOffsetY(), settings.textOffsetY());
+                settings.layout(profile), settings.panelOffsetY(), settings.textOffsetY(),
+                settings.textOffsetX());
         for (int i = 0; i < lines.length; i++) {
             if (!lines[i].equals(lastLines[i])) {
                 bars[i].name(lines[i]);

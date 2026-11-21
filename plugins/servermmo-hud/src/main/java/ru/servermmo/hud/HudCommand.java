@@ -60,6 +60,7 @@ final class HudCommand implements CommandExecutor {
             case "offsetx", "offset", "сдвиг" -> setOffset(sender, args);
             case "offsety" -> setOffsetY(sender, args);
             case "texty" -> setTextY(sender, args);
+            case "textx" -> setTextX(sender, args);
             case "anchorx", "anchor", "якорь" -> setAnchor(sender, args);
             default -> {
                 help(sender);
@@ -316,6 +317,35 @@ final class HudCommand implements CommandExecutor {
         return true;
     }
 
+    /**
+     * {@code /hud textx <px>} — сдвиг всего текстового блока по горизонтали.
+     * Текст, цифры и малые значки перемещаются вместе; эмблема остаётся на месте.
+     */
+    private boolean setTextX(CommandSender sender, String[] args) {
+        if (args.length < 2) {
+            sender.sendMessage(Component.text(
+                    "Укажите сдвиг: /hud textx <пиксели> (от -100 до 100, "
+                            + "положительное — вправо)",
+                    NamedTextColor.YELLOW));
+            return true;
+        }
+        Integer value = parseInt(args[1]);
+        if (value == null) {
+            sender.sendMessage(Component.text("Нужно целое число пикселей",
+                    NamedTextColor.RED));
+            return true;
+        }
+        if (!sender.hasPermission("servermmo.hud")) {
+            sender.sendMessage(Component.text("Недостаточно прав", NamedTextColor.RED));
+            return true;
+        }
+        settings.textOffsetX(value);
+        applyAll(sender, "Готово: текстовый блок сдвинут на "
+                + settings.textOffsetX() + " px по горизонтали"
+                + " (положительное — вправо, эмблема на месте)");
+        return true;
+    }
+
     /** {@code /hud anchorx <пиксели>} — левый край строки хотбара. */
     private boolean setAnchor(CommandSender sender, String[] args) {
         if (args.length < 2) {
@@ -420,6 +450,9 @@ final class HudCommand implements CommandExecutor {
                 "/hud texty <пиксели> — сдвиг текста вниз относительно "
                         + "значков (-100..100)", NamedTextColor.YELLOW));
         sender.sendMessage(Component.text(
+                "/hud textx <пиксели> — сдвиг текстового блока влево/вправо "
+                        + "(-100..100; эмблема остаётся на месте)", NamedTextColor.YELLOW));
+        sender.sendMessage(Component.text(
                 "/hud anchorx <пиксели> — левый край строки хотбара (-91)",
                 NamedTextColor.YELLOW));
         sender.sendMessage(Component.text(
@@ -499,6 +532,7 @@ final class HudCommand implements CommandExecutor {
         plugin.getConfig().set("hud.margin-left", settings.marginLeft());
         plugin.getConfig().set("hud.panel-offset-y", settings.panelOffsetY());
         plugin.getConfig().set("hud.text-offset-y", settings.textOffsetY());
+        plugin.getConfig().set("hud.text-offset-x", settings.textOffsetX());
         plugin.getConfig().set("hud.hotbar-anchor-x", settings.hotbarAnchorX());
         plugin.saveConfig();
         for (Player player : Bukkit.getOnlinePlayers()) {
@@ -517,6 +551,6 @@ final class HudCommand implements CommandExecutor {
 
     /** Подсказка аргументов для tab-complete. */
     public static List<String> keys() {
-        return List.of("scale", "screen", "margin", "offsetx", "offsety", "texty", "anchorx", "debug", "reset");
+        return List.of("scale", "screen", "margin", "offsetx", "offsety", "textx", "texty", "anchorx", "debug", "reset");
     }
 }

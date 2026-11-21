@@ -4,6 +4,8 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
@@ -130,6 +132,8 @@ final class HudText {
             HOTBAR_LEFT_GEAR_COUNT + HOTBAR_LEFT_DIGIT_COUNT;
     private static final int HOTBAR_LEFT_VARIANT_GLYPH_COUNT =
             HOTBAR_LEFT_FADE_OFFSET + FADE_STEPS * 12;
+    /** Text-atlas glyphs need +12 ascent offset to align with dropped hotbar digits. */
+    private static final int HOTBAR_TEXT_BASELINE_OFFSET = 12;
     private static final int HOTBAR_LEFT_START_INDEX =
             TEXT_SMALL_START_INDEX + TEXT_VARIANT_TOTAL;
     private static final int HOTBAR_LEFT_VARIANT_TOTAL =
@@ -330,16 +334,16 @@ final class HudText {
      * шрифт; если даже в нём строка не помещается, аккуратно обрезается.
      */
     private int titleBudget(char diamond, String xpFraction, boolean small,
-                            int contentLeft, int textx) {
+                            int contentLeft, int textx, int texty) {
         int iconGap = small ? 3 : ICON_GAP;
         int columnGap = small ? 4 : COLUMN_GAP;
         return (CONTENT_RIGHT - contentLeft - textx) - width(MONEY_SCROLL) - iconGap
-                - width(diamond) - columnGap - width(xpFraction) - columnGap;
+                - width(diamond) - columnGap - width(inlineText(xpFraction, texty)) - columnGap;
     }
 
     private String fitTitle(String playerName, char diamond, String xpFraction,
                             int texty, boolean small, int contentLeft, int textx) {
-        int budget = titleBudget(diamond, xpFraction, small, contentLeft, textx);
+        int budget = titleBudget(diamond, xpFraction, small, contentLeft, textx, texty);
         String name = playerName == null ? "" : playerName;
         while (textWidth(name, texty, small) > budget && !name.isEmpty()) {
             name = name.substring(0, name.length() - 1);
@@ -447,11 +451,52 @@ final class HudText {
         return puaCodePoint(INLINE_START_INDEX + variant * INLINE_GLYPH_COUNT + offset + index);
     }
 
-    private static String inlineText(String text, int texty) {
+    private static final long[] COMPACT_DIVISORS = {
+            1L, 1_000L, 1_000_000L, 1_000_000_000L, 1_000_000_000_000L
+    };
+    private static final String[] COMPACT_SUFFIXES = {"", "к", "м", "млрд", "трлн"};
+
+    /**
+     * Числа HUD: до тысячи без суффикса, затем K/M/B/T с тремя значащими
+     * цифрами и русской десятичной запятой (например, 1,31к и 27,4к).
+     */
+    static String compactNumber(long value) {
+        BigDecimal absolute = BigDecimal.valueOf(value).abs();
+        if (absolute.compareTo(BigDecimal.valueOf(1_000L)) < 0) {
+            return Long.toString(value);
+        }
+
+        int unit = 1;
+        while (unit < COMPACT_DIVISORS.length - 1
+                && absolute.compareTo(BigDecimal.valueOf(COMPACT_DIVISORS[unit + 1])) >= 0) {
+            unit++;
+        }
+        while (true) {
+            BigDecimal scaled = absolute.divide(BigDecimal.valueOf(COMPACT_DIVISORS[unit]),
+                    2, RoundingMode.HALF_UP);
+            int decimalPlaces = scaled.compareTo(BigDecimal.TEN) < 0 ? 2
+                    : scaled.compareTo(BigDecimal.valueOf(100L)) < 0 ? 1 : 0;
+            scaled = scaled.setScale(decimalPlaces, RoundingMode.HALF_UP).stripTrailingZeros();
+            if (scaled.compareTo(BigDecimal.valueOf(1_000L)) >= 0
+                    && unit < COMPACT_DIVISORS.length - 1) {
+                unit++;
+                continue;
+            }
+            String number = scaled.toPlainString().replace('.', ',');
+            return (value < 0 ? "-" : "") + number + COMPACT_SUFFIXES[unit];
+        }
+    }
+
+    private String inlineText(String text, int texty) {
         StringBuilder shifted = new StringBuilder(text.length());
         for (int i = 0; i < text.length();) {
             int codePoint = text.codePointAt(i);
-            shifted.appendCodePoint(inlineGlyph(codePoint, texty));
+            int glyph = inlineGlyph(codePoint, texty);
+            if (glyph == codePoint && Character.isBmpCodePoint(codePoint)
+                    && TEXT_CHARS.indexOf((char) codePoint) >= 0) {
+                glyph = textGlyph((char) codePoint, texty, true);
+            }
+            shifted.appendCodePoint(glyph);
             i += Character.charCount(codePoint);
         }
         return shifted.toString();
@@ -493,18 +538,19 @@ final class HudText {
         // Строка 1: после эмблемы курсор возвращается к общей левой границе
         // текстовой полосы. Свиток, ник и уровень идут подряд; хвост сохраняет
         // одинаковую общую ширину всех трёх строк.
-        String xpFraction = xp + "/" + xpToNext;
+        String xpFraction = compactNumber(xp) + "/" + compactNumber(xpToNext);
         char diamond = (char) (LEVEL_BASE + levelIndex(level));
         String playerTitle = playerName == null ? "" : playerName;
         boolean smallTitle = playerTitle.length() >= 11
                 || textWidth(playerTitle, texty)
-                > titleBudget(diamond, xpFraction, false, contentLeft, textx);
+                > titleBudget(diamond, xpFraction, false, contentLeft, textx, texty);
         int titleIconGap = smallTitle ? 3 : ICON_GAP;
         int titleColumnGap = smallTitle ? 4 : COLUMN_GAP;
         String title = fitTitle(playerTitle, diamond, xpFraction, texty,
                 smallTitle, contentLeft, textx);
         int titleW = width(MONEY_SCROLL) + titleIconGap + textWidth(title, texty, smallTitle)
-                + titleColumnGap + width(diamond) + titleColumnGap + width(xpFraction);
+                + titleColumnGap + width(diamond) + titleColumnGap
+                + width(inlineText(xpFraction, texty));
         int titleTail = panelWidth - contentLeft - textx - titleW;
 
         Component first = Component.text(shift(offset), GLYPHS)
@@ -521,15 +567,17 @@ final class HudText {
         // Строка 2: клан - щит уровня, название и опыт клана дробью.
         // Строка 2 начинается на той же координате, что и строка 1.
         char clanShield = (char) (CLAN_BASE + levelIndex(profile.clanLevel()));
-        String clanXp = profile.clanXp() + "/" + profile.clanXpToNext();
+        String clanXp = compactNumber(profile.clanXp()) + "/"
+                + compactNumber(profile.clanXpToNext());
         String clanName = profile.clanName().isEmpty() ? "Без клана" : profile.clanName();
+        int clanXpWidth = width(inlineText(clanXp, texty));
         int clanBudget = (CONTENT_RIGHT - contentLeft - textx) - width(clanShield) - COLUMN_GAP
-                - COLUMN_GAP - width(clanXp);
+                - COLUMN_GAP - clanXpWidth;
         while (textWidth(clanName, texty) > clanBudget && !clanName.isEmpty()) {
             clanName = clanName.substring(0, clanName.length() - 1);
         }
         int clanW = width(clanShield) + COLUMN_GAP + textWidth(clanName, texty)
-                + COLUMN_GAP + width(clanXp);
+                + COLUMN_GAP + clanXpWidth;
         int clanTail = panelWidth - contentLeft - textx - clanW;
         Component second = Component.text(shift(offset) + pad(contentLeft) + shift(textx), GLYPHS)
                 .append(Component.text(inlineText(String.valueOf(clanShield), texty)
@@ -539,11 +587,13 @@ final class HudText {
                 .append(Component.text(tail(clanTail), GLYPHS));
 
         // Строка 3: четыре валюты - значок и число; начинается под первой.
-        String money = "" + MONEY_COINS + pad(ICON_GAP) + profile.coins() + pad(COLUMN_GAP)
-                + MONEY_STAR + pad(ICON_GAP) + profile.starCoins() + pad(COLUMN_GAP)
-                + MONEY_GEM + pad(ICON_GAP) + profile.nanogems() + pad(COLUMN_GAP)
-                + MONEY_BATTLE + pad(ICON_GAP) + profile.battlePoints();
-        int moneyW = width(money);
+        String money = "" + MONEY_COINS + pad(ICON_GAP) + compactNumber(profile.coins())
+                + pad(COLUMN_GAP) + MONEY_STAR + pad(ICON_GAP)
+                + compactNumber(profile.starCoins()) + pad(COLUMN_GAP)
+                + MONEY_GEM + pad(ICON_GAP) + compactNumber(profile.nanogems())
+                + pad(COLUMN_GAP) + MONEY_BATTLE + pad(ICON_GAP)
+                + compactNumber(profile.battlePoints());
+        int moneyW = width(inlineText(money, texty));
         int moneyTail = panelWidth - contentLeft - textx - moneyW;
         Component third = Component.text(shift(offset) + pad(contentLeft) + shift(textx)
                 + inlineText(money, texty) + tail(moneyTail), GLYPHS);
@@ -571,13 +621,13 @@ final class HudText {
         int leftVariant = variantIndex(leftOffsetY);
         StringBuilder bodyBuilder = new StringBuilder();
         bodyBuilder.appendCodePoint(hotbarLeftGlyph(GEAR_HEART, leftVariant))
-                .append(pad(ICON_GAP)).append(hotbarDigits(health, leftVariant))
+                .append(pad(ICON_GAP)).append(hotbarNumber(health, leftVariant))
                 .append(pad(COLUMN_GAP))
                 .appendCodePoint(hotbarLeftGlyph(GEAR_SWORD, leftVariant))
-                .append(pad(ICON_GAP)).append(hotbarDigits(damage, leftVariant))
+                .append(pad(ICON_GAP)).append(hotbarNumber(damage, leftVariant))
                 .append(pad(COLUMN_GAP))
                 .appendCodePoint(hotbarLeftGlyph(GEAR_SHIELD, leftVariant))
-                .append(pad(ICON_GAP)).append(hotbarDigits(armor, leftVariant));
+                .append(pad(ICON_GAP)).append(hotbarNumber(armor, leftVariant));
         if (fadeStep >= 0) {
             bodyBuilder.append(pad(COLUMN_GAP))
                     .append(indicator(lastDamage, fadeStep, leftVariant));
@@ -622,9 +672,15 @@ final class HudText {
                 + HOTBAR_LEFT_FADE_OFFSET + step * 12;
         StringBuilder builder = new StringBuilder();
         builder.appendCodePoint(puaCodePoint(start + 10)); // минус
-        String digits = Long.toString(Math.max(0L, amount));
-        for (int i = 0; i < digits.length(); i++) {
-            builder.appendCodePoint(puaCodePoint(start + digits.charAt(i) - '0'));
+        String compact = compactNumber(Math.max(0L, amount));
+        for (int i = 0; i < compact.length(); i++) {
+            char ch = compact.charAt(i);
+            if (ch >= '0' && ch <= '9') {
+                builder.appendCodePoint(puaCodePoint(start + ch - '0'));
+            } else {
+                builder.appendCodePoint(textGlyph(ch,
+                        leftVariant - ICON_OFFSET_RANGE + HOTBAR_TEXT_BASELINE_OFFSET, true));
+            }
         }
         builder.appendCodePoint(puaCodePoint(start + 11)); // сердце
         return builder.toString();
@@ -637,14 +693,20 @@ final class HudText {
                 + HOTBAR_LEFT_GEAR_OFFSET + index);
     }
 
-    /** Число глифами цифр хотбара; его вертикальный сдвиг общий с левой группой. */
-    String hotbarDigits(long value, int variant) {
-        String digits = Long.toString(value);
-        StringBuilder builder = new StringBuilder(digits.length());
-        for (int i = 0; i < digits.length(); i++) {
-            builder.appendCodePoint(puaCodePoint(HOTBAR_LEFT_START_INDEX
-                    + variant * HOTBAR_LEFT_VARIANT_GLYPH_COUNT
-                    + HOTBAR_LEFT_DIGIT_OFFSET + digits.charAt(i) - '0'));
+    /** Число хотбара с компактными суффиксами и общим вертикальным сдвигом. */
+    String hotbarNumber(long value, int variant) {
+        String compact = compactNumber(value);
+        StringBuilder builder = new StringBuilder(compact.length());
+        for (int i = 0; i < compact.length(); i++) {
+            char ch = compact.charAt(i);
+            if (ch >= '0' && ch <= '9') {
+                builder.appendCodePoint(puaCodePoint(HOTBAR_LEFT_START_INDEX
+                        + variant * HOTBAR_LEFT_VARIANT_GLYPH_COUNT
+                        + HOTBAR_LEFT_DIGIT_OFFSET + ch - '0'));
+            } else {
+                builder.appendCodePoint(textGlyph(ch,
+                        variant - ICON_OFFSET_RANGE + HOTBAR_TEXT_BASELINE_OFFSET, true));
+            }
         }
         return builder.toString();
     }

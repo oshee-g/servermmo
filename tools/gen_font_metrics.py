@@ -13,7 +13,6 @@ from gen_resourcepack import (
     HOTBAR_CENTER_DIGIT_BASE, HOTBAR_CENTER_DIGIT_COUNT,
     HOTBAR_CENTER_DARK_BASE, HOTBAR_CENTER_HEIGHT, HOTBAR_CENTER_START_INDEX,
     HOTBAR_DIGIT_CHARS, HOTBAR_ENERGY_BASE, HOTBAR_HEIGHT,
-    LARGE_NUMBER_BASE, LARGE_NUMBER_CHARS,
     HOTBAR_LEFT_DIGIT_FADE_COUNT,
     HOTBAR_LEFT_DIGIT_OFFSET, HOTBAR_LEFT_GEAR_COUNT, HOTBAR_LEFT_GEAR_OFFSET,
     HOTBAR_LEFT_START_INDEX, HOTBAR_LEFT_VARIANT_GLYPH_COUNT,
@@ -86,8 +85,6 @@ def collect() -> dict[int, int]:
     atlases = (
         ("hud_digits.png", DIGIT_CHARS, len(DIGIT_CHARS), 8),
         ("hud_digits_basic.png", HOTBAR_DIGIT_CHARS, len(HOTBAR_DIGIT_CHARS), 8),
-        ("hud_large_numbers.png", chars(LARGE_NUMBER_BASE, len(LARGE_NUMBER_CHARS)),
-         len(LARGE_NUMBER_CHARS), 16),
         ("hud_icons.png", ICON_CHARS, len(ICON_CHARS), 8),
         ("hud_letters.png", LETTER_CHARS, len(LETTER_CHARS), 8),
         *((f"hud_fade{step}.png", fade_chars(step), 12, 8)

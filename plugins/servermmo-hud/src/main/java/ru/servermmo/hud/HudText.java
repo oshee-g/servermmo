@@ -74,8 +74,6 @@ final class HudText {
     private static final int INLINE_MONEY_OFFSET = 12;
     private static final int INLINE_LEVEL_OFFSET = 18;
     private static final int INLINE_CLAN_OFFSET = 118;
-    /** Увеличенные жёлтые цифры уровней и суффиксы компактных чисел. */
-    private static final int LARGE_NUMBER_BASE = 0xE500;
     private static final int INLINE_START_INDEX = 0;
     private static final int INLINE_VARIANT_TOTAL = VARIANT_COUNT * INLINE_GLYPH_COUNT;
     private static final int PANEL_START_INDEX = INLINE_VARIANT_TOTAL;
@@ -214,12 +212,6 @@ final class HudText {
         map.put((int) '1', 6);
         map.put((int) '/', 7);
         map.put((int) ' ', 4);
-        for (int i = 0; i < 10; i++) {
-            map.put(LARGE_NUMBER_BASE + i, i == 1 ? 10 : 12);
-        }
-        for (int i = 10; i < 14; i++) {
-            map.put(LARGE_NUMBER_BASE + i, 12);
-        }
         for (int i = 0; i < 12; i++) {
             map.put((int) (HOTBAR_DIGIT_BASE + i), i == 1 ? 6 : 7);
         }
@@ -458,10 +450,6 @@ final class HudText {
     private static int inlineGlyph(int codePoint, int texty) {
         int offset;
         int index;
-        int suffixIndex = "кмBT".indexOf(codePoint);
-        if (suffixIndex >= 0) {
-            return LARGE_NUMBER_BASE + 10 + suffixIndex;
-        }
         if (codePoint >= '0' && codePoint <= '9') {
             offset = 0;
             index = codePoint - '0';
@@ -528,29 +516,13 @@ final class HudText {
     }
 
     private String inlineText(String text, int texty) {
-        boolean[] largeDigits = new boolean[text.length()];
-        for (int i = 0; i < text.length(); i++) {
-            if ("кмBT".indexOf(text.charAt(i)) < 0) {
-                continue;
-            }
-            for (int j = i - 1; j >= 0; j--) {
-                char previous = text.charAt(j);
-                if (previous >= '0' && previous <= '9') {
-                    largeDigits[j] = true;
-                } else if (previous == ',' || previous == '-') {
-                    continue;
-                } else {
-                    break;
-                }
-            }
-        }
-
         StringBuilder shifted = new StringBuilder(text.length());
         for (int i = 0; i < text.length();) {
             int codePoint = text.codePointAt(i);
             int glyph;
-            if (codePoint >= '0' && codePoint <= '9' && largeDigits[i]) {
-                glyph = LARGE_NUMBER_BASE + codePoint - '0';
+            if ("кмBT".indexOf(codePoint) >= 0) {
+                // Compact suffixes use the same 8px atlas row as the digits.
+                glyph = codePoint;
             } else {
                 glyph = inlineGlyph(codePoint, texty);
                 if (glyph == codePoint && Character.isBmpCodePoint(codePoint)
@@ -638,7 +610,7 @@ final class HudText {
         // Строка 1: после эмблемы курсор возвращается к общей левой границе
         // текстовой полосы. Свиток, ник и уровень идут подряд; хвост сохраняет
         // одинаковую общую ширину всех трёх строк.
-        String levelNumber = inlineText(
+        String levelNumber = toGlyphs(
                 Long.toString(Math.max(1L, Math.min(100L, level))), titleTexty);
         int xpBudget = Math.max(0, textBudget - width(MONEY_SCROLL) - ICON_GAP
                 - width(levelNumber) - 2 * COLUMN_GAP);
@@ -664,15 +636,15 @@ final class HudText {
                 .append(Component.text(inlineText(String.valueOf(MONEY_SCROLL), titleTexty)
                         + pad(titleIconGap), GLYPHS))
                 .append(Component.text(toGlyphs(title, titleTexty, smallTitle), GLYPHS))
-                .append(Component.text(pad(titleColumnGap)
-                        + inlineText(xpFraction, titleTexty), GLYPHS))
                 .append(Component.text(pad(titleColumnGap), GLYPHS))
                 .append(Component.text(levelNumber, GLYPHS.color(NamedTextColor.GOLD)))
+                .append(Component.text(pad(titleColumnGap)
+                        + inlineText(xpFraction, titleTexty), GLYPHS))
                 .append(Component.text(tail(titleTail), GLYPHS));
 
         // Строка 2: номер уровня клана, название и опыт клана дробью.
         // Строка 2 начинается на той же координате, что и строка 1.
-        String clanLevel = inlineText(Long.toString(Math.max(1L,
+        String clanLevel = toGlyphs(Long.toString(Math.max(1L,
                 Math.min(100L, profile.clanLevel()))), clanTexty);
         int clanXpBudget = Math.max(0, textBudget - width(clanLevel) - 2 * COLUMN_GAP);
         String clanXp = compactFraction(profile.clanXp(), profile.clanXpToNext(),

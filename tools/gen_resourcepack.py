@@ -37,8 +37,6 @@ ZIP_OUT = ROOT / "server" / "resourcepack" / "servermmo-hud.zip"
 GLYPH_HEIGHT = 8  # ячейка 8x8, как у ванильного шрифта: цифры и буквы
 DIGIT_CHARS = "0123456789/ кмBT"
 INLINE_DIGIT_CHARS = "0123456789/ "
-LARGE_NUMBER_BASE = 0xE500
-LARGE_NUMBER_CHARS = "0123456789кмBT"
 # Значки: сердце, меч, кристалл и три буквы LVL / XP — всё одной сеткой.
 ICON_CHARS = "\ue010\ue011\ue013"
 LETTER_CHARS = "LVXP"
@@ -557,13 +555,6 @@ def build_font_json() -> dict:
             },
             {
                 "type": "bitmap",
-                "file": "servermmo:font/hud_large_numbers.png",
-                "ascent": 11,
-                "height": 16,
-                "chars": [chars(LARGE_NUMBER_BASE, len(LARGE_NUMBER_CHARS))],
-            },
-            {
-                "type": "bitmap",
                 "file": "servermmo:font/hud_digits_basic.png",
                 "ascent": HOTBAR_DIGIT_ASCENT,
                 "height": GLYPH_HEIGHT,
@@ -793,7 +784,7 @@ def main() -> int:
                  *(f"hud_fade{step}.png" for step in range(FADE_STEPS)),
                  "hud_gear.png", "hud_money.png", "hud_ability.png",
                  "hud_hotbar_center.png", "hud_level.png", "hud_clan.png", "hud_panel.png",
-                 "hud_text.png", "hud_text_small.png", "hud_large_numbers.png"):
+                 "hud_text.png", "hud_text_small.png"):
         copy_asset(name, textures / name)
     copy_asset("pack_icon.png", PACK / "pack.png")
     basic_width, basic_height, basic_pixels = select_atlas_cells(

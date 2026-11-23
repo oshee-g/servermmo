@@ -177,25 +177,6 @@ def digits_atlas() -> Image.Image:
     return glyph_run([DIGITS_5x7[ch] for ch in DIGIT_CHARS])
 
 
-def large_number_atlas() -> Image.Image:
-    """Увеличенные цифры и компактные суффиксы, с общей baseline в 16px ячейках."""
-    source = digits_atlas()
-    result = Image.new("RGBA", (14 * 16, 16), (0, 0, 0, 0))
-    # Индексы: 0-9 увеличенные цифры, затем к, м, B, T (исходные 12-15).
-    source_indices = [*range(10), 12, 13, 14, 15]
-    for index, source_index in enumerate(source_indices):
-        glyph = source.crop((source_index * CELL, 0,
-                             (source_index + 1) * CELL, CELL))
-        if index < 10:
-            # Уровни чуть крупнее оригинала; суффиксы остаются заметно крупнее.
-            glyph = glyph.resize((12, 12), Image.Resampling.NEAREST)
-            result.alpha_composite(glyph, (index * 16 + 2, 3))
-        else:
-            glyph = glyph.resize((16, 16), Image.Resampling.NEAREST)
-            result.alpha_composite(glyph, (index * 16, 0))
-    return result
-
-
 def fade_atlas(heart: Image.Image, alpha: int) -> Image.Image:
     """Атлас индикатора урона одной ступени затухания: 0-9, минус, сердце."""
     patterns = [DIGITS_5x7[ch] for ch in "0123456789"] + [MINUS_5x7]
@@ -257,10 +238,6 @@ def main() -> int:
     digits = digits_atlas()
     digits.save(OUT / "hud_digits.png", optimize=True)
     print(f"hud_digits.png: {digits.width}x{digits.height}")
-
-    large_numbers = large_number_atlas()
-    large_numbers.save(OUT / "hud_large_numbers.png", optimize=True)
-    print(f"hud_large_numbers.png: {large_numbers.width}x{large_numbers.height}")
 
     letters = letters_atlas()
     letters.save(OUT / "hud_letters.png", optimize=True)

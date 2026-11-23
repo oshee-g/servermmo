@@ -268,14 +268,12 @@ final class HudText {
                 };
                 map.put(puaCodePoint(hotbarLeftStart + HOTBAR_LEFT_GEAR_OFFSET + i), advance);
             }
-        for (int i = 0; i < HOTBAR_LEFT_DIGIT_COUNT; i++) {
-            map.put(puaCodePoint(hotbarLeftStart + HOTBAR_LEFT_DIGIT_OFFSET + i),
-                    i == 1 ? 6 : 7);
-        }
-        for (int variant = 0; variant < VARIANT_COUNT; variant++) {
+            for (int i = 0; i < HOTBAR_LEFT_DIGIT_COUNT; i++) {
+                map.put(puaCodePoint(hotbarLeftStart + HOTBAR_LEFT_DIGIT_OFFSET + i),
+                        i == 1 ? 6 : 7);
+            }
             map.put(HOTBAR_ENERGY_BASE + variant, 20);
-        }
-        for (int step = 0; step < FADE_STEPS; step++) {
+            for (int step = 0; step < FADE_STEPS; step++) {
                 int fadeStart = hotbarLeftStart + HOTBAR_LEFT_FADE_OFFSET + step * 12;
                 for (int digit = 0; digit <= 9; digit++) {
                     map.put(puaCodePoint(fadeStart + digit), digit == 1 ? 6 : 7);

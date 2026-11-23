@@ -6,12 +6,21 @@
       "ascent": 7,
       "height": 8,
       "chars": [
-        "0123456789/ "
+        "0123456789/ кмBT"
       ]
     },
     {
       "type": "bitmap",
-      "file": "servermmo:font/hud_digits.png",
+      "file": "servermmo:font/hud_large_numbers.png",
+      "ascent": 11,
+      "height": 16,
+      "chars": [
+        ""
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "servermmo:font/hud_digits_basic.png",
       "ascent": -6,
       "height": 8,
       "chars": [

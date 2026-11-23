@@ -35,7 +35,10 @@ ASSETS = ROOT / "tools" / "pack_assets"
 ZIP_OUT = ROOT / "server" / "resourcepack" / "servermmo-hud.zip"
 
 GLYPH_HEIGHT = 8  # ячейка 8x8, как у ванильного шрифта: цифры и буквы
-DIGIT_CHARS = "0123456789/ "
+DIGIT_CHARS = "0123456789/ кмBT"
+INLINE_DIGIT_CHARS = "0123456789/ "
+LARGE_NUMBER_BASE = 0xE500
+LARGE_NUMBER_CHARS = "0123456789кмBT"
 # Значки: сердце, меч, кристалл и три буквы LVL / XP — всё одной сеткой.
 ICON_CHARS = "\ue010\ue011\ue013"
 LETTER_CHARS = "LVXP"
@@ -97,7 +100,7 @@ def chars(base: int, count: int) -> str:
 # Цифры хотбара: те же PNG, что и цифры панели, но отдельные кодовые точки
 # и ниже (ascent -1) — чтобы цифры строки экшн-бара стояли по центру
 # опущенных значков, а не выше них. Панель цифры не трогаем.
-HOTBAR_DIGIT_CHARS = chars(0xE600, len(DIGIT_CHARS))   # 0-9, /, пробел
+HOTBAR_DIGIT_CHARS = chars(0xE600, len(INLINE_DIGIT_CHARS))   # 0-9, /, пробел
 # Ступени затухания урона для хотбара: те же атласы hud_fade*.png, но ниже.
 def hotbar_fade_chars(step: int) -> str:
     base = 0xE610 + step * 16
@@ -136,7 +139,7 @@ TEXT_CHARS = (
 
 # База: глифы, столбцы, строки исходного атласа, высота рисования, ascent.
 INLINE_GLYPHS = (
-    ("hud_digits_inline", DIGIT_CHARS, 12, 1, 16, 7),
+    ("hud_digits_inline", INLINE_DIGIT_CHARS, len(INLINE_DIGIT_CHARS), 1, 16, 7),
     ("hud_money", MONEY_CHARS, 6, 1, ICON_HEIGHT, ICON_ASCENT),
     ("hud_level", LEVEL_CHARS, 10, 10, ICON_HEIGHT, ICON_ASCENT),
     ("hud_clan", CLAN_CHARS, 10, 10, ICON_HEIGHT, ICON_ASCENT),
@@ -265,20 +268,20 @@ EXTRA_HUD_SPRITES = {
 
 
 def padded_digit_atlas(data: bytes) -> tuple[int, int, bytes]:
-    """Помещает исходные 8x8 цифры в прозрачные ячейки 16x16.
+    """Помещает цифры, дробь и пробел в прозрачные ячейки 16x16.
 
-    Это сохраняет пиксельный размер цифр и позволяет ascent-вариантам
+    Это сохраняет пиксельный размер глифов и позволяет ascent-вариантам
     /hud texty иметь диапазон выше исходной высоты глифа.
     """
     width, height, source = png_rgba(data)
     cols = len(DIGIT_CHARS)
     cell = width // cols
     if width % cols or height != cell:
-        raise ValueError("hud_digits.png должен быть сеткой из 12 квадратных глифов")
+        raise ValueError("hud_digits.png должен быть квадратным атласом цифр и суффиксов")
     out_cell = 16
-    out_width, out_height = cols * out_cell, out_cell
+    out_width, out_height = len(INLINE_DIGIT_CHARS) * out_cell, out_cell
     target = bytearray(out_width * out_height * 4)
-    for index in range(cols):
+    for index in range(len(INLINE_DIGIT_CHARS)):
         for y in range(cell):
             src_start = (y * width + index * cell) * 4
             dst_start = (y * out_width + index * out_cell) * 4
@@ -554,7 +557,14 @@ def build_font_json() -> dict:
             },
             {
                 "type": "bitmap",
-                "file": "servermmo:font/hud_digits.png",
+                "file": "servermmo:font/hud_large_numbers.png",
+                "ascent": 11,
+                "height": 16,
+                "chars": [chars(LARGE_NUMBER_BASE, len(LARGE_NUMBER_CHARS))],
+            },
+            {
+                "type": "bitmap",
+                "file": "servermmo:font/hud_digits_basic.png",
                 "ascent": HOTBAR_DIGIT_ASCENT,
                 "height": GLYPH_HEIGHT,
                 "chars": [HOTBAR_DIGIT_CHARS],
@@ -783,9 +793,13 @@ def main() -> int:
                  *(f"hud_fade{step}.png" for step in range(FADE_STEPS)),
                  "hud_gear.png", "hud_money.png", "hud_ability.png",
                  "hud_hotbar_center.png", "hud_level.png", "hud_clan.png", "hud_panel.png",
-                 "hud_text.png", "hud_text_small.png"):
+                 "hud_text.png", "hud_text_small.png", "hud_large_numbers.png"):
         copy_asset(name, textures / name)
     copy_asset("pack_icon.png", PACK / "pack.png")
+    basic_width, basic_height, basic_pixels = select_atlas_cells(
+        (ASSETS / "hud_digits.png").read_bytes(), len(DIGIT_CHARS), tuple(range(12)))
+    write_rgba_png(textures / "hud_digits_basic.png",
+                   basic_width, basic_height, basic_pixels)
     padded_width, padded_height, padded_pixels = padded_digit_atlas(
         (ASSETS / "hud_digits.png").read_bytes())
     write_rgba_png(textures / "hud_digits_inline.png",

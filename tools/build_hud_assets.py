@@ -100,6 +100,8 @@ def to_icon(path: Path, size: int) -> Image.Image:
 # ---------------------------------------------------------------------------
 # Атласы глифов
 # ---------------------------------------------------------------------------
+DIGIT_CHARS = "0123456789/ кмBT"
+
 DIGITS_5x7 = {
     "0": ["01110", "10001", "10011", "10101", "11001", "10001", "01110"],
     "1": ["00100", "01100", "00100", "00100", "00100", "00100", "01110"],
@@ -113,6 +115,10 @@ DIGITS_5x7 = {
     "9": ["01110", "10001", "10001", "01111", "00001", "00010", "01100"],
     "/": ["00001", "00011", "00010", "00100", "01000", "11000", "10000"],
     " ": ["00000", "00000", "00000", "00000", "00000", "00000", "00000"],
+    "к": ["10000", "10000", "10010", "10100", "11000", "10100", "10010"],
+    "м": ["00000", "00000", "11011", "10101", "10101", "10101", "10101"],
+    "B": ["11110", "10001", "10001", "11110", "10001", "10001", "11110"],
+    "T": ["11111", "00100", "00100", "00100", "00100", "00100", "00100"],
 }
 
 # Буквы для значков LVL и XP: та же сетка 5x7, что у цифр.
@@ -167,8 +173,22 @@ def icons_atlas(icons: list[Image.Image]) -> Image.Image:
 
 
 def digits_atlas() -> Image.Image:
-    """Цифры и дробь: ячейка 8x8, символ 5x7 на общей базовой линии."""
-    return glyph_run([DIGITS_5x7[ch] for ch in "0123456789/ "])
+    """Цифры, дробь и компактные суффиксы на общей базовой линии."""
+    return glyph_run([DIGITS_5x7[ch] for ch in DIGIT_CHARS])
+
+
+def large_number_atlas() -> Image.Image:
+    """Увеличенные цифры и компактные суффиксы, с общей baseline в 16px ячейках."""
+    source = digits_atlas()
+    result = Image.new("RGBA", (14 * 16, 16), (0, 0, 0, 0))
+    # Индексы: 0-9 увеличенные цифры, затем к, м, B, T (исходные 12-15).
+    source_indices = [*range(10), 12, 13, 14, 15]
+    for index, source_index in enumerate(source_indices):
+        glyph = source.crop((source_index * CELL, 0,
+                             (source_index + 1) * CELL, CELL))
+        result.alpha_composite(glyph.resize((16, 16), Image.Resampling.NEAREST),
+                               (index * 16, 0))
+    return result
 
 
 def fade_atlas(heart: Image.Image, alpha: int) -> Image.Image:
@@ -232,6 +252,10 @@ def main() -> int:
     digits = digits_atlas()
     digits.save(OUT / "hud_digits.png", optimize=True)
     print(f"hud_digits.png: {digits.width}x{digits.height}")
+
+    large_numbers = large_number_atlas()
+    large_numbers.save(OUT / "hud_large_numbers.png", optimize=True)
+    print(f"hud_large_numbers.png: {large_numbers.width}x{large_numbers.height}")
 
     letters = letters_atlas()
     letters.save(OUT / "hud_letters.png", optimize=True)

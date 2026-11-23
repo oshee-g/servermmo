@@ -370,18 +370,19 @@ final class HudText {
      * Ник первой строки: при достижении 11 символов переходит на компактный
      * шрифт; если даже в нём строка не помещается, аккуратно обрезается.
      */
-    private int titleBudget(char diamond, String xpFraction, boolean small,
+    private int titleBudget(String levelNumber, String xpFraction, boolean small,
                             int contentLeft, int contentRight, int textx, int texty) {
         int iconGap = small ? 3 : ICON_GAP;
         int columnGap = small ? 4 : COLUMN_GAP;
         return (contentRight - contentLeft - textx) - width(MONEY_SCROLL) - iconGap
-                - width(diamond) - columnGap - width(inlineText(xpFraction, texty)) - columnGap;
+                - width(levelNumber) - columnGap
+                - width(inlineText(xpFraction, texty)) - columnGap;
     }
 
-    private String fitTitle(String playerName, char diamond, String xpFraction,
+    private String fitTitle(String playerName, String levelNumber, String xpFraction,
                             int texty, boolean small, int contentLeft, int contentRight,
                             int textx) {
-        int budget = titleBudget(diamond, xpFraction, small, contentLeft,
+        int budget = titleBudget(levelNumber, xpFraction, small, contentLeft,
                 contentRight, textx, texty);
         String name = playerName == null ? "" : playerName;
         while (textWidth(name, texty, small) > budget && !name.isEmpty()) {
@@ -567,10 +568,9 @@ final class HudText {
     /**
      * Три строки панели.
      *
-     * <p>Первая - подложка-панель и поверх неё свиток, ник, ромб уровня
-     * (номер нарисован на нём) и опыт дробью; эмблема слева заменяет текст
-     * класса. Вторая - клан: щит уровня, название и опыт клана дробью;
-     * третья - четыре валюты.</p>
+     * <p>Первая - подложка-панель и поверх неё свиток, ник, номер уровня и
+     * опыт дробью; эмблема слева заменяет текст класса. Вторая - номер уровня
+     * клана, название и опыт клана дробью; третья - четыре валюты.</p>
      *
      * <p>Все три строки получают один и тот же сдвиг {@code P} и добиваются
      * до полной ширины панели, поэтому их центры совпадают. Начало текста
@@ -604,22 +604,23 @@ final class HudText {
         // Строка 1: после эмблемы курсор возвращается к общей левой границе
         // текстовой полосы. Свиток, ник и уровень идут подряд; хвост сохраняет
         // одинаковую общую ширину всех трёх строк.
-        char diamond = (char) (LEVEL_BASE + levelIndex(level));
+        String levelNumber = inlineText(Long.toString(Math.max(1L, Math.min(100L, level))),
+                titleTexty);
         int xpBudget = Math.max(0, textBudget - width(MONEY_SCROLL) - ICON_GAP
-                - width(diamond) - 2 * COLUMN_GAP);
+                - width(levelNumber) - 2 * COLUMN_GAP);
         String xpFraction = compactFraction(xp, xpToNext, xpBudget, titleTexty);
         String playerTitle = playerName == null ? "" : playerName;
         boolean smallTitle = playerTitle.length() >= 11
                 || textWidth(playerTitle, titleTexty)
-                > titleBudget(diamond, xpFraction, false, contentLeft,
+                > titleBudget(levelNumber, xpFraction, false, contentLeft,
                         CONTENT_RIGHT, textx, titleTexty);
         int titleIconGap = smallTitle ? 3 : ICON_GAP;
         int titleColumnGap = smallTitle ? 4 : COLUMN_GAP;
-        String title = fitTitle(playerTitle, diamond, xpFraction, titleTexty,
+        String title = fitTitle(playerTitle, levelNumber, xpFraction, titleTexty,
                 smallTitle, contentLeft, CONTENT_RIGHT, textx);
         int titleW = width(MONEY_SCROLL) + titleIconGap
                 + textWidth(title, titleTexty, smallTitle)
-                + titleColumnGap + width(diamond) + titleColumnGap
+                + titleColumnGap + width(levelNumber) + titleColumnGap
                 + width(inlineText(xpFraction, titleTexty));
         int titleTail = panelWidth - contentLeft - textx - titleW;
 
@@ -629,29 +630,28 @@ final class HudText {
                 .append(Component.text(inlineText(String.valueOf(MONEY_SCROLL), titleTexty)
                         + pad(titleIconGap), GLYPHS))
                 .append(Component.text(toGlyphs(title, titleTexty, smallTitle), GLYPHS))
-                .append(Component.text(pad(titleColumnGap)
-                        + inlineText(String.valueOf(diamond), titleTexty)
+                .append(Component.text(pad(titleColumnGap) + levelNumber
                         + pad(titleColumnGap) + inlineText(xpFraction, titleTexty), GLYPHS))
                 .append(Component.text(tail(titleTail), GLYPHS));
 
-        // Строка 2: клан - щит уровня, название и опыт клана дробью.
+        // Строка 2: номер уровня клана, название и опыт клана дробью.
         // Строка 2 начинается на той же координате, что и строка 1.
-        char clanShield = (char) (CLAN_BASE + levelIndex(profile.clanLevel()));
-        int clanXpBudget = Math.max(0, textBudget - width(clanShield) - 2 * COLUMN_GAP);
+        String clanLevel = inlineText(Long.toString(Math.max(1L,
+                Math.min(100L, profile.clanLevel()))), clanTexty);
+        int clanXpBudget = Math.max(0, textBudget - width(clanLevel) - 2 * COLUMN_GAP);
         String clanXp = compactFraction(profile.clanXp(), profile.clanXpToNext(),
                 clanXpBudget, clanTexty);
         String clanName = profile.clanName().isEmpty() ? "Без клана" : profile.clanName();
         int clanXpWidth = width(inlineText(clanXp, clanTexty));
-        int clanBudget = textBudget - width(clanShield) - 2 * COLUMN_GAP - clanXpWidth;
+        int clanBudget = textBudget - width(clanLevel) - 2 * COLUMN_GAP - clanXpWidth;
         while (textWidth(clanName, clanTexty) > clanBudget && !clanName.isEmpty()) {
             clanName = clanName.substring(0, clanName.length() - 1);
         }
-        int clanW = width(clanShield) + COLUMN_GAP + textWidth(clanName, clanTexty)
+        int clanW = width(clanLevel) + COLUMN_GAP + textWidth(clanName, clanTexty)
                 + COLUMN_GAP + clanXpWidth;
         int clanTail = panelWidth - contentLeft - textx - clanW;
         Component second = Component.text(shift(offset) + pad(contentLeft) + shift(textx), GLYPHS)
-                .append(Component.text(inlineText(String.valueOf(clanShield), clanTexty)
-                        + pad(COLUMN_GAP), GLYPHS))
+                .append(Component.text(clanLevel + pad(COLUMN_GAP), GLYPHS))
                 .append(Component.text(toGlyphs(clanName, clanTexty), GLYPHS))
                 .append(Component.text(pad(COLUMN_GAP) + inlineText(clanXp, clanTexty), GLYPHS))
                 .append(Component.text(tail(clanTail), GLYPHS));
@@ -807,12 +807,6 @@ final class HudText {
             builder.append((char) (start + digits.charAt(i) - '0'));
         }
         return builder.toString();
-    }
-
-    /** Номер глифа-значка для уровня: уровень 1 - первый, 100 - последний. */
-    private static int levelIndex(long level) {
-        long index = Math.max(1L, level) - 1L;
-        return (int) Math.min(99L, index);
     }
 
     /** Пустые глифы ровно на {@code pixels} пикселей. */

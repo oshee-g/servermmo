@@ -538,13 +538,35 @@ final class HudText {
     }
 
     private String inlineText(String text, int texty) {
+        boolean[] largeDigits = new boolean[text.length()];
+        for (int i = 0; i < text.length(); i++) {
+            if ("кмBT".indexOf(text.charAt(i)) < 0) {
+                continue;
+            }
+            for (int j = i - 1; j >= 0; j--) {
+                char previous = text.charAt(j);
+                if (previous >= '0' && previous <= '9') {
+                    largeDigits[j] = true;
+                } else if (previous == ',' || previous == '-') {
+                    continue;
+                } else {
+                    break;
+                }
+            }
+        }
+
         StringBuilder shifted = new StringBuilder(text.length());
         for (int i = 0; i < text.length();) {
             int codePoint = text.codePointAt(i);
-            int glyph = inlineGlyph(codePoint, texty);
-            if (glyph == codePoint && Character.isBmpCodePoint(codePoint)
-                    && TEXT_CHARS.indexOf((char) codePoint) >= 0) {
-                glyph = textGlyph((char) codePoint, texty, true);
+            int glyph;
+            if (codePoint >= '0' && codePoint <= '9' && largeDigits[i]) {
+                glyph = LARGE_NUMBER_BASE + codePoint - '0';
+            } else {
+                glyph = inlineGlyph(codePoint, texty);
+                if (glyph == codePoint && Character.isBmpCodePoint(codePoint)
+                        && TEXT_CHARS.indexOf((char) codePoint) >= 0) {
+                    glyph = textGlyph((char) codePoint, texty, true);
+                }
             }
             shifted.appendCodePoint(glyph);
             i += Character.charCount(codePoint);

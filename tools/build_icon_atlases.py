@@ -9,8 +9,8 @@
     масштабе интерфейса 2;
   * в центре хотбара — квадратная иконка способности агрессии 32x32,
     с нормальным и затемнённым состоянием;
-  * ромбы уровней игрока и щиты уровней клана — ячейки 24x24 (номер уже
-    нарисован на них кодом, без «lvl»);
+  * ромбы уровней и щиты клана — номер заново рисуется пиксельной цифрой
+    уже в конечной 24x24 ячейке, отдельно подобранными цветами;
   * панели классов — 256x96 целиком, одним глифом (шире 256 нельзя:
     клиент запекает глифы в атлас 256x256).
 
@@ -37,8 +37,6 @@ except ImportError:  # pragma: no cover
 
 ROOT = Path(__file__).resolve().parent.parent
 ICONS = ROOT / "tools" / "pack_assets" / "icons64"
-LEVEL = ROOT / "tools" / "pack_assets" / "level"
-CLAN = ROOT / "tools" / "pack_assets" / "clan"
 OUT = ROOT / "tools" / "pack_assets"
 
 ICON = 24          # ячейка значка панели: height=24 в шрифте
@@ -68,6 +66,19 @@ CLASSES = ["warrior", "archer", "mage", "paladin", "vampire", "necromancer",
 
 LEVEL_COLS = 10    # 10x10 = 100 уровней
 PANEL_COLS = 2     # сетка 2x5 = 10 панелей
+
+PIXEL_DIGITS = {
+    "0": ("1111", "1001", "1001", "1001", "1111"),
+    "1": ("0110", "1110", "0110", "0110", "1111"),
+    "2": ("1111", "0001", "1111", "1000", "1111"),
+    "3": ("1111", "0001", "1111", "0001", "1111"),
+    "4": ("1001", "1001", "1111", "0001", "0001"),
+    "5": ("1111", "1000", "1111", "0001", "1111"),
+    "6": ("1111", "1000", "1111", "1001", "1111"),
+    "7": ("1111", "0001", "0010", "0100", "0100"),
+    "8": ("1111", "1001", "1111", "1001", "1111"),
+    "9": ("1111", "1001", "1111", "0001", "1111"),
+}
 
 
 def tile(images: list[Image.Image], cols: int, cell: tuple[int, int]) -> Image.Image:
@@ -107,6 +118,37 @@ def fit(name: str, size: tuple[int, int]) -> Image.Image:
     canvas = Image.new("RGBA", size, (0, 0, 0, 0))
     canvas.paste(image, ((size[0] - w) // 2, (size[1] - h) // 2), image)
     return canvas
+
+
+def numbered_badge(base_name: str, value: int, clan_style: bool) -> Image.Image:
+    """Draw sharp, purpose-styled pixel numerals after scaling the badge art."""
+    badge = load(base_name, (ICON, ICON))
+    text = str(value)
+    scale = 2 if len(text) == 1 else 1
+    glyph_width = 4 * len(text) + max(0, len(text) - 1)
+    x_start = (ICON - glyph_width * scale) // 2
+    y_start = (ICON - 5 * scale) // 2
+    draw = ImageDraw.Draw(badge)
+
+    # Level numerals are icy white with a deep teal shadow; clan numerals use
+    # warm gold over burgundy. Drawing at final atlas resolution avoids the
+    # blur caused by painting text on a 64px icon and shrinking it twice.
+    shadow = (4, 25, 39, 255) if not clan_style else (49, 10, 22, 255)
+    bright = (242, 255, 255, 255) if not clan_style else (255, 247, 190, 255)
+    face = (137, 246, 255, 255) if not clan_style else (255, 190, 67, 255)
+    for index, digit in enumerate(text):
+        pattern = PIXEL_DIGITS[digit]
+        origin_x = x_start + index * 5 * scale
+        for y, row in enumerate(pattern):
+            for x, pixel in enumerate(row):
+                if pixel != "1":
+                    continue
+                px = origin_x + x * scale
+                py = y_start + y * scale
+                draw.rectangle((px + 1, py + 1, px + scale, py + scale), fill=shadow)
+                color = bright if y == 0 else face
+                draw.rectangle((px, py, px + scale - 1, py + scale - 1), fill=color)
+    return badge
 
 
 def build_ability_atlas() -> None:
@@ -186,25 +228,15 @@ def main() -> int:
     build_ability_atlas()
     build_hotbar_center_atlas()
 
-    badges = []
-    for n in range(1, 101):
-        path = LEVEL / f"level_{n}.png"
-        if not path.is_file():
-            sys.exit(f"нет значка {path} — сначала tools/build_level_badges.py")
-        badges.append(Image.open(path).convert("RGBA").resize((ICON, ICON),
-                                                             Image.LANCZOS))
+    badges = [numbered_badge("level_diamond_new", n, False)
+              for n in range(1, 101)]
     sheet = tile(badges, LEVEL_COLS, (ICON, ICON))
     sheet.save(OUT / "hud_level.png", optimize=True)
     print(f"hud_level.png {sheet.size[0]}x{sheet.size[1]}: уровни 1..100 "
           f"сеткой {LEVEL_COLS}x{10}")
 
-    clan_badges = []
-    for n in range(1, 101):
-        path = CLAN / f"level_{n}.png"
-        if not path.is_file():
-            sys.exit(f"нет значка {path} — сначала tools/build_level_badges.py")
-        clan_badges.append(Image.open(path).convert("RGBA").resize((ICON, ICON),
-                                                                   Image.LANCZOS))
+    clan_badges = [numbered_badge("level_shield", n, True)
+                   for n in range(1, 101)]
     clan_sheet = tile(clan_badges, LEVEL_COLS, (ICON, ICON))
     clan_sheet.save(OUT / "hud_clan.png", optimize=True)
     print(f"hud_clan.png {clan_sheet.size[0]}x{clan_sheet.size[1]}: щиты клана "

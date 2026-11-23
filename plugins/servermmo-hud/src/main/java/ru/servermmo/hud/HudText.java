@@ -454,16 +454,6 @@ final class HudText {
         return new String(Character.toChars(codePoint));
     }
 
-    /** Увеличенные цифры уровня: 2x пиксельная графика с общей baseline текста. */
-    private static String largeLevelNumber(String value) {
-        StringBuilder result = new StringBuilder(value.length());
-        for (int i = 0; i < value.length(); i++) {
-            char ch = value.charAt(i);
-            result.appendCodePoint(LARGE_NUMBER_BASE + ch - '0');
-        }
-        return result.toString();
-    }
-
     /** Подбирает вертикальный вариант цифры/малого значка под /hud texty. */
     private static int inlineGlyph(int codePoint, int texty) {
         int offset;
@@ -648,8 +638,8 @@ final class HudText {
         // Строка 1: после эмблемы курсор возвращается к общей левой границе
         // текстовой полосы. Свиток, ник и уровень идут подряд; хвост сохраняет
         // одинаковую общую ширину всех трёх строк.
-        String levelNumber = largeLevelNumber(
-                Long.toString(Math.max(1L, Math.min(100L, level))));
+        String levelNumber = inlineText(
+                Long.toString(Math.max(1L, Math.min(100L, level))), titleTexty);
         int xpBudget = Math.max(0, textBudget - width(MONEY_SCROLL) - ICON_GAP
                 - width(levelNumber) - 2 * COLUMN_GAP);
         String xpFraction = compactFraction(xp, xpToNext, xpBudget, titleTexty);
@@ -674,16 +664,16 @@ final class HudText {
                 .append(Component.text(inlineText(String.valueOf(MONEY_SCROLL), titleTexty)
                         + pad(titleIconGap), GLYPHS))
                 .append(Component.text(toGlyphs(title, titleTexty, smallTitle), GLYPHS))
-                .append(Component.text(pad(titleColumnGap), GLYPHS))
-                .append(Component.text(levelNumber, GLYPHS.color(NamedTextColor.GOLD)))
                 .append(Component.text(pad(titleColumnGap)
                         + inlineText(xpFraction, titleTexty), GLYPHS))
+                .append(Component.text(pad(titleColumnGap), GLYPHS))
+                .append(Component.text(levelNumber, GLYPHS.color(NamedTextColor.GOLD)))
                 .append(Component.text(tail(titleTail), GLYPHS));
 
         // Строка 2: номер уровня клана, название и опыт клана дробью.
         // Строка 2 начинается на той же координате, что и строка 1.
-        String clanLevel = largeLevelNumber(Long.toString(Math.max(1L,
-                Math.min(100L, profile.clanLevel()))));
+        String clanLevel = inlineText(Long.toString(Math.max(1L,
+                Math.min(100L, profile.clanLevel()))), clanTexty);
         int clanXpBudget = Math.max(0, textBudget - width(clanLevel) - 2 * COLUMN_GAP);
         String clanXp = compactFraction(profile.clanXp(), profile.clanXpToNext(),
                 clanXpBudget, clanTexty);

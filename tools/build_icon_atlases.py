@@ -59,7 +59,7 @@ PANEL = (256, 96)  # панель класса целиком, один глиф
 GEAR = ["heart", "sword", "axe", "staff", "hammer", "scythe", "trident",
         "bow", "spear", "shield"]
 MONEY = ["coin_pile", "coin_star", "nanogem", "clan", "scroll", "battle_points"]
-ABILITIES = ["ability_aggression", "ability_flame", "ability_bolt", "ability_shield",
+ABILITIES = ["ability_slash", "ability_flame", "ability_bolt", "ability_shield",
              "ability_skull", "ability_leaf", "ability_wave", "ability_arrow"]
 CLASSES = ["warrior", "archer", "mage", "paladin", "vampire", "necromancer",
            "viking", "farmer", "blacksmith", "druid"]
@@ -160,9 +160,9 @@ def build_ability_atlas() -> None:
 
 
 def build_hotbar_center_atlas() -> None:
-    # Keep the center aggression slot represented by the sword, not the fist art.
-    icon = fit("sword", (HOTBAR_CENTER_HEIGHT - 8,
-                         HOTBAR_CENTER_HEIGHT - 8))
+    # The center aggression slot uses the fist; the adjacent ability slot has a sword.
+    icon = fit("ability_aggression", (HOTBAR_CENTER_HEIGHT - 8,
+                                      HOTBAR_CENTER_HEIGHT - 8))
     framed = Image.new("RGBA", (HOTBAR_CENTER_HEIGHT, HOTBAR_CENTER_HEIGHT),
                        (22, 27, 29, 255))
     draw = ImageDraw.Draw(framed)

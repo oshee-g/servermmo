@@ -24,7 +24,6 @@ final class EnergyListener implements Listener {
 
     private static final long REGEN_DELAY_MILLIS = 5_000L;
     private static final long REGEN_INTERVAL_MILLIS = 100L;
-    private static final double MIN_SPRINT_SPEED_FACTOR = 0.55D;
     private final JavaPlugin plugin;
     private final Map<UUID, Double> sprintDistance = new ConcurrentHashMap<>();
     private final Map<UUID, Float> originalWalkSpeed = new ConcurrentHashMap<>();
@@ -74,10 +73,20 @@ final class EnergyListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onMove(PlayerMoveEvent event) {
         Player player = event.getPlayer();
+        if (!player.isSprinting()) {
+            return;
+        }
+        UUID uuid = player.getUniqueId();
+        PlayerProfile profile = profile(player);
+        if (profile.energy() <= 0L) {
+            stopSprintForExhaustion(player);
+            return;
+        }
+
         Location from = event.getFrom();
         Location to = event.getTo();
-        if (event instanceof PlayerTeleportEvent || !player.isSprinting()
-                || to == null || from.getWorld() != to.getWorld()) {
+        if (event instanceof PlayerTeleportEvent || to == null
+                || from.getWorld() != to.getWorld()) {
             return;
         }
         double dx = to.getX() - from.getX();
@@ -86,24 +95,17 @@ final class EnergyListener implements Listener {
         if (distance <= 0.0) {
             return;
         }
-        UUID uuid = player.getUniqueId();
         double accumulated = sprintDistance.getOrDefault(uuid, 0.0) + distance;
         long blocks = (long) accumulated;
         sprintDistance.put(uuid, accumulated - blocks);
         if (blocks > 0L) {
-            PlayerProfile profile = profile(player);
             profile.energy(profile.energy() - blocks);
             if (profile.energy() <= 0L) {
-                // Израсходовав последний пункт, теряем спринт сразу; дальнейшие
-                // попытки включить его отменяются preventSprintWithoutEnergy.
-                player.setSprinting(false);
-                restoreWalkSpeed(player);
-                long now = System.currentTimeMillis();
-                stoppedAt.put(uuid, now);
-                lastRegenAt.put(uuid, now + REGEN_DELAY_MILLIS);
+                // Exhausted players leave sprint immediately; sprint-start attempts
+                // are rejected by preventSprintWithoutEnergy until energy returns.
+                stopSprintForExhaustion(player);
                 return;
             }
-            applyEnergySpeed(player, profile);
         }
         stoppedAt.remove(uuid);
         lastRegenAt.remove(uuid);
@@ -111,10 +113,16 @@ final class EnergyListener implements Listener {
 
     /** Обновляет скорость после внешнего изменения энергии (например, /energy add). */
     void refreshSprint(Player player) {
-        if (player.isSprinting()) {
-            originalWalkSpeed.putIfAbsent(player.getUniqueId(), player.getWalkSpeed());
-            applyEnergySpeed(player, profile(player));
+        if (!player.isSprinting()) {
+            return;
         }
+        PlayerProfile profile = profile(player);
+        if (profile.energy() <= 0L) {
+            stopSprintForExhaustion(player);
+            return;
+        }
+        originalWalkSpeed.putIfAbsent(player.getUniqueId(), player.getWalkSpeed());
+        applyEnergySpeed(player, profile);
     }
 
     private void applyEnergySpeed(Player player, PlayerProfile profile) {
@@ -122,11 +130,19 @@ final class EnergyListener implements Listener {
         if (base == null || profile.maxEnergy() <= 0L) {
             return;
         }
-        double energyRatio = Math.max(0.0D,
-                Math.min(1.0D, (double) profile.energy() / profile.maxEnergy()));
-        double factor = MIN_SPRINT_SPEED_FACTOR
-                + (1.0D - MIN_SPRINT_SPEED_FACTOR) * energyRatio;
-        player.setWalkSpeed((float) (base * factor));
+        // Energy is a sprint allowance, not a speed multiplier: keep full sprint
+        // speed while any energy remains, then drop to normal speed at zero.
+        player.setWalkSpeed(base);
+    }
+
+    private void stopSprintForExhaustion(Player player) {
+        UUID uuid = player.getUniqueId();
+        sprintDistance.put(uuid, 0.0);
+        player.setSprinting(false);
+        restoreWalkSpeed(player);
+        long now = System.currentTimeMillis();
+        stoppedAt.put(uuid, now);
+        lastRegenAt.put(uuid, now + REGEN_DELAY_MILLIS);
     }
 
     private void restoreWalkSpeed(Player player) {

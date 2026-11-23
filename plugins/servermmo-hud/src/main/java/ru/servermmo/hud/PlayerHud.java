@@ -49,6 +49,8 @@ final class PlayerHud {
     private long lastDamageAt;
     private Component lastActionBar2;
     private long ticksSinceActionBar;
+    /** Время окончания визуального 30-секундного отката способности агрессии. */
+    private long aggressionCooldownUntil;
 
     PlayerHud(HudSettings settings, HudText text, HudStore store, Player player) {
         this.settings = settings;
@@ -87,6 +89,20 @@ final class PlayerHud {
         }
         this.lastDamage = amount;
         this.lastDamageAt = System.currentTimeMillis();
+    }
+
+    /** Запускает визуальный откат способности, если предыдущий уже завершился. */
+    void activateAggression() {
+        long now = System.currentTimeMillis();
+        if (aggressionCooldownUntil <= now) {
+            aggressionCooldownUntil = now + 30_000L;
+            lastActionBar2 = null;
+        }
+    }
+
+    private int aggressionSecondsRemaining() {
+        long remaining = aggressionCooldownUntil - System.currentTimeMillis();
+        return remaining <= 0L ? 0 : (int) ((remaining + 999L) / 1_000L);
     }
 
     /** Показать панель (только если ресурспак загружен). */
@@ -129,6 +145,7 @@ final class PlayerHud {
         show();
 
         long health = 0L;
+        long maxHealth = 10L;
         long energy = 100L;
         long maxEnergy = 100L;
         long damage = 0L;
@@ -140,6 +157,7 @@ final class PlayerHud {
             PlayerProfile profile = core.players().get(player.getUniqueId());
             if (profile != null) {
                 health = profile.health();
+                maxHealth = profile.maxHealth();
                 energy = profile.energy();
                 maxEnergy = profile.maxEnergy();
                 damage = profile.damage();
@@ -160,7 +178,7 @@ final class PlayerHud {
             }
         }
 
-        tickActionBar(health, energy, maxEnergy, damage, profile.armor());
+        tickActionBar(health, maxHealth, energy, maxEnergy, damage, profile.armor());
     }
 
     /**
@@ -169,7 +187,8 @@ final class PlayerHud {
      * яркости {@code damage-hold-seconds}, затем ступенями затухает и
      * пропадает; новый урон вспыхивает его заново.
      */
-    private void tickActionBar(long health, long energy, long maxEnergy, long damage, long armor) {
+    private void tickActionBar(long health, long maxHealth, long energy, long maxEnergy,
+                               long damage, long armor) {
         int fadeStep = -1;
         if (lastDamageAt > 0L) {
             long elapsed = System.currentTimeMillis() - lastDamageAt;
@@ -185,8 +204,9 @@ final class PlayerHud {
                 }
             }
         }
-        Component line = text.hotbar(health, energy, maxEnergy, damage, armor,
-                lastDamage, fadeStep,
+        int aggressionTimer = aggressionSecondsRemaining();
+        Component line = text.hotbar(health, maxHealth, energy, maxEnergy, damage, armor,
+                lastDamage, fadeStep, aggressionTimer,
                 settings.hotbarAnchorX(), settings.abilitySlots(),
                 settings.layout(store.get(player.getUniqueId())),
                 settings.hotbarLeftOffsetX(), settings.hotbarLeftOffsetY(),

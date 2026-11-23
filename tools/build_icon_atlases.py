@@ -7,7 +7,8 @@
     рамку панели;
   * значки хотбара (сердце, меч, щит) — ячейки 20x20, как слот при
     масштабе интерфейса 2;
-  * в центре хотбара — одна крупная пустая железная ромб-рамка 32x32;
+  * в центре хотбара — квадратная иконка способности агрессии 32x32,
+    с нормальным и затемнённым состоянием;
   * ромбы уровней игрока и щиты уровней клана — ячейки 24x24 (номер уже
     нарисован на них кодом, без «lvl»);
   * панели классов — 256x96 целиком, одним глифом (шире 256 нельзя:
@@ -42,7 +43,7 @@ OUT = ROOT / "tools" / "pack_assets"
 
 ICON = 24          # ячейка значка панели: height=24 в шрифте
 HOTBAR = 20        # ячейка значка хотбара: height=20, как ячейка хотбара
-ABILITY_FRAME = 32 # крупная железная рамка центрального ромба
+HOTBAR_CENTER_HEIGHT = 32  # центральная квадратная способность
 # Ячейка панели класса. Высота не исходные 64, а 96: три строки HUD
 # занимают 70 px, и панель с запасом накрывает их, а заодно выше и
 # представительнее (игрок просил панель повыше, а не пошире — ширину 256
@@ -108,45 +109,6 @@ def fit(name: str, size: tuple[int, int]) -> Image.Image:
     return canvas
 
 
-def diamond_frame() -> Image.Image:
-    """Empty, steel-edged diamond placeholder for future ability artwork."""
-    size = ABILITY_FRAME
-    center = size // 2
-    hi = size - 1
-
-    def points(inset: int) -> list[tuple[int, int]]:
-        low, high = inset, hi - inset
-        return [(center, low), (high - 1, center - 1), (high, center),
-                (center, high), (center - 1, high), (low, center),
-                (low, center - 1)]
-
-    image = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(image)
-    shadow = [(x, min(hi, y + 1)) for x, y in points(0)]
-    draw.polygon(shadow, fill=(6, 8, 10, 235))
-    draw.polygon(points(0), fill=(24, 29, 32, 255))
-    draw.polygon(points(1), fill=(174, 182, 184, 255))
-    draw.polygon(points(2), fill=(75, 85, 89, 255))
-    draw.polygon(points(3), fill=(132, 142, 145, 255))
-    draw.polygon(points(4), fill=(47, 57, 62, 255))
-    # Leave the middle transparent for the future ability image or item icon.
-    draw.polygon(points(5), fill=(0, 0, 0, 0))
-    # Broad forged-steel bevel: bright upper-left edge and dark lower-right edge.
-    draw.line([(center, 1), (1, center - 1), (1, center),
-               (center, hi - 1)], fill=(222, 226, 225, 255), width=1)
-    draw.line([(center, hi - 1), (hi - 1, center),
-               (hi - 2, center - 1)], fill=(35, 42, 45, 255), width=2)
-    draw.line([(center, 5), (5, center - 1), (5, center),
-               (center, hi - 5)], fill=(181, 190, 192, 255), width=1)
-    draw.line([(center, hi - 5), (hi - 5, center),
-               (hi - 6, center - 1)], fill=(52, 61, 65, 255), width=1)
-    # Four tiny iron rivets make the frame read as forged metal, not a thin outline.
-    for x, y in ((center, 2), (hi - 2, center), (center, hi - 2), (2, center)):
-        draw.rectangle((x - 1, y - 1, x, y), fill=(42, 49, 52, 255))
-        draw.point((x - 1, y - 1), fill=(230, 233, 231, 255))
-    return image
-
-
 def build_ability_atlas() -> None:
     ability = tile([fit(name, (HOTBAR, HOTBAR)) for name in ABILITIES],
                    len(ABILITIES), (HOTBAR, HOTBAR))
@@ -156,10 +118,29 @@ def build_ability_atlas() -> None:
 
 
 def build_hotbar_center_atlas() -> None:
-    frame = diamond_frame()
-    frame.save(OUT / "hud_hotbar_center.png", optimize=True)
-    print(f"hud_hotbar_center.png {frame.size[0]}x{frame.size[1]}: "
-          "одна центральная ромб-рамка")
+    icon = fit("ability_slash", (HOTBAR_CENTER_HEIGHT - 8,
+                                  HOTBAR_CENTER_HEIGHT - 8))
+    framed = Image.new("RGBA", (HOTBAR_CENTER_HEIGHT, HOTBAR_CENTER_HEIGHT),
+                       (22, 27, 29, 255))
+    draw = ImageDraw.Draw(framed)
+    # Layered bevel makes the center slot read as forged iron rather than a
+    # floating ability icon. The ability art sits inside a 24px square opening.
+    draw.rectangle((0, 0, 31, 31), fill=(17, 21, 23, 255))
+    draw.rectangle((1, 1, 30, 30), fill=(173, 181, 183, 255))
+    draw.rectangle((2, 2, 29, 29), fill=(52, 61, 65, 255))
+    draw.rectangle((3, 3, 28, 28), fill=(20, 24, 26, 255))
+    framed.alpha_composite(icon, (4, 4))
+    dim = framed.copy()
+    pixels = dim.load()
+    for y in range(dim.height):
+        for x in range(dim.width):
+            red, green, blue, alpha = pixels[x, y]
+            pixels[x, y] = (red * 55 // 100, green * 55 // 100,
+                            blue * 55 // 100, alpha)
+    atlas = tile([framed, dim], 2, (HOTBAR_CENTER_HEIGHT, HOTBAR_CENTER_HEIGHT))
+    atlas.save(OUT / "hud_hotbar_center.png", optimize=True)
+    print(f"hud_hotbar_center.png {atlas.size[0]}x{atlas.size[1]}: "
+          "иконка агрессии, обычное и затемнённое состояния")
 
 
 def build_panel_atlas() -> None:

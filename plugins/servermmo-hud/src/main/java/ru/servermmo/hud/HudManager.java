@@ -52,6 +52,13 @@ final class HudManager extends BukkitRunnable {
         hud.tick();
     }
 
+    /** Двойной тап Shift активирует 30-секундный откат способности агрессии. */
+    void activateAggression(Player player) {
+        PlayerHud hud = huds.computeIfAbsent(player.getUniqueId(),
+                uuid -> new PlayerHud(settings, text, store, player));
+        hud.activateAggression();
+    }
+
     /** Игрок получил кастомный урон: вспыхнуть индикатору «−N♥» в хотбаре. */
     void recordDamage(Player player, long amount) {
         PlayerHud hud = huds.computeIfAbsent(player.getUniqueId(),

@@ -10,7 +10,7 @@ from pathlib import Path
 
 from gen_resourcepack import (
     ABILITY_CHARS, CLAN_CHARS, DIGIT_CHARS, FADE_STEPS, GEAR_CHARS,
-    HOTBAR_CENTER_HEIGHT, HOTBAR_CENTER_START_INDEX,
+    HOTBAR_CENTER_DARK_BASE, HOTBAR_CENTER_HEIGHT, HOTBAR_CENTER_START_INDEX,
     HOTBAR_DIGIT_CHARS, HOTBAR_ENERGY_BASE, HOTBAR_HEIGHT,
     HOTBAR_LEFT_DIGIT_FADE_COUNT,
     HOTBAR_LEFT_DIGIT_OFFSET, HOTBAR_LEFT_GEAR_COUNT, HOTBAR_LEFT_GEAR_OFFSET,
@@ -24,8 +24,9 @@ from gen_resourcepack import (
     PANEL_VARIANT_GLYPH_COUNT, TEXT_CHARS, TEXT_COLS, TEXT_HEIGHT,
     INLINE_VARIANT_HEIGHT, PANEL_VARIANT_HEIGHT, TEXT_SMALL_START_INDEX,
     TEXT_START_INDEX, TEXT_VARIANT_HEIGHT, build_space_advances, chars,
-    encode_rgba_png, fade_chars, hotbar_digits_fade_atlas_data,
-    hotbar_icon_atlas_data, hotbar_fade_chars, padded_atlas,
+    encode_rgba_png, fade_chars, hotbar_center_atlas_data,
+    hotbar_digits_fade_atlas_data, hotbar_icon_atlas_data,
+    hotbar_fade_chars, padded_atlas,
     padded_digit_atlas, pua_chars, variant_index,
 )
 from png_io import glyph_advance_grid, png_rgba
@@ -129,7 +130,7 @@ def collect() -> dict[int, int]:
     # independently to each side when HudText chooses its glyphs.
     icon_source = hotbar_icon_atlas_data()
     digit_fade_source = hotbar_digits_fade_atlas_data()
-    center_source = (ASSETS / "hud_hotbar_center.png").read_bytes()
+    center_source = hotbar_center_atlas_data()
     icon_count = HOTBAR_LEFT_GEAR_COUNT + 1 + HOTBAR_RIGHT_VARIANT_GLYPH_COUNT
     for offset in range(-ICON_OFFSET_RANGE, ICON_OFFSET_RANGE + 1):
         variant = variant_index(offset)
@@ -145,9 +146,10 @@ def collect() -> dict[int, int]:
                   pua_chars(left_start + HOTBAR_LEFT_DIGIT_OFFSET,
                             HOTBAR_LEFT_DIGIT_FADE_COUNT),
                   14, HOTBAR_VARIANT_HEIGHT, source_data=digit_fade_source)
-        add_atlas("hud_hotbar_center_offset.png",
-                  pua_chars(HOTBAR_CENTER_START_INDEX + variant, 1),
-                  1, HOTBAR_CENTER_HEIGHT, HOTBAR_VARIANT_HEIGHT, center_source)
+        center_glyphs = pua_chars(HOTBAR_CENTER_START_INDEX + variant, 1)
+        center_glyphs += chr(HOTBAR_CENTER_DARK_BASE + variant)
+        add_atlas("hud_hotbar_center_offset.png", center_glyphs,
+                  2, HOTBAR_CENTER_HEIGHT, HOTBAR_VARIANT_HEIGHT, center_source)
 
     # Spaces and cursor shifts are defined by the font's space provider.
     for char, advance in build_space_advances().items():

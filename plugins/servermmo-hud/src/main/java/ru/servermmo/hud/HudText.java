@@ -169,6 +169,8 @@ final class HudText {
     private static final int HOTBAR_RIGHT_VARIANT_GLYPH_COUNT = 8;
     private static final int HOTBAR_CENTER_START_INDEX = HOTBAR_RIGHT_START_INDEX
             + VARIANT_COUNT * HOTBAR_RIGHT_VARIANT_GLYPH_COUNT;
+    /** BMP PUA-база затемнённых вариантов центральной иконки (201 offsets). */
+    private static final int HOTBAR_CENTER_DARK_BASE = 0xE900;
     /** База кодовых точек ступеней: ступень L - FADE_BASE + L*16 + позиция. */
     private static final int FADE_BASE = 0xE200;
     /**
@@ -235,6 +237,7 @@ final class HudText {
         }
         for (int variant = 0; variant < VARIANT_COUNT; variant++) {
             map.put(puaCodePoint(HOTBAR_CENTER_START_INDEX + variant), 24);
+            map.put(HOTBAR_CENTER_DARK_BASE + variant, 24);
         }
         for (int i = 0; i < 100; i++) {
             map.put((int) (LEVEL_BASE + i), 14);
@@ -666,11 +669,12 @@ final class HudText {
      * @param fadeStep ступень затухания индикатора, -1 - индикатора нет
      * @param abilitySlots сколько квадратных значков способностей рисовать
      * @param layout геометрия под экран игрока
-     * @param centerOffsetX сдвиг центрального ромба по горизонтали
-     * @param centerOffsetY сдвиг центрального ромба по вертикали
+     * @param centerOffsetX сдвиг центральной способности по горизонтали
+     * @param centerOffsetY сдвиг центральной способности по вертикали
      */
-    Component hotbar(long health, long energy, long maxEnergy, long damage, long armor,
-                     long lastDamage, int fadeStep,
+    Component hotbar(long health, long maxHealth, long energy, long maxEnergy,
+                     long damage, long armor, long lastDamage, int fadeStep,
+                     int aggressionTimer,
                      int anchorX, int abilitySlots, HudLayout layout,
                      int leftOffsetX, int leftOffsetY,
                      int rightOffsetX, int rightOffsetY,
@@ -678,7 +682,7 @@ final class HudText {
         int leftVariant = variantIndex(leftOffsetY);
         StringBuilder bodyBuilder = new StringBuilder();
         bodyBuilder.appendCodePoint(hotbarLeftGlyph(GEAR_HEART, leftVariant))
-                .append(pad(ICON_GAP)).append(hotbarNumber(health, leftVariant))
+                .append(pad(ICON_GAP)).append(hotbarFraction(health, maxHealth, leftVariant))
                 .append(pad(COLUMN_GAP))
                 .append((char) (HOTBAR_ENERGY_BASE + leftVariant))
                 .append(pad(ICON_GAP)).append(hotbarFraction(energy, maxEnergy, leftVariant))
@@ -711,17 +715,27 @@ final class HudText {
                 line.appendCodePoint(glyph);
             }
             line.append(shift(-rightOffsetX));
-
-            // Один дополнительный ромб центрируем относительно всего экрана.
-            // Парные сдвиги дают нулевую ширину, не меняя позиции остального HUD.
-            int lineWidth = width(line.toString());
-            int centerVariant = variantIndex(centerOffsetY);
-            int diamondCodePoint = puaCodePoint(HOTBAR_CENTER_START_INDEX + centerVariant);
-            int diamondWidth = width(diamondCodePoint);
-            int centerShift = -(lineWidth + diamondWidth) / 2 + centerOffsetX;
-            line.append(shift(centerShift)).appendCodePoint(diamondCodePoint)
-                    .append(shift(-centerShift - diamondWidth));
         }
+
+        // Центральная квадратная способность всегда рисуется посередине строки.
+        // Во время отката выбирается затемнённый BMP-глиф, а цифры накладываются
+        // поверх него; компенсирующие сдвиги не меняют ширину всей строки.
+        int lineWidth = width(line.toString());
+        int centerVariant = variantIndex(centerOffsetY);
+        int centerGlyph = aggressionTimer > 0
+                ? HOTBAR_CENTER_DARK_BASE + centerVariant
+                : puaCodePoint(HOTBAR_CENTER_START_INDEX + centerVariant);
+        int centerWidth = width(centerGlyph);
+        int centerShift = -(lineWidth + centerWidth) / 2 + centerOffsetX;
+        line.append(shift(centerShift)).appendCodePoint(centerGlyph);
+        if (aggressionTimer > 0) {
+            String timer = hotbarNumber(aggressionTimer, centerVariant);
+            int timerWidth = width(timer);
+            int overlayShift = -(centerWidth + timerWidth) / 2;
+            line.append(shift(overlayShift)).append(timer)
+                    .append(shift(-overlayShift - timerWidth));
+        }
+        line.append(shift(-centerShift - centerWidth));
         return Component.text(line.toString(), GLYPHS);
     }
 

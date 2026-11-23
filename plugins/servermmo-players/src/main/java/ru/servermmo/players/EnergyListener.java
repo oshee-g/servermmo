@@ -42,7 +42,14 @@ final class EnergyListener implements Listener {
         lastRegenAt.clear();
     }
 
-    @EventHandler(priority = EventPriority.MONITOR)
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void preventSprintWithoutEnergy(PlayerToggleSprintEvent event) {
+        if (event.isSprinting() && profile(event.getPlayer()).energy() <= 0L) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onSprint(PlayerToggleSprintEvent event) {
         UUID uuid = event.getPlayer().getUniqueId();
         if (event.isSprinting()) {
@@ -77,6 +84,15 @@ final class EnergyListener implements Listener {
         if (blocks > 0L) {
             PlayerProfile profile = profile(player);
             profile.energy(profile.energy() - blocks);
+            if (profile.energy() <= 0L) {
+                // Израсходовав последний пункт, теряем спринт сразу; дальнейшие
+                // попытки включить его отменяются preventSprintWithoutEnergy.
+                player.setSprinting(false);
+                long now = System.currentTimeMillis();
+                stoppedAt.put(uuid, now);
+                lastRegenAt.put(uuid, now + REGEN_DELAY_MILLIS);
+                return;
+            }
         }
         stoppedAt.remove(uuid);
         lastRegenAt.remove(uuid);

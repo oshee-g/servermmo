@@ -57,7 +57,7 @@ ICON_ASCENT = 9
 HOTBAR_HEIGHT = 20
 HOTBAR_LEFT_ICON_DRAW_SIZE = 14
 HOTBAR_CENTER_HEIGHT = 32
-HOTBAR_CENTER_BASELINE_OFFSET = 30  # центрируем крупный ромб в слоте хотбара
+HOTBAR_CENTER_BASELINE_OFFSET = 30  # центрируем квадратную способность в хотбаре
 # Ascent 0: значки опущены на 13 px ниже, вплотную к ячейкам хотбара
 # (игрок просил прижать строку к ячейкам). Цифры хотбара идут отдельными
 # глифами с тем же центром (HOTBAR_DIGIT_ASCENT), чтобы не отрывались от
@@ -165,6 +165,7 @@ HOTBAR_RIGHT_START_INDEX = HOTBAR_LEFT_START_INDEX + HOTBAR_LEFT_TOTAL
 HOTBAR_RIGHT_VARIANT_GLYPH_COUNT = len(ABILITY_CHARS)
 # BMP private-use chars avoid consuming another supplementary PUA slot per offset.
 HOTBAR_ENERGY_BASE = 0xE800
+HOTBAR_CENTER_DARK_BASE = 0xE900
 HOTBAR_RIGHT_TOTAL = VARIANT_COUNT * HOTBAR_RIGHT_VARIANT_GLYPH_COUNT
 HOTBAR_CENTER_START_INDEX = HOTBAR_RIGHT_START_INDEX + HOTBAR_RIGHT_TOTAL
 HOTBAR_CENTER_TOTAL = VARIANT_COUNT
@@ -420,15 +421,21 @@ def encode_rgba_png(width: int, height: int, pixels: bytes) -> bytes:
 
 
 def hotbar_center_atlas_data() -> bytes:
-    """Make a 128px bitmap cell with the 24px frame lowered to the slot row."""
-    width, source_height, source = png_rgba(
-        (ASSETS / "hud_hotbar_center.png").read_bytes())
-    if (width, source_height) != (HOTBAR_CENTER_HEIGHT, HOTBAR_CENTER_HEIGHT):
-        raise ValueError("центральная ромб-рамка должна быть 24x24")
+    """Two raw 32x32 aggression-icon cells: normal and darkened."""
+    data = (ASSETS / "hud_hotbar_center.png").read_bytes()
+    width, height, _pixels = png_rgba(data)
+    if (width, height) != (HOTBAR_CENTER_HEIGHT * 2, HOTBAR_CENTER_HEIGHT):
+        raise ValueError("центральный атлас должен содержать два квадрата 32x32")
+    return data
+
+
+def hotbar_center_offset_atlas_data() -> bytes:
+    """Pad both center icons down in 128px font cells to align with the bar."""
+    width, source_height, source = png_rgba(hotbar_center_atlas_data())
     height = HOTBAR_VARIANT_HEIGHT
     top = HOTBAR_CENTER_BASELINE_OFFSET
     if top + source_height > height:
-        raise ValueError("центральная ромб-рамка не помещается в ячейку шрифта")
+        raise ValueError("центральная способность не помещается в ячейку шрифта")
     pixels = bytearray(width * height * 4)
     for y in range(source_height):
         start = ((top + y) * width) * 4
@@ -569,7 +576,8 @@ def build_font_json() -> dict:
                     "ascent": -offset,
                     "height": HOTBAR_VARIANT_HEIGHT,
                     "chars": [pua_chars(HOTBAR_CENTER_START_INDEX
-                                         + variant_index(offset), 1)],
+                                         + variant_index(offset), 1)
+                              + chr(HOTBAR_CENTER_DARK_BASE + variant_index(offset))],
                 }
                 for offset in range(-ICON_OFFSET_RANGE, ICON_OFFSET_RANGE + 1)
             ],
@@ -770,7 +778,7 @@ def main() -> int:
                        textures / "hud_panel_offset.png",
                        PANEL_COLS, 5, PANEL_VARIANT_HEIGHT, PANEL_HEIGHT)
     (textures / "hud_hotbar_center_offset.png").write_bytes(
-        hotbar_center_atlas_data())
+        hotbar_center_offset_atlas_data())
 
     write_offset_data(hotbar_icon_atlas_data(),
                       textures / "hud_hotbar_icons_offset.png",

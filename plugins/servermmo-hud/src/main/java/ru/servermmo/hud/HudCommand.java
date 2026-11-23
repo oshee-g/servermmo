@@ -423,7 +423,7 @@ final class HudCommand implements CommandExecutor {
         }
         int applied = horizontal ? settings.hotbarCenterOffsetX()
                 : settings.hotbarCenterOffsetY();
-        applyAll(sender, "Готово: центральный ромб сдвинут на " + applied
+        applyAll(sender, "Готово: центральная способность сдвинута на " + applied
                 + " px по " + (horizontal ? "горизонтали" : "вертикали")
                 + " (положительное — " + direction + ")");
         return true;

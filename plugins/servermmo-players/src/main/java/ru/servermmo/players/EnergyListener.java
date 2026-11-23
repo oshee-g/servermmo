@@ -33,7 +33,7 @@ final class EnergyListener implements Listener {
 
     EnergyListener(JavaPlugin plugin) {
         this.plugin = plugin;
-        regenTask = Bukkit.getScheduler().runTaskTimer(plugin, this::regenerate, 2L, 2L);
+        regenTask = Bukkit.getScheduler().runTaskTimer(plugin, this::regenerate, 1L, 1L);
     }
 
     void stop() {
@@ -141,8 +141,8 @@ final class EnergyListener implements Listener {
         player.setSprinting(false);
         restoreWalkSpeed(player);
         long now = System.currentTimeMillis();
-        stoppedAt.put(uuid, now);
-        lastRegenAt.put(uuid, now + REGEN_DELAY_MILLIS);
+        stoppedAt.putIfAbsent(uuid, now);
+        lastRegenAt.putIfAbsent(uuid, now + REGEN_DELAY_MILLIS);
     }
 
     private void restoreWalkSpeed(Player player) {
@@ -177,12 +177,19 @@ final class EnergyListener implements Listener {
             return;
         }
         for (Player player : Bukkit.getOnlinePlayers()) {
+            UUID uuid = player.getUniqueId();
             if (player.isSprinting()) {
-                stoppedAt.remove(player.getUniqueId());
-                lastRegenAt.remove(player.getUniqueId());
+                PlayerProfile profile = profile(player);
+                if (profile.energy() <= 0L) {
+                    // Re-assert the stop every tick in case the client keeps sending
+                    // sprint input after the exhaustion event.
+                    stopSprintForExhaustion(player);
+                } else {
+                    stoppedAt.remove(uuid);
+                    lastRegenAt.remove(uuid);
+                }
                 continue;
             }
-            UUID uuid = player.getUniqueId();
             long stop = stoppedAt.computeIfAbsent(uuid, ignored -> now);
             if (now - stop < REGEN_DELAY_MILLIS) {
                 continue;

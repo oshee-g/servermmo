@@ -169,6 +169,9 @@ HOTBAR_CENTER_DARK_BASE = 0xE900
 HOTBAR_RIGHT_TOTAL = VARIANT_COUNT * HOTBAR_RIGHT_VARIANT_GLYPH_COUNT
 HOTBAR_CENTER_START_INDEX = HOTBAR_RIGHT_START_INDEX + HOTBAR_RIGHT_TOTAL
 HOTBAR_CENTER_TOTAL = VARIANT_COUNT
+HOTBAR_CENTER_DIGIT_COUNT = 10
+HOTBAR_CENTER_DIGIT_BASE = 0xEA00
+HOTBAR_CENTER_DIGIT_BASELINE = 42
 PUA_TOTAL_USED = HOTBAR_CENTER_START_INDEX + HOTBAR_CENTER_TOTAL
 if PUA_TOTAL_USED > 2 * PUA_A_COUNT:
     raise ValueError(f"HUD-глифы требуют {PUA_TOTAL_USED} PUA-кодов, доступно "
@@ -443,6 +446,28 @@ def hotbar_center_offset_atlas_data() -> bytes:
     return encode_rgba_png(width, height, bytes(pixels))
 
 
+def hotbar_center_digits_atlas_data() -> bytes:
+    """10 number glyphs placed at the vertical center of the square ability."""
+    width, source_height, source = png_rgba((ASSETS / "hud_digits.png").read_bytes())
+    if source_height != GLYPH_HEIGHT or width % GLYPH_HEIGHT:
+        raise ValueError("цифровой атлас имеет неожиданную сетку")
+    source_cols = width // GLYPH_HEIGHT
+    if source_cols < HOTBAR_CENTER_DIGIT_COUNT:
+        raise ValueError("в цифровом атласе не хватает десяти цифр")
+    out_width = HOTBAR_CENTER_DIGIT_COUNT * GLYPH_HEIGHT
+    out_height = HOTBAR_VARIANT_HEIGHT
+    if HOTBAR_CENTER_DIGIT_BASELINE + GLYPH_HEIGHT > out_height:
+        raise ValueError("цифры не помещаются в ячейку таймера")
+    pixels = bytearray(out_width * out_height * 4)
+    for digit in range(HOTBAR_CENTER_DIGIT_COUNT):
+        for y in range(GLYPH_HEIGHT):
+            src = (y * width + digit * GLYPH_HEIGHT) * 4
+            dst = ((HOTBAR_CENTER_DIGIT_BASELINE + y) * out_width
+                   + digit * GLYPH_HEIGHT) * 4
+            pixels[dst:dst + GLYPH_HEIGHT * 4] = source[src:src + GLYPH_HEIGHT * 4]
+    return encode_rgba_png(out_width, out_height, bytes(pixels))
+
+
 def write_rgba_png(path: Path, width: int, height: int, pixels: bytes) -> None:
     path.write_bytes(encode_rgba_png(width, height, pixels))
 
@@ -578,6 +603,20 @@ def build_font_json() -> dict:
                     "chars": [pua_chars(HOTBAR_CENTER_START_INDEX
                                          + variant_index(offset), 1)
                               + chr(HOTBAR_CENTER_DARK_BASE + variant_index(offset))],
+                }
+                for offset in range(-ICON_OFFSET_RANGE, ICON_OFFSET_RANGE + 1)
+            ],
+            *[
+                {
+                    "type": "bitmap",
+                    "file": "servermmo:font/hud_hotbar_center_digits_offset.png",
+                    "ascent": HOTBAR_ASCENT - offset,
+                    "height": HOTBAR_VARIANT_HEIGHT,
+                    "chars": grid("".join(chr(HOTBAR_CENTER_DIGIT_BASE
+                                                  + variant_index(offset) * HOTBAR_CENTER_DIGIT_COUNT
+                                                  + digit)
+                                             for digit in range(HOTBAR_CENTER_DIGIT_COUNT)),
+                                  HOTBAR_CENTER_DIGIT_COUNT),
                 }
                 for offset in range(-ICON_OFFSET_RANGE, ICON_OFFSET_RANGE + 1)
             ],
@@ -779,6 +818,8 @@ def main() -> int:
                        PANEL_COLS, 5, PANEL_VARIANT_HEIGHT, PANEL_HEIGHT)
     (textures / "hud_hotbar_center_offset.png").write_bytes(
         hotbar_center_offset_atlas_data())
+    (textures / "hud_hotbar_center_digits_offset.png").write_bytes(
+        hotbar_center_digits_atlas_data())
 
     write_offset_data(hotbar_icon_atlas_data(),
                       textures / "hud_hotbar_icons_offset.png",

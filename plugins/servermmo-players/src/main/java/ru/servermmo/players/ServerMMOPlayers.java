@@ -27,6 +27,12 @@ public final class ServerMMOPlayers extends JavaPlugin {
         stats.setExecutor(executor);
         stats.setTabCompleter(executor);
 
+        PluginCommand energy = Objects.requireNonNull(getCommand("energy"),
+                "команда energy не описана");
+        EnergyCommand energyExecutor = new EnergyCommand(energyListener);
+        energy.setExecutor(energyExecutor);
+        energy.setTabCompleter(energyExecutor);
+
         getLogger().info("ServerMMOPlayers включён");
     }
 

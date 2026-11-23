@@ -171,6 +171,8 @@ final class HudText {
             + VARIANT_COUNT * HOTBAR_RIGHT_VARIANT_GLYPH_COUNT;
     /** BMP PUA-база затемнённых вариантов центральной иконки (201 offsets). */
     private static final int HOTBAR_CENTER_DARK_BASE = 0xE900;
+    private static final int HOTBAR_CENTER_DIGIT_COUNT = 10;
+    private static final int HOTBAR_CENTER_DIGIT_BASE = 0xEA00;
     /** База кодовых точек ступеней: ступень L - FADE_BASE + L*16 + позиция. */
     private static final int FADE_BASE = 0xE200;
     /**
@@ -236,8 +238,13 @@ final class HudText {
             map.put((int) (ABILITY_BASE + i), 20);
         }
         for (int variant = 0; variant < VARIANT_COUNT; variant++) {
-            map.put(puaCodePoint(HOTBAR_CENTER_START_INDEX + variant), 24);
-            map.put(HOTBAR_CENTER_DARK_BASE + variant, 24);
+            map.put(puaCodePoint(HOTBAR_CENTER_START_INDEX + variant), 33);
+            map.put(HOTBAR_CENTER_DARK_BASE + variant, 33);
+            int digitStart = HOTBAR_CENTER_DIGIT_BASE
+                    + variant * HOTBAR_CENTER_DIGIT_COUNT;
+            for (int digit = 0; digit < HOTBAR_CENTER_DIGIT_COUNT; digit++) {
+                map.put(digitStart + digit, digit == 1 ? 6 : 7);
+            }
         }
         for (int i = 0; i < 100; i++) {
             map.put((int) (LEVEL_BASE + i), 14);
@@ -729,7 +736,7 @@ final class HudText {
         int centerShift = -(lineWidth + centerWidth) / 2 + centerOffsetX;
         line.append(shift(centerShift)).appendCodePoint(centerGlyph);
         if (aggressionTimer > 0) {
-            String timer = hotbarNumber(aggressionTimer, centerVariant);
+            String timer = centerTimerNumber(aggressionTimer, centerVariant);
             int timerWidth = width(timer);
             int overlayShift = -(centerWidth + timerWidth) / 2;
             line.append(shift(overlayShift)).append(timer)
@@ -787,6 +794,17 @@ final class HudText {
                 builder.appendCodePoint(textGlyph(ch,
                         variant - ICON_OFFSET_RANGE + HOTBAR_TEXT_BASELINE_OFFSET, true));
             }
+        }
+        return builder.toString();
+    }
+
+    /** Цифры таймера со специальным вертикальным центром внутри центрального квадрата. */
+    private String centerTimerNumber(int value, int variant) {
+        String digits = Integer.toString(Math.max(0, value));
+        int start = HOTBAR_CENTER_DIGIT_BASE + variant * HOTBAR_CENTER_DIGIT_COUNT;
+        StringBuilder builder = new StringBuilder(digits.length());
+        for (int i = 0; i < digits.length(); i++) {
+            builder.append((char) (start + digits.charAt(i) - '0'));
         }
         return builder.toString();
     }

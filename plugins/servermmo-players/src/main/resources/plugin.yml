@@ -12,10 +12,21 @@ commands:
     usage: /stats [игрок|reset [игрок]]
     aliases: [статы, stat]
     permission: servermmo.stats
+  energy:
+    description: Показать или увеличить энергию игрока
+    usage: /energy [игрок|add <количество> [игрок]]
+    aliases: [энергия]
+    permission: servermmo.energy
 permissions:
   servermmo.stats:
     description: Просмотр статов
     default: true
   servermmo.stats.reset:
     description: Сброс статов к первому уровню
+    default: op
+  servermmo.energy:
+    description: Просмотр энергии
+    default: true
+  servermmo.energy.give:
+    description: Увеличение энергии командой /energy add
     default: op

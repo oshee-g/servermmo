@@ -24,8 +24,10 @@ final class EnergyListener implements Listener {
 
     private static final long REGEN_DELAY_MILLIS = 5_000L;
     private static final long REGEN_INTERVAL_MILLIS = 100L;
+    private static final double MIN_SPRINT_SPEED_FACTOR = 0.55D;
     private final JavaPlugin plugin;
     private final Map<UUID, Double> sprintDistance = new ConcurrentHashMap<>();
+    private final Map<UUID, Float> originalWalkSpeed = new ConcurrentHashMap<>();
     private final Map<UUID, Long> stoppedAt = new ConcurrentHashMap<>();
     private final Map<UUID, Long> lastRegenAt = new ConcurrentHashMap<>();
     private final BukkitTask regenTask;
@@ -37,7 +39,11 @@ final class EnergyListener implements Listener {
 
     void stop() {
         regenTask.cancel();
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            restoreWalkSpeed(player);
+        }
         sprintDistance.clear();
+        originalWalkSpeed.clear();
         stoppedAt.clear();
         lastRegenAt.clear();
     }
@@ -53,9 +59,12 @@ final class EnergyListener implements Listener {
     public void onSprint(PlayerToggleSprintEvent event) {
         UUID uuid = event.getPlayer().getUniqueId();
         if (event.isSprinting()) {
+            originalWalkSpeed.putIfAbsent(uuid, event.getPlayer().getWalkSpeed());
+            applyEnergySpeed(event.getPlayer(), profile(event.getPlayer()));
             stoppedAt.remove(uuid);
             lastRegenAt.remove(uuid);
         } else {
+            restoreWalkSpeed(event.getPlayer());
             long now = System.currentTimeMillis();
             stoppedAt.put(uuid, now);
             lastRegenAt.put(uuid, now + REGEN_DELAY_MILLIS);
@@ -88,14 +97,43 @@ final class EnergyListener implements Listener {
                 // Израсходовав последний пункт, теряем спринт сразу; дальнейшие
                 // попытки включить его отменяются preventSprintWithoutEnergy.
                 player.setSprinting(false);
+                restoreWalkSpeed(player);
                 long now = System.currentTimeMillis();
                 stoppedAt.put(uuid, now);
                 lastRegenAt.put(uuid, now + REGEN_DELAY_MILLIS);
                 return;
             }
+            applyEnergySpeed(player, profile);
         }
         stoppedAt.remove(uuid);
         lastRegenAt.remove(uuid);
+    }
+
+    /** Обновляет скорость после внешнего изменения энергии (например, /energy add). */
+    void refreshSprint(Player player) {
+        if (player.isSprinting()) {
+            originalWalkSpeed.putIfAbsent(player.getUniqueId(), player.getWalkSpeed());
+            applyEnergySpeed(player, profile(player));
+        }
+    }
+
+    private void applyEnergySpeed(Player player, PlayerProfile profile) {
+        Float base = originalWalkSpeed.get(player.getUniqueId());
+        if (base == null || profile.maxEnergy() <= 0L) {
+            return;
+        }
+        double energyRatio = Math.max(0.0D,
+                Math.min(1.0D, (double) profile.energy() / profile.maxEnergy()));
+        double factor = MIN_SPRINT_SPEED_FACTOR
+                + (1.0D - MIN_SPRINT_SPEED_FACTOR) * energyRatio;
+        player.setWalkSpeed((float) (base * factor));
+    }
+
+    private void restoreWalkSpeed(Player player) {
+        Float base = originalWalkSpeed.remove(player.getUniqueId());
+        if (base != null) {
+            player.setWalkSpeed(base);
+        }
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
@@ -110,6 +148,7 @@ final class EnergyListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR)
     public void onQuit(PlayerQuitEvent event) {
         UUID uuid = event.getPlayer().getUniqueId();
+        restoreWalkSpeed(event.getPlayer());
         sprintDistance.remove(uuid);
         stoppedAt.remove(uuid);
         lastRegenAt.remove(uuid);

@@ -160,8 +160,9 @@ def build_ability_atlas() -> None:
 
 
 def build_hotbar_center_atlas() -> None:
-    icon = fit("ability_aggression", (HOTBAR_CENTER_HEIGHT - 8,
-                                  HOTBAR_CENTER_HEIGHT - 8))
+    # Keep the center aggression slot represented by the sword, not the fist art.
+    icon = fit("sword", (HOTBAR_CENTER_HEIGHT - 8,
+                         HOTBAR_CENTER_HEIGHT - 8))
     framed = Image.new("RGBA", (HOTBAR_CENTER_HEIGHT, HOTBAR_CENTER_HEIGHT),
                        (22, 27, 29, 255))
     draw = ImageDraw.Draw(framed)

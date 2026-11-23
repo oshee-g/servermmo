@@ -186,8 +186,13 @@ def large_number_atlas() -> Image.Image:
     for index, source_index in enumerate(source_indices):
         glyph = source.crop((source_index * CELL, 0,
                              (source_index + 1) * CELL, CELL))
-        result.alpha_composite(glyph.resize((16, 16), Image.Resampling.NEAREST),
-                               (index * 16, 0))
+        if index < 10:
+            # Уровни чуть крупнее оригинала; суффиксы остаются заметно крупнее.
+            glyph = glyph.resize((12, 12), Image.Resampling.NEAREST)
+            result.alpha_composite(glyph, (index * 16 + 2, 3))
+        else:
+            glyph = glyph.resize((16, 16), Image.Resampling.NEAREST)
+            result.alpha_composite(glyph, (index * 16, 0))
     return result
 
 

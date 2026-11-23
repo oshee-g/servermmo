@@ -9,6 +9,8 @@ import ru.servermmo.core.ServerMMOCore;
 /** Плагин игроков: уровни, опыт и команды просмотра статов. */
 public final class ServerMMOPlayers extends JavaPlugin {
 
+    private EnergyListener energyListener;
+
     @Override
     public void onEnable() {
         if (ServerMMOCore.get() == null) {
@@ -17,6 +19,8 @@ public final class ServerMMOPlayers extends JavaPlugin {
             return;
         }
         Bukkit.getPluginManager().registerEvents(new LevelUpListener(this), this);
+        energyListener = new EnergyListener(this);
+        Bukkit.getPluginManager().registerEvents(energyListener, this);
 
         PluginCommand stats = Objects.requireNonNull(getCommand("stats"), "команда stats не описана");
         StatsCommand executor = new StatsCommand(this);
@@ -24,5 +28,12 @@ public final class ServerMMOPlayers extends JavaPlugin {
         stats.setTabCompleter(executor);
 
         getLogger().info("ServerMMOPlayers включён");
+    }
+
+    @Override
+    public void onDisable() {
+        if (energyListener != null) {
+            energyListener.stop();
+        }
     }
 }

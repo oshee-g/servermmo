@@ -194,6 +194,10 @@ def main() -> int:
     gear.save(OUT / "hud_gear.png", optimize=True)
     print(f"hud_gear.png {gear.size[0]}x{gear.size[1]}: {', '.join(GEAR)}")
 
+    energy = fit("energy", (HOTBAR, HOTBAR))
+    energy.save(OUT / "hud_energy.png", optimize=True)
+    print(f"hud_energy.png {energy.size[0]}x{energy.size[1]}: energy bolt")
+
     money = tile([load(n, (ICON, ICON)) for n in MONEY], len(MONEY), (ICON, ICON))
     money.save(OUT / "hud_money.png", optimize=True)
     print(f"hud_money.png {money.size[0]}x{money.size[1]}: {', '.join(MONEY)}")

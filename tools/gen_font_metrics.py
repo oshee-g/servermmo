@@ -11,7 +11,7 @@ from pathlib import Path
 from gen_resourcepack import (
     ABILITY_CHARS, CLAN_CHARS, DIGIT_CHARS, FADE_STEPS, GEAR_CHARS,
     HOTBAR_CENTER_HEIGHT, HOTBAR_CENTER_START_INDEX,
-    HOTBAR_DIGIT_CHARS, HOTBAR_HEIGHT,
+    HOTBAR_DIGIT_CHARS, HOTBAR_ENERGY_BASE, HOTBAR_HEIGHT,
     HOTBAR_LEFT_DIGIT_FADE_COUNT,
     HOTBAR_LEFT_DIGIT_OFFSET, HOTBAR_LEFT_GEAR_COUNT, HOTBAR_LEFT_GEAR_OFFSET,
     HOTBAR_LEFT_START_INDEX, HOTBAR_LEFT_VARIANT_GLYPH_COUNT,
@@ -130,7 +130,7 @@ def collect() -> dict[int, int]:
     icon_source = hotbar_icon_atlas_data()
     digit_fade_source = hotbar_digits_fade_atlas_data()
     center_source = (ASSETS / "hud_hotbar_center.png").read_bytes()
-    icon_count = HOTBAR_LEFT_GEAR_COUNT + HOTBAR_RIGHT_VARIANT_GLYPH_COUNT
+    icon_count = HOTBAR_LEFT_GEAR_COUNT + 1 + HOTBAR_RIGHT_VARIANT_GLYPH_COUNT
     for offset in range(-ICON_OFFSET_RANGE, ICON_OFFSET_RANGE + 1):
         variant = variant_index(offset)
         left_start = HOTBAR_LEFT_START_INDEX + variant * HOTBAR_LEFT_VARIANT_GLYPH_COUNT
@@ -138,6 +138,7 @@ def collect() -> dict[int, int]:
         add_atlas("hud_hotbar_icons_offset.png",
                   pua_chars(left_start + HOTBAR_LEFT_GEAR_OFFSET,
                             HOTBAR_LEFT_GEAR_COUNT)
+                  + chr(HOTBAR_ENERGY_BASE + variant)
                   + pua_chars(right_start, HOTBAR_RIGHT_VARIANT_GLYPH_COUNT),
                   icon_count, HOTBAR_HEIGHT, HOTBAR_VARIANT_HEIGHT, icon_source)
         add_atlas("hud_hotbar_digits_fade_offset.png",

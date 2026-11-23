@@ -89,6 +89,8 @@ final class HudText {
     private static final char GEAR_HEART = '\uE300';
     private static final char GEAR_SWORD = '\uE301';
     private static final char GEAR_SHIELD = '\uE309';
+    /** BMP PUA-база с вариантами высоты для сгенерированного значка энергии. */
+    private static final int HOTBAR_ENERGY_BASE = 0xE800;
     /** Валюты и значки панели: монеты, коины, нанагемы, клан, свиток, боевые очки. */
     private static final char MONEY_COINS = '\uE310';
     private static final char MONEY_STAR = '\uE311';
@@ -266,11 +268,14 @@ final class HudText {
                 };
                 map.put(puaCodePoint(hotbarLeftStart + HOTBAR_LEFT_GEAR_OFFSET + i), advance);
             }
-            for (int i = 0; i < HOTBAR_LEFT_DIGIT_COUNT; i++) {
-                map.put(puaCodePoint(hotbarLeftStart + HOTBAR_LEFT_DIGIT_OFFSET + i),
-                        i == 1 ? 6 : 7);
-            }
-            for (int step = 0; step < FADE_STEPS; step++) {
+        for (int i = 0; i < HOTBAR_LEFT_DIGIT_COUNT; i++) {
+            map.put(puaCodePoint(hotbarLeftStart + HOTBAR_LEFT_DIGIT_OFFSET + i),
+                    i == 1 ? 6 : 7);
+        }
+        for (int variant = 0; variant < VARIANT_COUNT; variant++) {
+            map.put(HOTBAR_ENERGY_BASE + variant, 20);
+        }
+        for (int step = 0; step < FADE_STEPS; step++) {
                 int fadeStart = hotbarLeftStart + HOTBAR_LEFT_FADE_OFFSET + step * 12;
                 for (int digit = 0; digit <= 9; digit++) {
                     map.put(puaCodePoint(fadeStart + digit), digit == 1 ? 6 : 7);
@@ -666,7 +671,8 @@ final class HudText {
      * @param centerOffsetX сдвиг центрального ромба по горизонтали
      * @param centerOffsetY сдвиг центрального ромба по вертикали
      */
-    Component hotbar(long health, long damage, long armor, long lastDamage, int fadeStep,
+    Component hotbar(long health, long energy, long maxEnergy, long damage, long armor,
+                     long lastDamage, int fadeStep,
                      int anchorX, int abilitySlots, HudLayout layout,
                      int leftOffsetX, int leftOffsetY,
                      int rightOffsetX, int rightOffsetY,
@@ -675,6 +681,9 @@ final class HudText {
         StringBuilder bodyBuilder = new StringBuilder();
         bodyBuilder.appendCodePoint(hotbarLeftGlyph(GEAR_HEART, leftVariant))
                 .append(pad(ICON_GAP)).append(hotbarNumber(health, leftVariant))
+                .append(pad(COLUMN_GAP))
+                .append((char) (HOTBAR_ENERGY_BASE + leftVariant))
+                .append(pad(ICON_GAP)).append(hotbarFraction(energy, maxEnergy, leftVariant))
                 .append(pad(COLUMN_GAP))
                 .appendCodePoint(hotbarLeftGlyph(GEAR_SWORD, leftVariant))
                 .append(pad(ICON_GAP)).append(hotbarNumber(damage, leftVariant))
@@ -744,6 +753,12 @@ final class HudText {
         return puaCodePoint(HOTBAR_LEFT_START_INDEX
                 + variant * HOTBAR_LEFT_VARIANT_GLYPH_COUNT
                 + HOTBAR_LEFT_GEAR_OFFSET + index);
+    }
+
+    private String hotbarFraction(long value, long maximum, int variant) {
+        int baseline = variant - ICON_OFFSET_RANGE + HOTBAR_TEXT_BASELINE_OFFSET;
+        return hotbarNumber(value, variant) + glyphString(textGlyph('/', baseline))
+                + hotbarNumber(maximum, variant);
     }
 
     /** Число хотбара с компактными суффиксами и общим вертикальным сдвигом. */

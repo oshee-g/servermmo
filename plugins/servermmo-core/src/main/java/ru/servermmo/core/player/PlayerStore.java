@@ -51,6 +51,7 @@ public final class PlayerStore {
             profile.level(section.getLong("level", 1L));
             profile.xp(section.getLong("xp", 0L));
             profile.health(section.getLong("health", 10L));
+            profile.energy(section.getLong("energy", 100L));
             PlayerLevelStats stats = plugin.playerStats().forLevel((int) Math.min(Integer.MAX_VALUE, profile.level()));
             profile.applyStats(stats, false);
             profile.clampHealth();
@@ -68,6 +69,7 @@ public final class PlayerStore {
             yaml.set(base + ".level", profile.level());
             yaml.set(base + ".xp", profile.xp());
             yaml.set(base + ".health", profile.health());
+            yaml.set(base + ".energy", profile.energy());
         }
         if (yaml.getKeys(false).isEmpty()) {
             return;

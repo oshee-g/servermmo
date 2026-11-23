@@ -163,6 +163,8 @@ HOTBAR_LEFT_START_INDEX = TEXT_VARIANT_END_INDEX
 HOTBAR_LEFT_TOTAL = VARIANT_COUNT * HOTBAR_LEFT_VARIANT_GLYPH_COUNT
 HOTBAR_RIGHT_START_INDEX = HOTBAR_LEFT_START_INDEX + HOTBAR_LEFT_TOTAL
 HOTBAR_RIGHT_VARIANT_GLYPH_COUNT = len(ABILITY_CHARS)
+# BMP private-use chars avoid consuming another supplementary PUA slot per offset.
+HOTBAR_ENERGY_BASE = 0xE800
 HOTBAR_RIGHT_TOTAL = VARIANT_COUNT * HOTBAR_RIGHT_VARIANT_GLYPH_COUNT
 HOTBAR_CENTER_START_INDEX = HOTBAR_RIGHT_START_INDEX + HOTBAR_RIGHT_TOTAL
 HOTBAR_CENTER_TOTAL = VARIANT_COUNT
@@ -299,22 +301,27 @@ def select_atlas_cells(data: bytes, cols: int, indices: tuple[int, ...]) -> tupl
 
 
 def hotbar_icon_atlas_data() -> bytes:
-    """One 11-glyph atlas for left stats icons and the square ability icons."""
+    """Left stats icons, dedicated energy bolt, and right-side abilities."""
     gear_cols = (0, 1, 9)
     gear_w, gear_h, gear = select_atlas_cells(
         (ASSETS / "hud_gear.png").read_bytes(), len(GEAR_CHARS), gear_cols)
     ability_w, ability_h, abilities = select_atlas_cells(
         (ASSETS / "hud_ability.png").read_bytes(), len(ABILITY_CHARS),
         tuple(range(len(ABILITY_CHARS))))
-    if gear_h != ability_h or gear_w % len(gear_cols) or ability_w % len(ABILITY_CHARS):
+    energy_w, energy_h, energy = png_rgba((ASSETS / "hud_energy.png").read_bytes())
+    if (gear_h != ability_h or energy_h != HOTBAR_HEIGHT or energy_w != HOTBAR_HEIGHT
+            or gear_w % len(gear_cols) or ability_w % len(ABILITY_CHARS)):
         raise ValueError("иконки хотбара должны иметь одинаковую сетку ячеек")
     gear_cell = gear_w // len(gear_cols)
     ability_cell = ability_w // len(ABILITY_CHARS)
     if gear_cell != HOTBAR_HEIGHT or ability_cell != HOTBAR_HEIGHT:
         raise ValueError("ячейки левых и правых значков должны быть 20x20")
-    width = gear_w + ability_w
+    energy_x = gear_w
+    ability_x = energy_x + energy_w
+    width = ability_x + ability_w
     pixels = bytearray(width * gear_h * 4)
-    # Scale only the left-side pictograms down; leave right square icons intact.
+    # Scale the left pictograms to the same 14px size; the energy bolt has
+    # its own source image and occupies a dedicated atlas cell.
     draw_size = HOTBAR_LEFT_ICON_DRAW_SIZE
     margin = (HOTBAR_HEIGHT - draw_size) // 2
     for index in range(len(gear_cols)):
@@ -325,8 +332,15 @@ def hotbar_icon_atlas_data() -> bytes:
                 src = (source_y * gear_w + index * gear_cell + source_x) * 4
                 dst = ((y + margin) * width + index * gear_cell + x + margin) * 4
                 pixels[dst:dst + 4] = gear[src:src + 4]
+    for y in range(draw_size):
+        source_y = y * energy_h // draw_size
+        for x in range(draw_size):
+            source_x = x * energy_w // draw_size
+            src = (source_y * energy_w + source_x) * 4
+            dst = ((y + margin) * width + energy_x + x + margin) * 4
+            pixels[dst:dst + 4] = energy[src:src + 4]
     for y in range(ability_h):
-        start = (y * width + gear_w) * 4
+        start = (y * width + ability_x) * 4
         pixels[start:start + ability_w * 4] = \
             abilities[y * ability_w * 4:(y + 1) * ability_w * 4]
     return encode_rgba_png(width, gear_h, bytes(pixels))
@@ -613,6 +627,7 @@ def build_font_json() -> dict:
                                          + variant_index(offset) * HOTBAR_LEFT_VARIANT_GLYPH_COUNT
                                          + HOTBAR_LEFT_GEAR_OFFSET,
                                          HOTBAR_LEFT_GEAR_COUNT)
+                              + chr(HOTBAR_ENERGY_BASE + variant_index(offset))
                               + pua_chars(HOTBAR_RIGHT_START_INDEX
                                           + variant_index(offset) * HOTBAR_RIGHT_VARIANT_GLYPH_COUNT,
                                           HOTBAR_RIGHT_VARIANT_GLYPH_COUNT)],
@@ -759,7 +774,7 @@ def main() -> int:
 
     write_offset_data(hotbar_icon_atlas_data(),
                       textures / "hud_hotbar_icons_offset.png",
-                      HOTBAR_LEFT_GEAR_COUNT + HOTBAR_RIGHT_VARIANT_GLYPH_COUNT,
+                      HOTBAR_LEFT_GEAR_COUNT + 1 + HOTBAR_RIGHT_VARIANT_GLYPH_COUNT,
                       1, HOTBAR_VARIANT_HEIGHT, HOTBAR_HEIGHT)
     # Одинаковая базовая линия для этих глифов; цифры и индикатор физически
     # сдвинуты на 6 px вниз внутри ячейки, чтобы сохранить прежнее выравнивание.

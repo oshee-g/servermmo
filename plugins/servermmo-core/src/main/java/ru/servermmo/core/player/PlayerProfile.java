@@ -15,6 +15,8 @@ public final class PlayerProfile {
     private long xp;
     private long health;
     private long maxHealth;
+    private long energy = 100L;
+    private long maxEnergy = 100L;
     private long damage;
     private long xpToNext;
     private boolean dirty = true;
@@ -72,6 +74,22 @@ public final class PlayerProfile {
 
     public long maxHealth() {
         return maxHealth;
+    }
+
+    public long energy() {
+        return energy;
+    }
+
+    public long maxEnergy() {
+        return maxEnergy;
+    }
+
+    public void energy(long energy) {
+        long clamped = Math.max(0L, Math.min(maxEnergy, energy));
+        if (this.energy != clamped) {
+            this.energy = clamped;
+            this.dirty = true;
+        }
     }
 
     public long damage() {

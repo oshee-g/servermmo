@@ -129,6 +129,8 @@ final class PlayerHud {
         show();
 
         long health = 0L;
+        long energy = 100L;
+        long maxEnergy = 100L;
         long damage = 0L;
         long level = 1L;
         long xp = 0L;
@@ -138,6 +140,8 @@ final class PlayerHud {
             PlayerProfile profile = core.players().get(player.getUniqueId());
             if (profile != null) {
                 health = profile.health();
+                energy = profile.energy();
+                maxEnergy = profile.maxEnergy();
                 damage = profile.damage();
                 level = profile.level();
                 xp = profile.xp();
@@ -156,7 +160,7 @@ final class PlayerHud {
             }
         }
 
-        tickActionBar(health, damage, profile.armor());
+        tickActionBar(health, energy, maxEnergy, damage, profile.armor());
     }
 
     /**
@@ -165,7 +169,7 @@ final class PlayerHud {
      * яркости {@code damage-hold-seconds}, затем ступенями затухает и
      * пропадает; новый урон вспыхивает его заново.
      */
-    private void tickActionBar(long health, long damage, long armor) {
+    private void tickActionBar(long health, long energy, long maxEnergy, long damage, long armor) {
         int fadeStep = -1;
         if (lastDamageAt > 0L) {
             long elapsed = System.currentTimeMillis() - lastDamageAt;
@@ -181,7 +185,8 @@ final class PlayerHud {
                 }
             }
         }
-        Component line = text.hotbar(health, damage, armor, lastDamage, fadeStep,
+        Component line = text.hotbar(health, energy, maxEnergy, damage, armor,
+                lastDamage, fadeStep,
                 settings.hotbarAnchorX(), settings.abilitySlots(),
                 settings.layout(store.get(player.getUniqueId())),
                 settings.hotbarLeftOffsetX(), settings.hotbarLeftOffsetY(),

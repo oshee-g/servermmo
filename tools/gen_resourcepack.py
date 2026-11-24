@@ -111,7 +111,11 @@ MONEY_CHARS = chars(0xE310, 6)      # монеты, коины, нанагемы
                                     # боевые очки
 ABILITY_CHARS = chars(0xE320, 8)    # восемь квадратных иконок справа от хотбара
 LEVEL_CHARS = chars(0xE400, 100)    # ромбы уровней игрока 1..100
-CLAN_CHARS = chars(0xE470, 100)     # щиты уровней клана 1..100
+CLAN_CHARS = chars(0xE470, 100)     # старый атлас значков уровней клана
+CLAN_EMPTY_CHAR = "\ue4d4"
+ENEMY_LEVEL_CHAR = "\ue4d5"
+PLAYER_LEVEL_BASE = 0xE500
+PLAYER_LEVEL_CHARS = chars(PLAYER_LEVEL_BASE, 13)  # 0-9, l, v
 PANEL_OFFSET_RANGE = 100           # /hud offsety: панель -100..+100 px
 ICON_OFFSET_RANGE = 100             # /hud texty: текст -100..+100 px
 PANEL_CLASS_COUNT = 10
@@ -635,6 +639,27 @@ def build_font_json() -> dict:
                 "height": ICON_HEIGHT,
                 "chars": grid(CLAN_CHARS, LEVEL_COLS),
             },
+            {
+                "type": "bitmap",
+                "file": "servermmo:font/hud_clan_empty.png",
+                "ascent": ICON_ASCENT,
+                "height": ICON_HEIGHT,
+                "chars": [CLAN_EMPTY_CHAR],
+            },
+            {
+                "type": "bitmap",
+                "file": "servermmo:font/hud_enemy_level.png",
+                "ascent": ICON_ASCENT,
+                "height": ICON_HEIGHT,
+                "chars": [ENEMY_LEVEL_CHAR],
+            },
+            {
+                "type": "bitmap",
+                "file": "servermmo:font/hud_player_level.png",
+                "ascent": 7,
+                "height": 8,
+                "chars": [PLAYER_LEVEL_CHARS],
+            },
             *[
                 {
                     "type": "bitmap",
@@ -783,7 +808,9 @@ def main() -> int:
     for name in ("hud_digits.png", "hud_icons.png", "hud_letters.png",
                  *(f"hud_fade{step}.png" for step in range(FADE_STEPS)),
                  "hud_gear.png", "hud_money.png", "hud_ability.png",
-                 "hud_hotbar_center.png", "hud_level.png", "hud_clan.png", "hud_panel.png",
+                 "hud_hotbar_center.png", "hud_level.png", "hud_clan.png",
+                 "hud_clan_empty.png", "hud_enemy_level.png",
+                 "hud_player_level.png", "hud_panel.png",
                  "hud_text.png", "hud_text_small.png"):
         copy_asset(name, textures / name)
     copy_asset("pack_icon.png", PACK / "pack.png")

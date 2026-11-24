@@ -21,6 +21,7 @@ from gen_resourcepack import (
     ICON_CHARS, ICON_HEIGHT,
     ICON_OFFSET_RANGE, INLINE_GLYPH_COUNT, INLINE_GLYPHS, INLINE_START_INDEX,
     LEVEL_CHARS, LEVEL_COLS, LETTER_CHARS, MONEY_CHARS, PANEL_CLASS_COUNT,
+    CLAN_EMPTY_CHAR, ENEMY_LEVEL_CHAR, PLAYER_LEVEL_CHARS,
     PANEL_COLS, PANEL_OFFSET_RANGE, PANEL_START_INDEX,
     PANEL_VARIANT_GLYPH_COUNT, TEXT_CHARS, TEXT_COLS, TEXT_HEIGHT,
     INLINE_VARIANT_HEIGHT, PANEL_VARIANT_HEIGHT, TEXT_SMALL_START_INDEX,
@@ -96,6 +97,9 @@ def collect() -> dict[int, int]:
         ("hud_ability.png", ABILITY_CHARS, 8, HOTBAR_HEIGHT),
         ("hud_level.png", LEVEL_CHARS, LEVEL_COLS, ICON_HEIGHT),
         ("hud_clan.png", CLAN_CHARS, LEVEL_COLS, ICON_HEIGHT),
+        ("hud_clan_empty.png", CLAN_EMPTY_CHAR, 1, ICON_HEIGHT),
+        ("hud_enemy_level.png", ENEMY_LEVEL_CHAR, 1, ICON_HEIGHT),
+        ("hud_player_level.png", PLAYER_LEVEL_CHARS, len(PLAYER_LEVEL_CHARS), 8),
     )
     for name, glyphs, cols, draw_h in atlases:
         add_atlas(name, glyphs, cols, draw_h)

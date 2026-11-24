@@ -85,6 +85,8 @@ final class HudText {
     private static final int LEVEL_BASE = 0xE400;
     /** Щиты уровней клана 1..100 (номер нарисован на щите, без «lvl»). */
     private static final int CLAN_BASE = 0xE470;
+    private static final int CLAN_EMPTY_GLYPH = 0xE4D4;
+    private static final int PLAYER_LEVEL_GLYPH_BASE = 0xE500;
     /** Снаряжение: сердце, меч, топор, посох, молот, коса, вилы, лук, копьё, щит. */
     private static final char GEAR_HEART = '\uE300';
     private static final char GEAR_SWORD = '\uE301';
@@ -159,7 +161,7 @@ final class HudText {
     private static final int HOTBAR_LEFT_VARIANT_GLYPH_COUNT =
             HOTBAR_LEFT_FADE_OFFSET + FADE_STEPS * 12;
     /** Text-atlas glyphs need +12 ascent offset to align with dropped hotbar digits. */
-    private static final int HOTBAR_TEXT_BASELINE_OFFSET = 12;
+    private static final int HOTBAR_TEXT_BASELINE_OFFSET = 0;
     private static final int HOTBAR_LEFT_START_INDEX =
             TEXT_SMALL_START_INDEX + TEXT_VARIANT_TOTAL;
     private static final int HOTBAR_LEFT_VARIANT_TOTAL =
@@ -398,6 +400,17 @@ final class HudText {
     }
 
     /** Глиф текста с учётом сдвига (texty) и размера шрифта. */
+    private String playerLevelGlyphs(String level) {
+        StringBuilder out = new StringBuilder(level.length() + 3);
+        for (int i = 0; i < level.length(); i++) {
+            out.append((char) (PLAYER_LEVEL_GLYPH_BASE + level.charAt(i) - '0'));
+        }
+        out.append((char) (PLAYER_LEVEL_GLYPH_BASE + 10));
+        out.append((char) (PLAYER_LEVEL_GLYPH_BASE + 11));
+        out.append((char) (PLAYER_LEVEL_GLYPH_BASE + 12));
+        return out.toString();
+    }
+
     private int textGlyph(char ch, int texty) {
         return textGlyph(ch, texty, false);
     }
@@ -610,8 +623,8 @@ final class HudText {
         // Строка 1: после эмблемы курсор возвращается к общей левой границе
         // текстовой полосы. Свиток, ник и уровень идут подряд; хвост сохраняет
         // одинаковую общую ширину всех трёх строк.
-        String levelNumber = toGlyphs(
-                Long.toString(Math.max(1L, Math.min(100L, level))), titleTexty);
+        String levelNumber = playerLevelGlyphs(
+                Long.toString(Math.max(1L, Math.min(100L, level))));
         int xpBudget = Math.max(0, textBudget - width(MONEY_SCROLL) - ICON_GAP
                 - width(levelNumber) - 2 * COLUMN_GAP);
         String xpFraction = compactFraction(xp, xpToNext, xpBudget, titleTexty);
@@ -637,29 +650,26 @@ final class HudText {
                         + pad(titleIconGap), GLYPHS))
                 .append(Component.text(toGlyphs(title, titleTexty, smallTitle), GLYPHS))
                 .append(Component.text(pad(titleColumnGap), GLYPHS))
-                .append(Component.text(levelNumber, GLYPHS.color(NamedTextColor.GOLD)))
+                .append(Component.text(levelNumber, GLYPHS))
                 .append(Component.text(pad(titleColumnGap)
                         + inlineText(xpFraction, titleTexty), GLYPHS))
                 .append(Component.text(tail(titleTail), GLYPHS));
 
-        // Строка 2: номер уровня клана, название и опыт клана дробью.
+        // Строка 2: пустой щит клана, название и фиксированный опыт 0/0.
         // Строка 2 начинается на той же координате, что и строка 1.
-        String clanLevel = toGlyphs(Long.toString(Math.max(1L,
-                Math.min(100L, profile.clanLevel()))), clanTexty);
-        int clanXpBudget = Math.max(0, textBudget - width(clanLevel) - 2 * COLUMN_GAP);
-        String clanXp = compactFraction(profile.clanXp(), profile.clanXpToNext(),
-                clanXpBudget, clanTexty);
+        String clanIcon = glyphString(CLAN_EMPTY_GLYPH);
+        String clanXp = "0/0";
         String clanName = profile.clanName().isEmpty() ? "Без клана" : profile.clanName();
         int clanXpWidth = width(inlineText(clanXp, clanTexty));
-        int clanBudget = textBudget - width(clanLevel) - 2 * COLUMN_GAP - clanXpWidth;
+        int clanBudget = textBudget - width(clanIcon) - 2 * COLUMN_GAP - clanXpWidth;
         while (textWidth(clanName, clanTexty) > clanBudget && !clanName.isEmpty()) {
             clanName = clanName.substring(0, clanName.length() - 1);
         }
-        int clanW = width(clanLevel) + COLUMN_GAP + textWidth(clanName, clanTexty)
+        int clanW = width(clanIcon) + COLUMN_GAP + textWidth(clanName, clanTexty)
                 + COLUMN_GAP + clanXpWidth;
         int clanTail = panelWidth - contentLeft - textx - clanW;
         Component second = Component.text(shift(offset) + pad(contentLeft) + shift(textx), GLYPHS)
-                .append(Component.text(clanLevel, GLYPHS.color(NamedTextColor.GOLD)))
+                .append(Component.text(clanIcon, GLYPHS))
                 .append(Component.text(pad(COLUMN_GAP), GLYPHS))
                 .append(Component.text(toGlyphs(clanName, clanTexty), GLYPHS))
                 .append(Component.text(pad(COLUMN_GAP) + inlineText(clanXp, clanTexty), GLYPHS))
@@ -704,10 +714,10 @@ final class HudText {
                 .append(pad(ICON_GAP)).append(hotbarFraction(energy, maxEnergy, leftVariant))
                 .append(pad(COLUMN_GAP))
                 .appendCodePoint(hotbarLeftGlyph(GEAR_SWORD, leftVariant))
-                .append(pad(ICON_GAP)).append(hotbarNumber(damage, leftVariant))
+                .append(pad(ICON_GAP)).append(rightAlignHotbar(hotbarNumber(damage, leftVariant), 42))
                 .append(pad(COLUMN_GAP))
                 .appendCodePoint(hotbarLeftGlyph(GEAR_SHIELD, leftVariant))
-                .append(pad(ICON_GAP)).append(hotbarNumber(armor, leftVariant));
+                .append(pad(ICON_GAP)).append(rightAlignHotbar(hotbarNumber(armor, leftVariant), 42));
         if (fadeStep >= 0) {
             bodyBuilder.append(pad(COLUMN_GAP))
                     .append(indicator(lastDamage, fadeStep, leftVariant));
@@ -785,8 +795,9 @@ final class HudText {
 
     private String hotbarFraction(long value, long maximum, int variant) {
         int baseline = variant - ICON_OFFSET_RANGE + HOTBAR_TEXT_BASELINE_OFFSET;
-        return hotbarNumber(value, variant) + glyphString(textGlyph('/', baseline))
-                + hotbarNumber(maximum, variant);
+        String fraction = hotbarNumber(value, variant)
+                + glyphString(textGlyph('/', baseline)) + hotbarNumber(maximum, variant);
+        return rightAlignHotbar(fraction, 94);
     }
 
     /** Число хотбара с компактными суффиксами и общим вертикальным сдвигом. */
@@ -805,6 +816,10 @@ final class HudText {
             }
         }
         return builder.toString();
+    }
+
+    private String rightAlignHotbar(String value, int columnWidth) {
+        return pad(Math.max(0, columnWidth - width(value))) + value;
     }
 
     /** Цифры таймера со специальным вертикальным центром внутри центрального квадрата. */

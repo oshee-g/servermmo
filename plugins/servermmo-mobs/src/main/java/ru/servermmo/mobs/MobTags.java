@@ -17,15 +17,14 @@ import ru.servermmo.core.ServerMMOCore;
 import ru.servermmo.core.stats.LevelStats;
 
 /**
- * Подпись над кастомным мобом: {@code <LVL> 1 Лосось 3}.
+ * Подпись над кастомным мобом: вражеская метка, красный уровень, имя,
+ * сердце с HP и меч с уроном.
  *
- * <p>Значок {@code LVL} и числа — глифы шрифта {@code servermmo:hud} из
- * ресурспака, имя моба — обычный ванильный шрифт. Глифы пака лежат в тех же
- * строках ячейки, что ванильные заглавные буквы, поэтому строка не «пляшет»:
- * значок, цифры и имя стоят на одной базовой линии.</p>
+ * <p>Метка, сердце и меч — глифы шрифта {@code servermmo:hud} из ресурспака;
+ * цифры и имя рисуются ванильным шрифтом.</p>
  *
- * <p>Без ресурспака вместо {@code LVL} останется текст, а цифры будут
- * ванильными — подпись не сломается.</p>
+ * <p>Без ресурспака отсутствующие значки могут отображаться пустыми, но
+ * имя и текстовые характеристики останутся читаемыми.</p>
  *
  * <p>Подпись обновляется при изменении здоровья. Перебираются только
  * кастомные мобы (они регистрируются при спавне и загрузке), а не все
@@ -33,8 +32,10 @@ import ru.servermmo.core.stats.LevelStats;
  */
 final class MobTags extends BukkitRunnable {
 
-    /** Значок уровня: буквы LVL из шрифта пака. */
-    private static final String GLYPH_LEVEL = "LVL";
+    /** Вражеский щит с L, сгенерированный в ресурспаке. */
+    private static final String GLYPH_LEVEL = "\uE4D5";
+    private static final char GLYPH_HEART = '\uE010';
+    private static final char GLYPH_SWORD = '\uE011';
     /** Пробел шрифта пака шириной 4 пикселя: в паке обычный пробел 1 px. */
     private static final String GLYPH_SPACE = "\uE101";
 
@@ -53,6 +54,11 @@ final class MobTags extends BukkitRunnable {
     private static final Style NAME_STYLE = Style.style()
             .font(Key.key("minecraft", "default"))
             .color(NamedTextColor.WHITE)
+            .build();
+    private static final Style LEVEL_STYLE = Style.style()
+            .font(Key.key("minecraft", "default"))
+            .color(NamedTextColor.RED)
+            .decorate(net.kyori.adventure.text.format.TextDecoration.BOLD)
             .build();
 
     private final ServerMMOMobs plugin;
@@ -111,16 +117,22 @@ final class MobTags extends BukkitRunnable {
         LevelStats stats = core.levels().byLevel(level);
         String name = stats != null ? stats.mobName() : niceName(mob);
         long health = core.combat().health(mob);
+        long damage = stats != null ? Math.max(0L, stats.damage()) : 0L;
 
-        // Пробелы внутри шрифта пака шириной 1 px, поэтому между значком и
-        // числом ставим глиф-пробел \uE101 (4 px), а вокруг имени — обычные
-        // ванильные пробелы: имя рисуется ванильным шрифтом.
+        // Метка уровня и иконки используют ресурспак; имя, красный жирный
+        // уровень и значения характеристик — ванильный шрифт.
         return Component.text()
                 .append(Component.text(GLYPH_LEVEL, HUD_STYLE))
                 .append(Component.text(GLYPH_SPACE, HUD_STYLE))
-                .append(Component.text(Integer.toString(level), HUD_STYLE))
+                .append(Component.text(Integer.toString(level), LEVEL_STYLE))
                 .append(Component.text(" " + name + " ", NAME_STYLE))
-                .append(Component.text(Long.toString(health), HUD_STYLE))
+                .append(Component.text(String.valueOf(GLYPH_HEART), HUD_STYLE))
+                .append(Component.text(GLYPH_SPACE, HUD_STYLE))
+                .append(Component.text(Long.toString(health), NAME_STYLE))
+                .append(Component.text(" ", NAME_STYLE))
+                .append(Component.text(String.valueOf(GLYPH_SWORD), HUD_STYLE))
+                .append(Component.text(GLYPH_SPACE, HUD_STYLE))
+                .append(Component.text(Long.toString(damage), NAME_STYLE))
                 .build();
     }
 

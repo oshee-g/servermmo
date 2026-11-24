@@ -5,6 +5,8 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -24,9 +26,11 @@ final class EnergyListener implements Listener {
 
     private static final long REGEN_DELAY_MILLIS = 5_000L;
     private static final long REGEN_INTERVAL_MILLIS = 100L;
+    private static final double EXHAUSTED_MOVEMENT_SPEED = 0.05;
     private final JavaPlugin plugin;
     private final Map<UUID, Double> sprintDistance = new ConcurrentHashMap<>();
     private final Map<UUID, Float> originalWalkSpeed = new ConcurrentHashMap<>();
+    private final Map<UUID, Double> originalMovementSpeed = new ConcurrentHashMap<>();
     private final Map<UUID, Long> stoppedAt = new ConcurrentHashMap<>();
     private final Map<UUID, Long> lastRegenAt = new ConcurrentHashMap<>();
     private final BukkitTask regenTask;
@@ -40,9 +44,11 @@ final class EnergyListener implements Listener {
         regenTask.cancel();
         for (Player player : Bukkit.getOnlinePlayers()) {
             restoreWalkSpeed(player);
+            restoreMovementSpeed(player);
         }
         sprintDistance.clear();
         originalWalkSpeed.clear();
+        originalMovementSpeed.clear();
         stoppedAt.clear();
         lastRegenAt.clear();
     }
@@ -58,6 +64,7 @@ final class EnergyListener implements Listener {
     public void onSprint(PlayerToggleSprintEvent event) {
         UUID uuid = event.getPlayer().getUniqueId();
         if (event.isSprinting()) {
+            restoreMovementSpeed(event.getPlayer());
             originalWalkSpeed.putIfAbsent(uuid, event.getPlayer().getWalkSpeed());
             applyEnergySpeed(event.getPlayer(), profile(event.getPlayer()));
             stoppedAt.remove(uuid);
@@ -113,12 +120,17 @@ final class EnergyListener implements Listener {
 
     /** Обновляет скорость после внешнего изменения энергии (например, /energy add). */
     void refreshSprint(Player player) {
-        if (!player.isSprinting()) {
-            return;
-        }
         PlayerProfile profile = profile(player);
         if (profile.energy() <= 0L) {
-            stopSprintForExhaustion(player);
+            if (player.isSprinting()) {
+                stopSprintForExhaustion(player);
+            } else {
+                applyExhaustedMovementSpeed(player);
+            }
+            return;
+        }
+        restoreMovementSpeed(player);
+        if (!player.isSprinting()) {
             return;
         }
         originalWalkSpeed.putIfAbsent(player.getUniqueId(), player.getWalkSpeed());
@@ -130,8 +142,9 @@ final class EnergyListener implements Listener {
         if (base == null || profile.maxEnergy() <= 0L) {
             return;
         }
-        // Energy is a sprint allowance, not a speed multiplier: keep full sprint
-        // speed while any energy remains, then drop to normal speed at zero.
+        // Energy is a sprint allowance, not a speed multiplier: preserve the
+        // player's normal walk-speed setting while energy remains. Exhaustion
+        // applies the separate movement-attribute penalty below.
         player.setWalkSpeed(base);
     }
 
@@ -140,6 +153,7 @@ final class EnergyListener implements Listener {
         sprintDistance.put(uuid, 0.0);
         player.setSprinting(false);
         restoreWalkSpeed(player);
+        applyExhaustedMovementSpeed(player);
         long now = System.currentTimeMillis();
         stoppedAt.putIfAbsent(uuid, now);
         lastRegenAt.putIfAbsent(uuid, now + REGEN_DELAY_MILLIS);
@@ -149,6 +163,32 @@ final class EnergyListener implements Listener {
         Float base = originalWalkSpeed.remove(player.getUniqueId());
         if (base != null) {
             player.setWalkSpeed(base);
+        }
+    }
+
+    private void applyExhaustedMovementSpeed(Player player) {
+        AttributeInstance movementSpeed = player.getAttribute(Attribute.MOVEMENT_SPEED);
+        if (movementSpeed == null) {
+            return;
+        }
+        UUID uuid = player.getUniqueId();
+        originalMovementSpeed.putIfAbsent(uuid, movementSpeed.getBaseValue());
+        if (Double.compare(movementSpeed.getBaseValue(), EXHAUSTED_MOVEMENT_SPEED) != 0) {
+            movementSpeed.setBaseValue(EXHAUSTED_MOVEMENT_SPEED);
+        }
+    }
+
+    private void restoreMovementSpeed(Player player) {
+        Double original = originalMovementSpeed.remove(player.getUniqueId());
+        if (original == null) {
+            return;
+        }
+        AttributeInstance movementSpeed = player.getAttribute(Attribute.MOVEMENT_SPEED);
+        // Do not overwrite a different base value another plugin may have set
+        // while this exhaustion penalty was active.
+        if (movementSpeed != null
+                && Double.compare(movementSpeed.getBaseValue(), EXHAUSTED_MOVEMENT_SPEED) == 0) {
+            movementSpeed.setBaseValue(original);
         }
     }
 
@@ -165,6 +205,7 @@ final class EnergyListener implements Listener {
     public void onQuit(PlayerQuitEvent event) {
         UUID uuid = event.getPlayer().getUniqueId();
         restoreWalkSpeed(event.getPlayer());
+        restoreMovementSpeed(event.getPlayer());
         sprintDistance.remove(uuid);
         stoppedAt.remove(uuid);
         lastRegenAt.remove(uuid);
@@ -178,8 +219,13 @@ final class EnergyListener implements Listener {
         }
         for (Player player : Bukkit.getOnlinePlayers()) {
             UUID uuid = player.getUniqueId();
+            PlayerProfile profile = profile(player);
+            if (profile.energy() <= 0L) {
+                applyExhaustedMovementSpeed(player);
+            } else {
+                restoreMovementSpeed(player);
+            }
             if (player.isSprinting()) {
-                PlayerProfile profile = profile(player);
                 if (profile.energy() <= 0L) {
                     // Re-assert the stop every tick in case the client keeps sending
                     // sprint input after the exhaustion event.
@@ -201,8 +247,10 @@ final class EnergyListener implements Listener {
             }
             long points = (now - previous) / REGEN_INTERVAL_MILLIS;
             lastRegenAt.put(uuid, previous + points * REGEN_INTERVAL_MILLIS);
-            PlayerProfile profile = profile(player);
             profile.energy(profile.energy() + points);
+            if (profile.energy() > 0L) {
+                restoreMovementSpeed(player);
+            }
         }
     }
 

@@ -65,6 +65,7 @@ CLASSES = ["warrior", "archer", "mage", "paladin", "vampire", "necromancer",
            "viking", "farmer", "blacksmith", "druid"]
 
 LEVEL_COLS = 10    # 10x10 = 100 уровней
+PLAYER_LEVEL_GLYPHS = "0123456789lvl"
 PANEL_COLS = 2     # сетка 2x5 = 10 панелей
 
 PIXEL_DIGITS = {
@@ -151,6 +152,60 @@ def numbered_badge(base_name: str, value: int, clan_style: bool) -> Image.Image:
     return badge
 
 
+def chroma_badge(master_name: str) -> Image.Image:
+    """Remove the vivid green key, crop the artwork, and fit it into an icon cell."""
+    image = Image.open(ICONS / master_name).convert("RGBA")
+    pixels = image.load()
+    for y in range(image.height):
+        for x in range(image.width):
+            r, g, b, a = pixels[x, y]
+            excess = g - max(r, b)
+            if g > 80 and excess > 35:
+                # Feather the chroma key on antialiased edges and despill green.
+                alpha = max(0, min(255, round(255 * (1 - (excess - 35) / 45))))
+                pixels[x, y] = (r, min(g, max(r, b)), b, min(a, alpha))
+    box = image.getchannel("A").getbbox()
+    if box:
+        image = image.crop(box)
+    scale = min(22 / image.width, 22 / image.height)
+    image = image.resize((max(1, round(image.width * scale)),
+                          max(1, round(image.height * scale))), Image.LANCZOS)
+    cell = Image.new("RGBA", (ICON, ICON), (0, 0, 0, 0))
+    cell.alpha_composite(image, ((ICON - image.width) // 2,
+                                 (ICON - image.height) // 2))
+    return cell
+
+
+def build_generated_level_digits() -> None:
+    """Thick teal pixel glyphs for the player's level number and `lvl`."""
+    patterns = {
+        "0": ("11111", "11011", "10101", "10101", "10101", "11011", "11111"),
+        "1": ("00110", "01110", "00110", "00110", "00110", "00110", "01111"),
+        "2": ("11111", "00011", "00011", "11111", "11000", "11000", "11111"),
+        "3": ("11111", "00011", "00011", "01111", "00011", "00011", "11111"),
+        "4": ("11011", "11011", "11011", "11111", "00011", "00011", "00011"),
+        "5": ("11111", "11000", "11000", "11111", "00011", "00011", "11111"),
+        "6": ("11111", "11000", "11000", "11111", "11011", "11011", "11111"),
+        "7": ("11111", "00011", "00110", "00110", "01100", "01100", "01100"),
+        "8": ("11111", "11011", "11011", "11111", "11011", "11011", "11111"),
+        "9": ("11111", "11011", "11011", "11111", "00011", "00011", "11111"),
+        "l": ("11000", "11000", "11000", "11000", "11000", "11000", "11111"),
+        "v": ("11011", "11011", "11011", "11011", "11011", "01110", "00100"),
+    }
+    atlas = Image.new("RGBA", (8 * len(PLAYER_LEVEL_GLYPHS), 8), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(atlas)
+    for i, char in enumerate(PLAYER_LEVEL_GLYPHS):
+        for y, row in enumerate(patterns[char]):
+            for x, bit in enumerate(row):
+                if bit == "1":
+                    px, py = i * 8 + x + 1, y
+                    if y < 6:
+                        draw.point((px + 1, py + 1), fill=(0, 52, 62, 255))
+                    draw.point((px, py), fill=(45, 255, 238, 255))
+    atlas.save(OUT / "hud_player_level.png", optimize=True)
+    print(f"hud_player_level.png {atlas.width}x{atlas.height}: digits and lvl")
+
+
 def build_ability_atlas() -> None:
     ability = tile([fit(name, (HOTBAR, HOTBAR)) for name in ABILITIES],
                    len(ABILITIES), (HOTBAR, HOTBAR))
@@ -228,6 +283,7 @@ def main() -> int:
 
     build_ability_atlas()
     build_hotbar_center_atlas()
+    build_generated_level_digits()
 
     badges = [numbered_badge("level_diamond_new", n, False)
               for n in range(1, 101)]
@@ -240,6 +296,8 @@ def main() -> int:
                    for n in range(1, 101)]
     clan_sheet = tile(clan_badges, LEVEL_COLS, (ICON, ICON))
     clan_sheet.save(OUT / "hud_clan.png", optimize=True)
+    chroma_badge("clan_shield_cape_master.png").save(OUT / "hud_clan_empty.png", optimize=True)
+    chroma_badge("enemy_level_badge_master.png").save(OUT / "hud_enemy_level.png", optimize=True)
     print(f"hud_clan.png {clan_sheet.size[0]}x{clan_sheet.size[1]}: щиты клана "
           f"1..100 сеткой {LEVEL_COLS}x{10}")
 

@@ -186,8 +186,8 @@ jobs:
             FAIL=1
           fi
 
-          # Подпись над мобом: «LVL 2 Курица 11». Значок LVL, пробел, уровень и
-          # здоровье — куски шрифта пака (имя моба ванильное), плюс сам значок.
+          # Подпись над мобом: вражеский значок L, красный уровень, имя,
+          # сердце с HP и меч с уроном; иконки используют шрифт пака.
           TAG_LINE=$(grep -E 'Курица .* has the following entity data' console.log | head -1 || true)
           TAG_GLYPHS=$(printf '%s' "$TAG_LINE" | grep -o 'font: "servermmo:hud"' | wc -l)
           if [ "$TAG_GLYPHS" -ge 4 ]; then
@@ -197,10 +197,10 @@ jobs:
             echo "$TAG_LINE" | head -2 || true
             FAIL=1
           fi
-          if printf '%s' "$TAG_LINE" | grep -q 'LVL'; then
-            echo "OK: в подписи моба есть значок LVL"
+          if printf '%s' "$TAG_LINE" | grep -q $'\uE4D5'; then
+            echo "OK: в подписи моба есть сгенерированный значок уровня L"
           else
-            echo "::error::В подписи моба нет значка LVL"
+            echo "::error::В подписи моба нет сгенерированного значка уровня L"
             echo "$TAG_LINE" | head -2 || true
             FAIL=1
           fi

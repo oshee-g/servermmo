@@ -162,6 +162,8 @@ final class HudText {
             HOTBAR_LEFT_FADE_OFFSET + FADE_STEPS * 12;
     /** Text-atlas glyphs need +12 ascent offset to align with dropped hotbar digits. */
     private static final int HOTBAR_TEXT_BASELINE_OFFSET = 0;
+    /** Компактная фиксированная ширина stat-колонки: новые цифры растут влево. */
+    private static final int HOTBAR_STAT_COLUMN_WIDTH = 30;
     private static final int HOTBAR_LEFT_START_INDEX =
             TEXT_SMALL_START_INDEX + TEXT_VARIANT_TOTAL;
     private static final int HOTBAR_LEFT_VARIANT_TOTAL =
@@ -714,10 +716,12 @@ final class HudText {
                 .append(pad(ICON_GAP)).append(hotbarFraction(energy, maxEnergy, leftVariant))
                 .append(pad(COLUMN_GAP))
                 .appendCodePoint(hotbarLeftGlyph(GEAR_SWORD, leftVariant))
-                .append(pad(ICON_GAP)).append(rightAlignHotbar(hotbarNumber(damage, leftVariant), 42))
+                .append(pad(ICON_GAP)).append(rightAlignHotbar(
+                        hotbarNumber(damage, leftVariant), HOTBAR_STAT_COLUMN_WIDTH))
                 .append(pad(COLUMN_GAP))
                 .appendCodePoint(hotbarLeftGlyph(GEAR_SHIELD, leftVariant))
-                .append(pad(ICON_GAP)).append(rightAlignHotbar(hotbarNumber(armor, leftVariant), 42));
+                .append(pad(ICON_GAP)).append(rightAlignHotbar(
+                        hotbarNumber(armor, leftVariant), HOTBAR_STAT_COLUMN_WIDTH));
         if (fadeStep >= 0) {
             bodyBuilder.append(pad(COLUMN_GAP))
                     .append(indicator(lastDamage, fadeStep, leftVariant));
@@ -795,9 +799,13 @@ final class HudText {
 
     private String hotbarFraction(long value, long maximum, int variant) {
         int baseline = variant - ICON_OFFSET_RANGE + HOTBAR_TEXT_BASELINE_OFFSET;
-        String fraction = hotbarNumber(value, variant)
-                + glyphString(textGlyph('/', baseline)) + hotbarNumber(maximum, variant);
-        return rightAlignHotbar(fraction, 94);
+        String current = hotbarNumber(value, variant);
+        String total = hotbarNumber(maximum, variant);
+        // Ширину задаёт максимум, поэтому растущий текущий показатель
+        // занимает свободное место слева, а соседний слот не сдвигается.
+        int numberWidth = width(total);
+        return rightAlignHotbar(current, numberWidth)
+                + glyphString(textGlyph('/', baseline)) + total;
     }
 
     /** Число хотбара с компактными суффиксами и общим вертикальным сдвигом. */

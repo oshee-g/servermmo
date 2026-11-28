@@ -18,6 +18,8 @@ $SourceRoot = [System.IO.Path]::GetFullPath($SourceRoot)
 $SourcePlugins = Join-Path $SourceRoot 'server\plugins'
 $SourcePack = Join-Path $SourceRoot 'server\resourcepack\servermmo-hud.zip'
 $SourceProperties = Join-Path $SourceRoot 'server\server.properties'
+$SourceTestFile = Join-Path $SourceRoot 'server\aplle.txt'
+$TargetTestFile = Join-Path $ServerRoot 'aplle.txt'
 $TargetPlugins = Join-Path $ServerRoot 'plugins'
 $TargetPackDirectory = Join-Path $ServerRoot 'resourcepack'
 $TargetPack = Join-Path $TargetPackDirectory 'servermmo-hud.zip'
@@ -36,7 +38,7 @@ $ManagedPropertyNames = @(
     'require-resource-pack'
 )
 
-foreach ($path in @($SourcePlugins, $SourcePack, $SourceProperties, $TargetProperties)) {
+foreach ($path in @($SourcePlugins, $SourcePack, $SourceProperties, $SourceTestFile, $TargetProperties)) {
     if (-not (Test-Path -LiteralPath $path -PathType Leaf) -and
         -not (Test-Path -LiteralPath $path -PathType Container)) {
         throw "Required deployment path not found: $path"
@@ -88,6 +90,7 @@ try {
             -Destination (Join-Path $TargetPlugins $name) -Force
     }
     Copy-Item -LiteralPath $SourcePack -Destination $TargetPack -Force
+    Copy-Item -LiteralPath $SourceTestFile -Destination $TargetTestFile -Force
 
     # Merge only resource-pack settings; retain the live server's port,
     # online-mode, world, whitelist, and other machine-specific settings.

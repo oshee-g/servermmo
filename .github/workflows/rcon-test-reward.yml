@@ -1,0 +1,23 @@
+name: RCON test reward
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  reward:
+    if: github.ref == 'refs/heads/arena/01a107fb-servermmo'
+    runs-on: [self-hosted, Windows, X64, servermmo]
+    timeout-minutes: 2
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Give test reward and place a safe platform
+        shell: powershell
+        env:
+          RCON_PASSWORD: ${{ secrets.SERVER_RCON_PASSWORD }}
+        run: |
+          & "$env:GITHUB_WORKSPACE\server\scripts\rcon-test-reward.ps1" -Player 'OSheepka'

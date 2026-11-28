@@ -457,6 +457,45 @@ python3 tools/check_plugins.py   # jar, таблицы статов, ресур�
 Paper 26.3, ставит плагины, спавнит зомби и проверяет кастомный урон —
 результат складывается в `smoke-test.log`.
 
+### Автодеплой на Windows по push
+
+Workflow `.github/workflows/deploy-windows-server.yml` после появления новых
+JAR/ресурспака обновляет файлы на Windows-ПК и запускает службу Paper. Для
+этого нужен **self-hosted GitHub Actions runner на том же ПК**, где работает
+сервер: облачный runner не может держать Minecraft запущенным.
+
+1. Установи self-hosted runner из GitHub → **Settings → Actions → Runners** на
+   Windows-ПК и добавь ему метку `servermmo`. Запусти runner как службу Windows
+   от учётной записи, которой разрешено управлять Paper-службой и писать в
+   папку сервера.
+2. Запускай Paper как службу с именем `ServerMMO` (или задай другое имя в
+   переменной `PAPER_SERVICE`). Например, с NSSM из PowerShell **от имени
+   администратора** (предполагается, что `nssm.exe` доступен через `PATH`):
+
+   ```powershell
+   nssm install ServerMMO C:\Windows\System32\cmd.exe '/c C:\Users\123\Desktop\server\start.bat'
+   nssm set ServerMMO AppDirectory 'C:\Users\123\Desktop\server'
+   nssm set ServerMMO AppStopMethodConsole 30000
+   nssm set ServerMMO AppKillProcessTree 1
+   nssm set ServerMMO AppExit Default Restart
+   ```
+
+   В `settings.bat` задай `AUTO_RESTART=no`, затем запусти `nssm start ServerMMO`.
+   Установи и Paper-службу, и runner так, чтобы их учётные записи имели доступ
+   к папке сервера и право управлять службой. Рабочая папка службы должна быть
+   постоянной папкой сервера, не временным каталогом runner.
+3. В GitHub → **Settings → Secrets and variables → Actions → Variables** добавь:
+   - `SERVER_ROOT` = `C:\Users\123\Desktop\server` (папка с `paper.jar`,
+     `server.properties` и мирами);
+   - `PAPER_SERVICE` = `ServerMMO` (если служба называется иначе).
+4. При push в ветку `arena/01a107fb-servermmo` сборка опубликует JAR-файлы,
+   затем runner скопирует только четыре плагина и ресурспак в `SERVER_ROOT`,
+   обновит в живом `server.properties` только настройки ресурспака и запустит
+   Paper-службу. Миры, ядро Paper и остальные настройки сервера не перезаписываются.
+
+Не запускай runner от имени GitHub для публичных недоверенных веток: это даёт
+workflow доступ к управлению сервером. Разрешай деплой только доверенным push.
+
 ### Проверка скриптов (для разработки)
 
 Если правишь `start.bat` / `start.sh`, прогони тесты:

@@ -1,0 +1,45 @@
+name: Deploy Paper server to Windows
+
+on:
+  push:
+    branches:
+      - arena/01a107fb-servermmo
+    paths:
+      - 'server/plugins/*.jar'
+      - 'server/resourcepack/servermmo-hud.zip'
+      - 'server/server.properties'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: servermmo-windows-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/arena/01a107fb-servermmo'
+    runs-on: [self-hosted, Windows, X64, servermmo]
+    timeout-minutes: 10
+    env:
+      SERVER_ROOT: ${{ vars.SERVER_ROOT }}
+      PAPER_SERVICE: ${{ vars.PAPER_SERVICE || 'ServerMMO' }}
+    steps:
+      - name: Checkout deployment files
+        uses: actions/checkout@v4
+
+      - name: Deploy plugins and resource pack, then start Paper
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ([string]::IsNullOrWhiteSpace($env:SERVER_ROOT)) {
+            throw 'Set repository variable SERVER_ROOT to the persistent Windows server folder.'
+          }
+          if ([string]::IsNullOrWhiteSpace($env:PAPER_SERVICE)) {
+            throw 'Set repository variable PAPER_SERVICE to the Windows Paper service name.'
+          }
+          & "$env:GITHUB_WORKSPACE\server\scripts\deploy-windows.ps1" `
+            -ServerRoot $env:SERVER_ROOT `
+            -ServiceName $env:PAPER_SERVICE `
+            -SourceRoot $env:GITHUB_WORKSPACE

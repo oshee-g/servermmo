@@ -4,8 +4,6 @@ param(
     [ValidatePattern('^[A-Za-z0-9_]{3,16}$')]
     [string]$Player,
 
-    [string]$HostName = '127.0.0.1',
-
     [int]$Port = 25575
 )
 
@@ -86,11 +84,30 @@ if ([string]::IsNullOrWhiteSpace($password)) {
     throw 'GitHub Actions secret SERVER_RCON_PASSWORD is missing or empty.'
 }
 
-$client = [System.Net.Sockets.TcpClient]::new()
-$client.ReceiveTimeout = 5000
-$client.SendTimeout = 5000
+$client = $null
+$lastConnectError = $null
+foreach ($address in @(
+    [System.Net.IPAddress]::IPv6Loopback,
+    [System.Net.IPAddress]::Loopback
+)) {
+    $candidate = [System.Net.Sockets.TcpClient]::new($address.AddressFamily)
+    $candidate.ReceiveTimeout = 5000
+    $candidate.SendTimeout = 5000
+    try {
+        $candidate.Connect($address, $Port)
+        $client = $candidate
+        break
+    }
+    catch {
+        $lastConnectError = $_
+        $candidate.Dispose()
+    }
+}
+if ($null -eq $client) {
+    throw "Could not connect to local RCON on port $Port over IPv6 or IPv4 loopback: $($lastConnectError.Exception.Message)"
+}
+
 try {
-    $client.Connect($HostName, $Port)
     $stream = $client.GetStream()
     $stream.ReadTimeout = 5000
     $stream.WriteTimeout = 5000

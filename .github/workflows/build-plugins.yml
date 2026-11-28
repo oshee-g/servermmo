@@ -6,12 +6,22 @@ on:
     paths-ignore:
       - 'server/plugins/*.jar'
   workflow_dispatch:
+    inputs:
+      mode:
+        description: Choose a normal plugin deployment or the one-off RCON test reward.
+        required: true
+        type: choice
+        options:
+          - build-and-deploy
+          - rcon-test-reward
+        default: build-and-deploy
 
 permissions:
   contents: write
 
 jobs:
   build:
+    if: github.event_name != 'workflow_dispatch' || inputs.mode != 'rcon-test-reward'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -72,7 +82,7 @@ jobs:
 
   deploy-windows:
     needs: build
-    if: github.ref == 'refs/heads/arena/01a107fb-servermmo'
+    if: github.ref == 'refs/heads/arena/01a107fb-servermmo' && (github.event_name != 'workflow_dispatch' || inputs.mode != 'rcon-test-reward')
     runs-on: [self-hosted, Windows, X64, servermmo]
     timeout-minutes: 10
     permissions:
@@ -105,3 +115,20 @@ jobs:
             -ServerRoot $env:SERVER_ROOT `
             -ServiceName $env:PAPER_SERVICE `
             -SourceRoot $env:GITHUB_WORKSPACE
+
+  rcon-test-reward:
+    if: github.event_name == 'workflow_dispatch' && inputs.mode == 'rcon-test-reward' && github.ref == 'refs/heads/arena/01a107fb-servermmo'
+    runs-on: [self-hosted, Windows, X64, servermmo]
+    timeout-minutes: 2
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Give test reward and place a safe platform
+        shell: powershell
+        env:
+          RCON_PASSWORD: ${{ secrets.SERVER_RCON_PASSWORD }}
+        run: |
+          & "$env:GITHUB_WORKSPACE\server\scripts\rcon-test-reward.ps1" -Player 'OSheepka'

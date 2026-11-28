@@ -69,3 +69,39 @@ jobs:
             git commit -m "chore: rebuild ServerMMO plugins"
             git push
           fi
+
+  deploy-windows:
+    needs: build
+    if: github.ref == 'refs/heads/arena/01a107fb-servermmo'
+    runs-on: [self-hosted, Windows, X64, servermmo]
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    concurrency:
+      group: servermmo-windows-deploy
+      cancel-in-progress: false
+    env:
+      SERVER_ROOT: ${{ vars.SERVER_ROOT }}
+      PAPER_SERVICE: ${{ vars.PAPER_SERVICE || 'ServerMMO' }}
+    steps:
+      - name: Checkout latest built files
+        uses: actions/checkout@v4
+        with:
+          # The build job may have pushed the newly built JARs after this run's
+          # original commit. Resolve the branch head after that job completes.
+          ref: ${{ github.ref_name }}
+
+      - name: Deploy plugins and resource pack, then start Paper
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ([string]::IsNullOrWhiteSpace($env:SERVER_ROOT)) {
+            throw 'Set repository variable SERVER_ROOT to the persistent Windows server folder.'
+          }
+          if ([string]::IsNullOrWhiteSpace($env:PAPER_SERVICE)) {
+            throw 'Set repository variable PAPER_SERVICE to the Windows Paper service name.'
+          }
+          & "$env:GITHUB_WORKSPACE\server\scripts\deploy-windows.ps1" `
+            -ServerRoot $env:SERVER_ROOT `
+            -ServiceName $env:PAPER_SERVICE `
+            -SourceRoot $env:GITHUB_WORKSPACE

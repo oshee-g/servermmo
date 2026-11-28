@@ -459,10 +459,10 @@ Paper 26.3, ставит плагины, спавнит зомби и прове
 
 ### Автодеплой на Windows по push
 
-Workflow `.github/workflows/deploy-windows-server.yml` после появления новых
-JAR/ресурспака обновляет файлы на Windows-ПК и запускает службу Paper. Для
-этого нужен **self-hosted GitHub Actions runner на том же ПК**, где работает
-сервер: облачный runner не может держать Minecraft запущенным.
+Job `deploy-windows` в `.github/workflows/build-plugins.yml` после сборки
+обновляет файлы на Windows-ПК и запускает службу Paper. Для этого нужен
+**self-hosted GitHub Actions runner на том же ПК**, где работает сервер:
+облачный runner не может держать Minecraft запущенным постоянно.
 
 1. Установи self-hosted runner из GitHub → **Settings → Actions → Runners** на
    Windows-ПК и добавь ему метку `servermmo`. Запусти runner как службу Windows

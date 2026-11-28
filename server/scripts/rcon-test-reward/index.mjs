@@ -2,6 +2,7 @@ import { Rcon } from 'rcon-client';
 
 const player = 'OSheepka';
 const password = process.env.RCON_PASSWORD ?? '';
+const wait = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 
 if (!password || password.trim() !== password) {
   console.error('RCON_PASSWORD is missing or has leading/trailing whitespace.');
@@ -14,20 +15,40 @@ if (!/^[A-Za-z0-9]+$/.test(password)) {
 
 let rcon;
 try {
-  rcon = await Rcon.connect({
-    host: '::1',
-    port: 25575,
-    password,
-    connectTimeout: 8000,
-    timeout: 20000,
-    reconnect: false,
-  });
+  const connectDeadline = Date.now() + 120_000;
+  while (!rcon) {
+    try {
+      rcon = await Rcon.connect({
+        host: '::1',
+        port: 25575,
+        password,
+        connectTimeout: 8000,
+        timeout: 20000,
+        reconnect: false,
+      });
+    } catch (error) {
+      if (error?.code !== 'CONNECTION_FAILED' || Date.now() >= connectDeadline) {
+        throw error;
+      }
+      console.log('Local RCON is not listening yet; retrying in 5 seconds without restarting the server.');
+      await wait(5000);
+    }
+  }
   console.log('RCON authentication succeeded.');
 
-  const playerList = await rcon.send('list');
   const playerPattern = new RegExp(`(?<![A-Za-z0-9_])${player}(?![A-Za-z0-9_])`, 'i');
-  if (!playerPattern.test(playerList)) {
-    throw new Error(`Player ${player} is not online; no reward commands were sent.`);
+  const playerDeadline = Date.now() + 120_000;
+  let isOnline = false;
+  while (!isOnline) {
+    const playerList = await rcon.send('list');
+    isOnline = playerPattern.test(playerList);
+    if (!isOnline) {
+      if (Date.now() >= playerDeadline) {
+        throw new Error(`Player ${player} did not come online; no reward commands were sent.`);
+      }
+      console.log(`Waiting for ${player} to join; checking again in 5 seconds.`);
+      await wait(5000);
+    }
   }
   console.log(`Confirmed ${player} is online.`);
 

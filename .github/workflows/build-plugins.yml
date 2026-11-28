@@ -122,7 +122,7 @@ jobs:
   rcon-test-reward:
     if: github.event_name == 'workflow_dispatch' && inputs.mode == 'rcon-test-reward' && github.ref == 'refs/heads/arena/01a107fb-servermmo'
     runs-on: [self-hosted, Windows, X64, servermmo]
-    timeout-minutes: 2
+    timeout-minutes: 5
     permissions:
       contents: read
     steps:

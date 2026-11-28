@@ -11,6 +11,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+$Latin1Encoding = [System.Text.Encoding]::GetEncoding(28591)
 
 $ServerRoot = [System.IO.Path]::GetFullPath($ServerRoot)
 $SourceRoot = [System.IO.Path]::GetFullPath($SourceRoot)
@@ -43,7 +44,7 @@ foreach ($path in @($SourcePlugins, $SourcePack, $SourceProperties, $TargetPrope
 }
 
 $SourcePropertiesLines = [System.IO.File]::ReadAllLines(
-    $SourceProperties, [System.Text.Encoding]::Latin1)
+    $SourceProperties, $Latin1Encoding)
 $SourcePropertiesMap = @{}
 foreach ($line in $SourcePropertiesLines) {
     if ($line -match '^\s*([^#\s][^=]*)=(.*)$') {
@@ -93,7 +94,7 @@ try {
     $targetLines = [System.Collections.Generic.List[string]]::new()
     if (Test-Path -LiteralPath $TargetProperties -PathType Leaf) {
         foreach ($line in [System.IO.File]::ReadAllLines(
-                $TargetProperties, [System.Text.Encoding]::Latin1)) {
+                $TargetProperties, $Latin1Encoding)) {
             $targetLines.Add($line)
         }
     }
@@ -112,7 +113,7 @@ try {
         }
     }
     [System.IO.File]::WriteAllLines(
-        $TargetProperties, $targetLines.ToArray(), [System.Text.Encoding]::Latin1)
+        $TargetProperties, $targetLines.ToArray(), $Latin1Encoding)
 
     Start-Service -Name $ServiceName -ErrorAction Stop
     $service = Get-Service -Name $ServiceName

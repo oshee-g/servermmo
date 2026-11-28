@@ -92,7 +92,7 @@ jobs:
           ref: ${{ github.ref_name }}
 
       - name: Deploy plugins and resource pack, then start Paper
-        shell: pwsh
+        shell: powershell
         run: |
           $ErrorActionPreference = 'Stop'
           if ([string]::IsNullOrWhiteSpace($env:SERVER_ROOT)) {

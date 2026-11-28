@@ -7,6 +7,7 @@ on:
       - 'server/plugins/*.jar'
       - 'server/scripts/rcon-test-reward.ps1'
       - 'server/scripts/rcon-test-reward/**'
+      - 'server/scripts/rcon-build-cottage/**'
       - '.github/workflows/build-plugins.yml'
   workflow_dispatch:
     inputs:
@@ -17,6 +18,7 @@ on:
         options:
           - build-and-deploy
           - rcon-test-reward
+          - build-cottage
         default: build-and-deploy
 
 permissions:
@@ -24,7 +26,7 @@ permissions:
 
 jobs:
   build:
-    if: github.event_name != 'workflow_dispatch' || inputs.mode != 'rcon-test-reward'
+    if: github.event_name != 'workflow_dispatch' || inputs.mode == 'build-and-deploy'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -85,7 +87,7 @@ jobs:
 
   deploy-windows:
     needs: build
-    if: github.ref == 'refs/heads/arena/01a107fb-servermmo' && (github.event_name != 'workflow_dispatch' || inputs.mode != 'rcon-test-reward')
+    if: github.ref == 'refs/heads/arena/01a107fb-servermmo' && (github.event_name != 'workflow_dispatch' || inputs.mode == 'build-and-deploy')
     runs-on: [self-hosted, Windows, X64, servermmo]
     timeout-minutes: 10
     permissions:
@@ -151,4 +153,38 @@ jobs:
           npm ci --prefix $helper --no-audit --no-fund
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           node (Join-Path $helper 'index.mjs')
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+  rcon-build-cottage:
+    if: github.event_name == 'workflow_dispatch' && inputs.mode == 'build-cottage' && github.ref == 'refs/heads/arena/01a107fb-servermmo'
+    runs-on: [self-hosted, Windows, X64, servermmo]
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js for RCON
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.22.0'
+
+      - name: Build a cottage in front of the player
+        shell: powershell
+        env:
+          RCON_PASSWORD: ${{ secrets.SERVER_RCON_PASSWORD }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $source = "$env:GITHUB_WORKSPACE\server\scripts\rcon-build-cottage"
+          $helper = Join-Path $env:RUNNER_TEMP 'rcon-build-cottage'
+          New-Item -ItemType Directory -Force -Path $helper | Out-Null
+          Copy-Item -Path @(
+            (Join-Path $source 'package.json'),
+            (Join-Path $source 'package-lock.json'),
+            (Join-Path $source 'build-cottage.mjs')
+          ) -Destination $helper -Force
+          npm ci --prefix $helper --no-audit --no-fund
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          node (Join-Path $helper 'build-cottage.mjs')
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

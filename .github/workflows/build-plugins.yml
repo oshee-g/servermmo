@@ -8,6 +8,7 @@ on:
       - 'server/scripts/rcon-test-reward.ps1'
       - 'server/scripts/rcon-test-reward/**'
       - 'server/scripts/rcon-build-cottage/**'
+      - 'server/scripts/rcon-parkour-map/**'
       - '.github/workflows/build-plugins.yml'
   workflow_dispatch:
     inputs:
@@ -19,6 +20,7 @@ on:
           - build-and-deploy
           - rcon-test-reward
           - build-cottage
+          - parkour-map
         default: build-and-deploy
 
 permissions:
@@ -187,4 +189,38 @@ jobs:
           npm ci --prefix $helper --no-audit --no-fund
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           node (Join-Path $helper 'build-cottage.mjs')
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+  rcon-parkour-map:
+    if: github.event_name == 'workflow_dispatch' && inputs.mode == 'parkour-map' && github.ref == 'refs/heads/arena/01a107fb-servermmo'
+    runs-on: [self-hosted, Windows, X64, servermmo]
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js for RCON
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.22.0'
+
+      - name: Build passable 50x50 medium parkour map
+        shell: powershell
+        env:
+          RCON_PASSWORD: ${{ secrets.SERVER_RCON_PASSWORD }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $source = "$env:GITHUB_WORKSPACE\server\scripts\rcon-parkour-map"
+          $helper = Join-Path $env:RUNNER_TEMP 'rcon-parkour-map'
+          New-Item -ItemType Directory -Force -Path $helper | Out-Null
+          Copy-Item -Path @(
+            (Join-Path $source 'package.json'),
+            (Join-Path $source 'package-lock.json'),
+            (Join-Path $source 'parkour-map.mjs')
+          ) -Destination $helper -Force
+          npm ci --prefix $helper --no-audit --no-fund
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          node (Join-Path $helper 'parkour-map.mjs')
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

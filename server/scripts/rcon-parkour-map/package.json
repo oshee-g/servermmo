@@ -1,0 +1,9 @@
+{
+  "name": "servermmo-rcon-test-reward",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "rcon-client": "5.0.0"
+  }
+}
